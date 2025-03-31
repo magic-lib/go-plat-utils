@@ -3,6 +3,7 @@ package lock
 import (
 	"context"
 	"fmt"
+	"github.com/go-redis/redis/v8"
 	"github.com/magic-lib/go-plat-utils/goroutines"
 	"github.com/magic-lib/go-plat-utils/internal/gmlock"
 	"github.com/magic-lib/go-plat-utils/internal/redislock"
