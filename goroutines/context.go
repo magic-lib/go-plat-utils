@@ -57,7 +57,7 @@ func getCurrentGoId() string {
 	if goId > 0 {
 		return strconv.FormatInt(goId, baseInt)
 	}
-	return strconv.FormatInt(routine.Goid(), baseInt)
+	return strconv.FormatUint(routine.Goid(), baseInt)
 }
 
 // InitContext 设置上下文，需要在入口协程上执行，会返回当前的IdKey
