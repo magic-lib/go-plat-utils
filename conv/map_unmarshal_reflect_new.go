@@ -463,6 +463,40 @@ func (c *getNewService) changeValueToDstByDstType(srcValue reflect.Value, dstTyp
 		return nil, true
 	}
 
+	srcInterface := srcValue.Interface()
+	switch dstType.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		if srcInterface == nil {
+			return nil, true
+		}
+		s := asString(srcInterface)
+		i64, err := strconv.ParseInt(s, 10, dstType.Bits())
+		if err != nil {
+			return nil, false
+		}
+		return i64, true
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		if srcInterface == nil {
+			return nil, true
+		}
+		s := asString(srcInterface)
+		u64, err := strconv.ParseUint(s, 10, dstType.Bits())
+		if err != nil {
+			return nil, false
+		}
+		return u64, true
+	case reflect.Float32, reflect.Float64:
+		if srcInterface == nil {
+			return nil, true
+		}
+		s := asString(srcInterface)
+		f64, err := strconv.ParseFloat(s, dstType.Bits())
+		if err != nil {
+			return nil, false
+		}
+		return f64, true
+	}
+
 	if dstType.Kind() == reflect.Bool {
 		tempTime, ok := c.changeValueToBool(srcValue)
 		if ok {
@@ -507,6 +541,29 @@ func (c *getNewService) changeValueToDstByDstType(srcValue reflect.Value, dstTyp
 		}
 	}
 	return nil, false
+}
+
+func asString(src any) string {
+	switch v := src.(type) {
+	case string:
+		return v
+	case []byte:
+		return string(v)
+	}
+	rv := reflect.ValueOf(src)
+	switch rv.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return strconv.FormatInt(rv.Int(), 10)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return strconv.FormatUint(rv.Uint(), 10)
+	case reflect.Float64:
+		return strconv.FormatFloat(rv.Float(), 'g', -1, 64)
+	case reflect.Float32:
+		return strconv.FormatFloat(rv.Float(), 'g', -1, 32)
+	case reflect.Bool:
+		return strconv.FormatBool(rv.Bool())
+	}
+	return fmt.Sprintf("%v", src)
 }
 
 func (c *getNewService) changeValueToString(srcValue reflect.Value) (string, bool) {
