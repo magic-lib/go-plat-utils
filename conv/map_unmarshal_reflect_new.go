@@ -5,6 +5,7 @@ import (
 	"github.com/jinzhu/copier"
 	"github.com/magic-lib/go-plat-utils/cond"
 	jsoniterForNil "github.com/magic-lib/go-plat-utils/internal/jsoniter/go"
+	"github.com/shopspring/decimal"
 	"log"
 	"reflect"
 	"strconv"
@@ -446,6 +447,14 @@ func (c *getNewService) changeValueToDstByDstType(srcValue reflect.Value, dstTyp
 		return nil, true
 	}
 
+	if dstType.Kind() == reflect.Uint64 {
+		tempTime, ok := c.changeValueToInt64(srcValue)
+		if ok {
+			return uint64(tempTime), ok
+		}
+		return nil, true
+	}
+
 	if dstType.Kind() == reflect.Int64 {
 		tempTime, ok := c.changeValueToInt64(srcValue)
 		if ok {
@@ -476,6 +485,14 @@ func (c *getNewService) changeValueToDstByDstType(srcValue reflect.Value, dstTyp
 			tempTime, ok := c.changeValueToTime(srcValue)
 			if ok {
 				return tempTime, ok
+			}
+			return nil, true
+		}
+		if dstType == reflect.TypeOf(decimal.Decimal{}) {
+			sStr := fmt.Sprintf("%v", srcValue.Interface())
+			decimalData, err := decimal.NewFromString(sStr)
+			if err == nil {
+				return decimalData, true
 			}
 			return nil, true
 		}

@@ -12,8 +12,8 @@ type CommResponse struct {
 	Now     string      `json:"now,omitempty"`
 	Env     string      `json:"env,omitempty"` //环境
 	Time    int64       `json:"time,omitempty"`
-	LogId   string      `json:"logId,omitempty"`
-	TraceId string      `json:"traceId,omitempty"`
+	LogId   string      `json:"log_id,omitempty"`
+	TraceId string      `json:"trace_id,omitempty"`
 	Params  interface{} `json:"params,omitempty"`
 	Debug   interface{} `json:"debug,omitempty"`
 	Data    interface{} `json:"data"`
@@ -21,12 +21,12 @@ type CommResponse struct {
 
 // PageModel 分页结构输出
 type PageModel struct {
-	Count      int64       `json:"count"`                // 数据总数
-	PageNow    int         `json:"pageNow,omitempty"`    // 当前页数
-	PageOffset int         `json:"pageOffset,omitempty"` // 当前页面的偏移量
-	PageSize   int         `json:"pageSize,omitempty"`   // 每页显示的数目
-	PageTotal  int         `json:"pageTotal,omitempty"`  // 总页数
-	DataList   interface{} `json:"dataList"`             // 数据列表
+	Count      int64       `json:"count"`                 // 数据总数
+	PageNow    int         `json:"page_now,omitempty"`    // 当前页数
+	PageOffset int         `json:"page_offset,omitempty"` // 当前页面的偏移量
+	PageSize   int         `json:"page_size,omitempty"`   // 每页显示的数目
+	PageTotal  int         `json:"page_total,omitempty"`  // 总页数
+	DataList   interface{} `json:"data_list"`             // 数据列表
 }
 
 func (p *PageModel) GetPage(maxPageSize int) *PageModel {
