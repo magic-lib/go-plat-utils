@@ -30,7 +30,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lqiz/expr v1.1.4
-	github.com/magic-lib/go-plat-startupcfg v1.20250331.1
+	github.com/magic-lib/go-plat-startupcfg v1.20250403.2
 	github.com/marspere/goencrypt v1.0.7
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
