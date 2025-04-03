@@ -401,7 +401,7 @@ func (c *getNewService) getByDstDefault(srcDefault interface{}, dstType reflect.
 
 	srcValue := reflect.ValueOf(srcDefault)
 	if !srcValue.IsValid() {
-		return reflect.Value{}, nil
+		return reflect.Value{}, fmt.Errorf("src inValid")
 	}
 	if dstType == srcValue.Type() {
 		return srcValue, nil
@@ -411,17 +411,17 @@ func (c *getNewService) getByDstDefault(srcDefault interface{}, dstType reflect.
 		if retData != nil {
 			return reflect.ValueOf(retData), nil
 		}
-		return reflect.Value{}, nil
+		return reflect.Value{}, fmt.Errorf("changeValueToDstByDstType error")
 	}
 
 	if retData, ok := c.changeValueToDstBySrcType(srcValue, dstType); ok {
 		if retData != nil {
 			return reflect.ValueOf(retData), nil
 		}
-		return reflect.Value{}, nil
+		return reflect.Value{}, fmt.Errorf("changeValueToDstBySrcType error")
 	}
 
-	return reflect.Value{}, err
+	return reflect.Value{}, fmt.Errorf("no change")
 }
 
 func (c *getNewService) changeValueToDstByDstType(srcValue reflect.Value, dstType reflect.Type) (interface{}, bool) {
@@ -432,6 +432,14 @@ func (c *getNewService) changeValueToDstByDstType(srcValue reflect.Value, dstTyp
 
 	if dstType.Kind() == reflect.String {
 		tempTime, ok := c.changeValueToString(srcValue)
+		if ok {
+			return tempTime, ok
+		}
+		return nil, true
+	}
+
+	if dstType.Kind() == reflect.Int8 {
+		tempTime, ok := c.changeValueToInt8(srcValue)
 		if ok {
 			return tempTime, ok
 		}
@@ -516,6 +524,15 @@ func (c *getNewService) changeValueToTime(srcValue reflect.Value) (time.Time, bo
 	return time.Time{}, false
 }
 
+func (c *getNewService) changeValueToInt8(srcValue reflect.Value) (int8, bool) {
+	srcInterface := srcValue.Interface()
+	sStr := fmt.Sprintf("%v", srcInterface)
+	sStrInt, err := strconv.ParseInt(sStr, 10, 8)
+	if err == nil {
+		return int8(sStrInt), true
+	}
+	return 0, false
+}
 func (c *getNewService) changeValueToInt64(srcValue reflect.Value) (int64, bool) {
 	srcValueTypeName := srcValue.Type().Name()
 	if srcValueTypeName == "int" {
