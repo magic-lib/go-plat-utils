@@ -1,13 +1,9 @@
 // Package conn 连接参数
 package conn
 
-import (
-	"github.com/magic-lib/go-plat-startupcfg/startupcfg"
-)
-
 // Connect 数据连接对象
 type Connect struct {
-	Driver   startupcfg.DriverType  `json:"driver,omitempty"`
+	Driver   string                 `json:"driver,omitempty"`
 	Protocol string                 `json:"protocol,omitempty"`
 	Host     string                 `json:"host,omitempty"`
 	Port     string                 `json:"port,omitempty"`
@@ -29,7 +25,7 @@ func NewOption() connOption {
 func (c connOption) DialDriver(driver string) connOption {
 	return func(do *Connect) {
 		c(do)
-		do.Driver = startupcfg.DriverType(driver)
+		do.Driver = driver
 	}
 }
 

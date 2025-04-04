@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"container/ring"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/samber/lo"
 	"reflect"
@@ -112,4 +113,45 @@ func SliceDiff[T comparable](slice1 []T, slice2 []T) []T {
 	}
 
 	return diff
+}
+
+// NextByRing 从一个循环里取下一个，数组会构成一个圈
+func NextByRing[T any](vsList []T, last T, nt func(this T, last T) bool) T {
+	if len(vsList) == 0 {
+		return last
+	}
+	if len(vsList) == 1 {
+		return vsList[0]
+	}
+
+	r := ring.New(len(vsList))
+	for i := 0; i < r.Len(); i++ {
+		r.Value = vsList[i]
+		r = r.Next()
+	}
+	start := r
+	found := false
+	var current *ring.Ring
+	i := 0
+	for {
+		if i > 0 {
+			//循环了一圈，则直接退出
+			if r == start {
+				break
+			}
+		}
+		oneData := r.Value.(T)
+		if nt(oneData, last) { //下一个条件
+			found = true
+			current = r
+			break
+		}
+		r = r.Next()
+		i++
+	}
+	if found {
+		return current.Value.(T)
+	}
+	//表示最后面了，取第一个，循环
+	return start.Value.(T)
 }

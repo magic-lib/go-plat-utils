@@ -2,6 +2,7 @@ package utils_test
 
 import (
 	"fmt"
+	"github.com/magic-lib/go-plat-utils/id-generator/id"
 	"github.com/magic-lib/go-plat-utils/utils"
 	"testing"
 )
@@ -33,6 +34,6 @@ func TestAesCbc(t *testing.T) {
 }
 
 func TestUUID(t *testing.T) {
-	aa := utils.GetUUID("sssss")
+	aa := id.GetUUID("sssss")
 	fmt.Println(aa)
 }

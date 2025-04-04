@@ -3,6 +3,7 @@ package utils_test
 import (
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/utils"
 	"github.com/samber/lo"
 	lop "github.com/samber/lo/parallel"
 	"strconv"
@@ -248,4 +249,67 @@ func TestIO(t *testing.T) {
 	// 10
 	// [4,5,2,3,0,1]
 	// ["hello","world"]
+}
+
+type OneData struct {
+	Id int64 `db:"id" json:"id"` // 主键
+}
+
+func TestRingArray(t *testing.T) {
+	vsList := make([]*OneData, 0)
+	vsList = append(vsList, &OneData{
+		Id: 4,
+	})
+	vsList = append(vsList, &OneData{
+		Id: 7,
+	})
+	//vsList = append(vsList, &OneData{
+	//	Id: 8,
+	//})
+
+	nt := func(this *OneData, last *OneData) bool {
+		return this.Id > last.Id
+	}
+
+	one := utils.NextByRing[*OneData](vsList, &OneData{
+		Id: 3,
+	}, nt)
+	fmt.Println(one.Id)
+	one = utils.NextByRing[*OneData](vsList, &OneData{
+		Id: 4,
+	}, nt)
+	fmt.Println(one.Id)
+	one = utils.NextByRing[*OneData](vsList, &OneData{
+		Id: 5,
+	}, nt)
+	fmt.Println(one.Id)
+	one = utils.NextByRing[*OneData](vsList, &OneData{
+		Id: 7,
+	}, nt)
+	fmt.Println(one.Id)
+	one = utils.NextByRing[*OneData](vsList, &OneData{
+		Id: 8,
+	}, nt)
+	fmt.Println(one.Id)
+	one = utils.NextByRing[*OneData](vsList, &OneData{
+		Id: 10,
+	}, nt)
+	fmt.Println(one.Id)
+
+	fmt.Println("//////////////////")
+	one = utils.NextByRing[*OneData](vsList, &OneData{
+		Id: 0,
+	}, nt)
+	fmt.Println(one.Id)
+	one = utils.NextByRing[*OneData](vsList, one, nt)
+	fmt.Println(one.Id)
+	one = utils.NextByRing[*OneData](vsList, one, nt)
+	fmt.Println(one.Id)
+	one = utils.NextByRing[*OneData](vsList, one, nt)
+	fmt.Println(one.Id)
+	one = utils.NextByRing[*OneData](vsList, one, nt)
+	fmt.Println(one.Id)
+	one = utils.NextByRing[*OneData](vsList, one, nt)
+	fmt.Println(one.Id)
+
 }
