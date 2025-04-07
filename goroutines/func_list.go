@@ -1,7 +1,9 @@
 package goroutines
 
 import (
+	"github.com/hashicorp/go-multierror"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -30,8 +32,8 @@ func AsyncExecuteDataList[T any](timeout time.Duration, dataList []T,
 	waitGroupTemp := newWaitGroup(timeout)
 	waitGroupTemp.add(len(dataList))
 
-	breakDataList := false
-	var errTotal error
+	var breakDataListFlag int64 = 0
+	var errTotal *multierror.Error
 
 	//如果dataList太长，这样会并发很多也不合理，所以分为二维数组会更合理一些，每50一组
 	pageSize := 50
@@ -47,7 +49,7 @@ outLoop:
 			if i >= len(dataList) {
 				break outLoop
 			}
-			if breakDataList {
+			if breakDataListFlag > 0 {
 				//如果循环中有跳出的指令以后，则后续的循环都直接全部完成
 				waitGroupTemp.done()
 				i++
@@ -58,7 +60,7 @@ outLoop:
 				oneIndexTemp, ok0 := params[0].(int)
 				oneValTemp, ok1 := params[1].(T)
 				if ok0 && ok1 {
-					if breakDataList {
+					if breakDataListFlag > 0 {
 						//如果循环中有跳出的指令以后，则后续的循环都直接全部完成
 						waitGroupTemp.done()
 						aw.Done()
@@ -67,11 +69,11 @@ outLoop:
 
 					breakFlag, err := callback(oneIndexTemp, oneValTemp)
 					if err != nil {
-						errTotal = err
+						errTotal = multierror.Append(errTotal, err)
 					}
 					if breakFlag {
-						//表示需要跳出后续循环
-						breakDataList = true
+						//表示需要跳出后续循环,原子操作，避免竞态
+						atomic.AddInt64(&breakDataListFlag, 1)
 					}
 					//如果完成了，才能关闭
 					waitGroupTemp.done()
