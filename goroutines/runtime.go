@@ -105,12 +105,11 @@ func GoSync(task func(params ...any), params ...any) {
 
 // GoAsync 异步方法
 func GoAsync(task func(params ...any), params ...any) {
-	fun := func() {
-		func(tempParams ...interface{}) {
-			GoSync(task, tempParams...)
-		}(params...)
-	}
-	taskFun := routine.WrapTask(fun)
+	taskFun := routine.WrapTask(func() {
+		func(newTask func(params ...any), tempParams ...interface{}) {
+			GoSync(newTask, tempParams...)
+		}(task, params...)
+	})
 	if defaultAsyncObj.antsPool == nil {
 		go taskFun.Run()
 		return
