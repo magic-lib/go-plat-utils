@@ -18,23 +18,23 @@ type (
 
 // LogCommData 不会改变的数据
 type LogCommData struct {
-	CreateTime time.Time              `json:"createTime"`       //第一条日志的创建时间
-	LogId      string                 `json:"id"`               //logId
-	UserId     string                 `json:"userid,omitempty"` //userID
-	Env        conf.EnvCode           `json:"env"`              //env
-	Path       string                 `json:"path,omitempty"`   //当前请求的地址
-	Method     string                 `json:"method,omitempty"` //当前请求的方法
-	Extend     map[string]interface{} `json:"extend,omitempty"` //额外的业务参数
+	CreateTime time.Time      `json:"createTime"`       //第一条日志的创建时间
+	LogId      string         `json:"id"`               //logId
+	UserId     string         `json:"userid,omitempty"` //userID
+	Env        conf.EnvCode   `json:"env"`              //env
+	Path       string         `json:"path,omitempty"`   //当前请求的地址
+	Method     string         `json:"method,omitempty"` //当前请求的方法
+	Extend     map[string]any `json:"extend,omitempty"` //额外的业务参数
 }
 
 // LogData 每条单独日志的数据
 type LogData struct {
 	LogCommData
-	Now      time.Time     `json:"now"` //初始化时间
-	FileName string        //文件名
-	Line     int           //行号
-	LogLevel LogLevel      `json:"logLevel"`
-	Message  []interface{} `json:"message"`
+	Now      time.Time `json:"now"` //初始化时间
+	FileName string    //文件名
+	Line     int       //行号
+	LogLevel LogLevel  `json:"logLevel"`
+	Message  []any     `json:"message"`
 }
 
 // Init 初始化
@@ -63,7 +63,7 @@ func NewLogData(logCommData ...*LogCommData) *LogData {
 }
 
 // AddMessage 将日志添加
-func (l *LogData) AddMessage(level LogLevel, fileName string, line int, msg ...interface{}) {
+func (l *LogData) AddMessage(level LogLevel, fileName string, line int, msg ...any) {
 	if len(msg) == 0 {
 		return
 	}
@@ -71,7 +71,7 @@ func (l *LogData) AddMessage(level LogLevel, fileName string, line int, msg ...i
 	l.FileName = fileName
 	l.Line = line
 	l.LogLevel = level
-	l.Message = append([]interface{}{}, msg...)
+	l.Message = append([]any{}, msg...)
 }
 
 // String 生成字符串

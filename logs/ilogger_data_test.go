@@ -17,7 +17,7 @@ func TestLoggerData(t *testing.T) {
 		Env:        "dev",
 		Path:       "/name/pri",
 		Method:     "get",
-		Extend: map[string]interface{}{
+		Extend: map[string]any{
 			"service": "dnf",
 		},
 	})
@@ -39,7 +39,7 @@ func TestPrintLogger(t *testing.T) {
 		Env:        "dev",
 		Path:       "/name/pri",
 		Method:     "get",
-		Extend: map[string]interface{}{
+		Extend: map[string]any{
 			"service": "dnf",
 		},
 	})

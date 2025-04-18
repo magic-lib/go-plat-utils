@@ -20,7 +20,7 @@ type FileLogger struct {
 }
 
 // Debug 调试
-func (x *FileLogger) Debug(v ...interface{}) {
+func (x *FileLogger) Debug(v ...any) {
 	if x.Level() < logs.DEBUG {
 		return
 	}
@@ -28,7 +28,7 @@ func (x *FileLogger) Debug(v ...interface{}) {
 }
 
 // Error 错误
-func (x *FileLogger) Error(v ...interface{}) {
+func (x *FileLogger) Error(v ...any) {
 	if x.Level() < logs.ERROR {
 		return
 	}
@@ -36,7 +36,7 @@ func (x *FileLogger) Error(v ...interface{}) {
 }
 
 // Info 普通
-func (x *FileLogger) Info(v ...interface{}) {
+func (x *FileLogger) Info(v ...any) {
 	if x.Level() < logs.INFO {
 		return
 	}
@@ -44,7 +44,7 @@ func (x *FileLogger) Info(v ...interface{}) {
 }
 
 // Warn 警告
-func (x *FileLogger) Warn(v ...interface{}) {
+func (x *FileLogger) Warn(v ...any) {
 	if x.Level() < logs.WARNING {
 		return
 	}

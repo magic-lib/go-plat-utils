@@ -19,17 +19,17 @@ import (
 
 // FilterMap map有很多字段，需要通过Mapstruct过滤，主要用在查询数据库时，
 // 因为前端传的参数可能很多，需要过滤出数据库包含的字段才可以用
-func FilterMap(oldMap map[string]interface{}, mapStruct interface{}) (map[string]interface{}, []string) {
+func FilterMap(oldMap map[string]any, mapStruct any) (map[string]any, []string) {
 	modelMapStr, err := jsoniter.Marshal(mapStruct)
 	if err != nil {
 		return oldMap, nil
 	}
-	newMap1 := make(map[string]interface{})
+	newMap1 := make(map[string]any)
 	err = jsoniter.Unmarshal(modelMapStr, &newMap1)
 	if err != nil {
 		return oldMap, nil
 	}
-	newMap := make(map[string]interface{})
+	newMap := make(map[string]any)
 	keyList := make([]string, 0)
 	for key := range oldMap {
 		isFind := false
@@ -48,12 +48,12 @@ func FilterMap(oldMap map[string]interface{}, mapStruct interface{}) (map[string
 }
 
 // FillMap 将oldMap中的数据填充到mapStruct中
-func FillMap(oldMap map[string]interface{}, mapStruct interface{}) interface{} {
+func FillMap(oldMap map[string]any, mapStruct any) any {
 	modelMapStr, err := jsoniter.Marshal(mapStruct)
 	if err != nil {
 		return mapStruct
 	}
-	newMapAll := make(map[string]interface{})
+	newMapAll := make(map[string]any)
 	err = jsoniter.Unmarshal(modelMapStr, &newMapAll)
 	if err != nil {
 		return mapStruct
@@ -80,7 +80,7 @@ func FillMap(oldMap map[string]interface{}, mapStruct interface{}) interface{} {
 }
 
 // ShowColumn 将一个数组中很多字段，过滤出showList里包含的字段，返回map或数组
-func ShowColumn(data interface{}, showList []string) interface{} {
+func ShowColumn(data any, showList []string) any {
 	if data == nil {
 		return nil
 	}
@@ -88,7 +88,7 @@ func ShowColumn(data interface{}, showList []string) interface{} {
 	if oldStr == reflect.Struct || oldStr == reflect.Map {
 		byte1, err := jsoniter.Marshal(data)
 		if err == nil {
-			retData := make(map[string]interface{}, 0)
+			retData := make(map[string]any, 0)
 			byte2 := string(byte1)
 			for _, one := range showList {
 				retData[one] = gjson.Get(byte2, one).Value()
@@ -100,12 +100,12 @@ func ShowColumn(data interface{}, showList []string) interface{} {
 	if oldStr == reflect.Slice {
 		byte1, err := jsoniter.Marshal(data)
 		if err == nil {
-			retData := make([]map[string]interface{}, 0)
+			retData := make([]map[string]any, 0)
 			byte2 := string(byte1)
 
 			lens := gjson.Get(byte2, "#").Int()
 			for i := 0; i < int(lens); i++ {
-				tempData := make(map[string]interface{}, 0)
+				tempData := make(map[string]any, 0)
 				retData = append(retData, tempData)
 			}
 
@@ -125,7 +125,7 @@ func ShowColumn(data interface{}, showList []string) interface{} {
 }
 
 // HideColumn 与上相反
-func HideColumn(data interface{}, hideList []string) interface{} {
+func HideColumn(data any, hideList []string) any {
 	if data == nil {
 		return nil
 	}
@@ -134,7 +134,7 @@ func HideColumn(data interface{}, hideList []string) interface{} {
 	if oldStr == reflect.Struct || oldStr == reflect.Map {
 		byte1, err := jsoniter.Marshal(data)
 		if err == nil {
-			retData := make(map[string]interface{}, 0)
+			retData := make(map[string]any, 0)
 			byte2 := string(byte1)
 			for _, one := range hideList {
 				byte2, _ = sjson.Delete(byte2, one)
@@ -147,7 +147,7 @@ func HideColumn(data interface{}, hideList []string) interface{} {
 	if oldStr == reflect.Slice {
 		byte1, err := jsoniter.Marshal(data)
 		if err == nil {
-			retData := make([]map[string]interface{}, 0)
+			retData := make([]map[string]any, 0)
 			byte2 := string(byte1)
 
 			lens := gjson.Get(byte2, "#").Int()
@@ -168,7 +168,7 @@ func HideColumn(data interface{}, hideList []string) interface{} {
 }
 
 // MapSort 按key排序 isDesc 是否降序
-func MapSort(oldData map[string]interface{}, isDesc ...bool) map[string]interface{} {
+func MapSort(oldData map[string]any, isDesc ...bool) map[string]any {
 	if oldData == nil {
 		return nil
 	}
@@ -190,7 +190,7 @@ func MapSort(oldData map[string]interface{}, isDesc ...bool) map[string]interfac
 			})
 		})
 	}
-	var newMap map[string]interface{}
+	var newMap map[string]any
 	err := conv.Unmarshal(o, &newMap)
 	if err != nil {
 		return oldData
@@ -199,7 +199,7 @@ func MapSort(oldData map[string]interface{}, isDesc ...bool) map[string]interfac
 }
 
 // GetJsonKeyMaps 取得一个struct的所有key，批量输出到前端使用
-func GetJsonKeyMaps(bean interface{}) map[string]string {
+func GetJsonKeyMaps(bean any) map[string]string {
 	cType := reflect.TypeOf(bean)
 	cValue := reflect.ValueOf(bean)
 	if cValue.Kind() != reflect.Ptr {
@@ -224,7 +224,7 @@ func GetJsonKeyMaps(bean interface{}) map[string]string {
 }
 
 // DelKey 批量删除map里多个字段
-func DelKey(val map[string]interface{}, fields []string) map[string]interface{} {
+func DelKey(val map[string]any, fields []string) map[string]any {
 	if fields == nil || len(fields) == 0 {
 		return val
 	}
@@ -235,12 +235,12 @@ func DelKey(val map[string]interface{}, fields []string) map[string]interface{} 
 }
 
 // ToMapFromKeyList "app.mm" : 1 ==> {"app":{"mm":1}}
-func ToMapFromKeyList(keyMapJsonObject interface{}) map[string]interface{} {
+func ToMapFromKeyList(keyMapJsonObject any) map[string]any {
 	keyMapJson := conv.String(keyMapJsonObject)
 
-	keyMap := make(map[string]interface{})
+	keyMap := make(map[string]any)
 	_ = jsoniter.UnmarshalFromString(keyMapJson, &keyMap)
-	newMap := make(map[string]interface{})
+	newMap := make(map[string]any)
 	for key, val := range keyMap {
 		keyList := strings.Split(key, ".")
 		toMapFromString(keyList, val, newMap)
@@ -248,7 +248,7 @@ func ToMapFromKeyList(keyMapJsonObject interface{}) map[string]interface{} {
 	return newMap
 }
 
-func toMapFromString(keyList []string, val interface{}, oneMap map[string]interface{}) {
+func toMapFromString(keyList []string, val any, oneMap map[string]any) {
 	var re, _ = regexp.Compile(`\[[0-9]+]$`)
 
 	for i, key := range keyList {
@@ -277,19 +277,19 @@ func toMapFromString(keyList []string, val interface{}, oneMap map[string]interf
 				continue
 			}
 			if _, ok := oneMap[realKey]; !ok {
-				oneMap[realKey] = make(map[string]interface{})
+				oneMap[realKey] = make(map[string]any)
 			}
 			tempMap := oneMap[realKey]
-			if one, ok := tempMap.(map[string]interface{}); ok {
+			if one, ok := tempMap.(map[string]any); ok {
 				oneMap = one
 			}
 		} else {
 			if _, ok := oneMap[realKey]; !ok {
-				oneMap[realKey] = make([]interface{}, 0)
+				oneMap[realKey] = make([]any, 0)
 			}
-			if arr, ok := oneMap[realKey].([]interface{}); ok {
+			if arr, ok := oneMap[realKey].([]any); ok {
 				if len(arr) <= indexNumber {
-					newArr := make([]interface{}, indexNumber+1)
+					newArr := make([]any, indexNumber+1)
 					copy(newArr, arr)
 					arr = newArr
 				}
@@ -300,12 +300,12 @@ func toMapFromString(keyList []string, val interface{}, oneMap map[string]interf
 					continue
 				}
 
-				var target map[string]interface{}
-				if one, ok := arr[indexNumber].(map[string]interface{}); ok {
+				var target map[string]any
+				if one, ok := arr[indexNumber].(map[string]any); ok {
 					target = one
 				} else {
-					arr[indexNumber] = make(map[string]interface{})
-					target, _ = arr[indexNumber].(map[string]interface{})
+					arr[indexNumber] = make(map[string]any)
+					target, _ = arr[indexNumber].(map[string]any)
 				}
 
 				oneMap[realKey] = arr
@@ -319,7 +319,7 @@ func toMapFromString(keyList []string, val interface{}, oneMap map[string]interf
 
 // GetStructInfoByTag converts golang struct field into slice string.
 // tagNames 会依次按传的顺序获取
-func GetStructInfoByTag(in any, f func(string) string, tagNames ...string) (structName string, fieldMap map[string]interface{}, err error) {
+func GetStructInfoByTag(in any, f func(string) string, tagNames ...string) (structName string, fieldMap map[string]any, err error) {
 	v := reflect.ValueOf(in)
 	if v.Kind() == reflect.Ptr {
 		if v.IsNil() {
@@ -421,7 +421,7 @@ type FieldInfo struct {
 }
 
 // GetStructInfo 函数用于获取结构体的详细信息
-func GetStructInfo(obj interface{}) StructInfo {
+func GetStructInfo(obj any) StructInfo {
 	// 获取对象的反射类型
 	t := reflect.TypeOf(obj)
 	if t.Kind() == reflect.Ptr {

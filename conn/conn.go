@@ -3,14 +3,14 @@ package conn
 
 // Connect 数据连接对象
 type Connect struct {
-	Driver   string                 `json:"driver,omitempty"`
-	Protocol string                 `json:"protocol,omitempty"`
-	Host     string                 `json:"host,omitempty"`
-	Port     string                 `json:"port,omitempty"`
-	Username string                 `json:"username,omitempty"`
-	Password string                 `json:"password,omitempty"`
-	Database string                 `json:"database,omitempty"`
-	Extend   map[string]interface{} `json:"extend,omitempty"`
+	Driver   string         `json:"driver,omitempty"`
+	Protocol string         `json:"protocol,omitempty"`
+	Host     string         `json:"host,omitempty"`
+	Port     string         `json:"port,omitempty"`
+	Username string         `json:"username,omitempty"`
+	Password string         `json:"password,omitempty"`
+	Database string         `json:"database,omitempty"`
+	Extend   map[string]any `json:"extend,omitempty"`
 }
 
 // ConnFunc 数据连接参数
@@ -64,12 +64,12 @@ func (c connOption) DialUserNamePassword(username string, password string) connO
 }
 
 // DialExtend 扩展函数
-func (c connOption) DialExtend(ext map[string]interface{}) connOption {
+func (c connOption) DialExtend(ext map[string]any) connOption {
 	return func(do *Connect) {
 		c(do)
 
 		if do.Extend == nil {
-			do.Extend = make(map[string]interface{})
+			do.Extend = make(map[string]any)
 		}
 		if ext == nil {
 			return

@@ -42,7 +42,7 @@ func CbcEncrypt(plainStr string, key string, en ...EnDeCoder) (string, error) {
 
 	keyByte := []byte(key)
 
-	goroutines.GoSync(func(params ...interface{}) {
+	goroutines.GoSync(func(params ...any) {
 		var block cipher.Block
 		block, err = aes.NewCipher(keyByte)
 		if err != nil {
@@ -87,7 +87,7 @@ func CbcDecrypt(cipherStr string, key string, de ...EnDeCoder) (string, error) {
 	key = getAllKeyString(key)
 	keyByte := []byte(key)
 
-	goroutines.GoSync(func(params ...interface{}) {
+	goroutines.GoSync(func(params ...any) {
 		var block cipher.Block
 
 		var deCode EnDeCoder = new(HexCoder)

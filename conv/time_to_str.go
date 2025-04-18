@@ -4,7 +4,7 @@ import "time"
 
 // FormatFromUnixTime 将unix时间戳格式化为YYYYMMDD HH:MM:SS格式字符串
 // FormatFromUnixTime(FullDate, 12321312)
-func FormatFromUnixTime(formatStr ...interface{}) string {
+func FormatFromUnixTime(formatStr ...any) string {
 	format := fullTimeForm
 	var timeNum int64 = 0
 

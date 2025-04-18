@@ -15,7 +15,7 @@ import (
 )
 
 // String 转换为string
-func String(src interface{}) string {
+func String(src any) string {
 	if src == nil {
 		return ""
 	}
@@ -84,16 +84,16 @@ func String(src interface{}) string {
 	return fmt.Sprintf("%v", src)
 }
 
-func getBySyncMap(synMap *sync.Map) map[interface{}]interface{} {
-	newMap := make(map[interface{}]interface{})
+func getBySyncMap(synMap *sync.Map) map[any]any {
+	newMap := make(map[any]any)
 	defer func() {
-		if err := recover(); interface{}(err) != nil {
+		if err := recover(); any(err) != nil {
 			fmt.Println("getBySyncMap error:", err)
 			return
 		}
 	}()
 	fmt.Println("getBySyncMap 1:")
-	synMap.Range(func(key, value interface{}) bool {
+	synMap.Range(func(key, value any) bool {
 		fmt.Println("getBySyncMap 2:")
 		//newMap[key] = value
 		return true
@@ -101,7 +101,7 @@ func getBySyncMap(synMap *sync.Map) map[interface{}]interface{} {
 	fmt.Println("getBySyncMap 3:")
 	return newMap
 }
-func getByMap(src interface{}) (string, map[interface{}]interface{}, error) {
+func getByMap(src any) (string, map[any]any, error) {
 	retStr, err := getStringFromJson(src)
 	if err == nil {
 		return retStr, nil, nil
@@ -109,7 +109,7 @@ func getByMap(src interface{}) (string, map[interface{}]interface{}, error) {
 
 	strValue := reflect.ValueOf(src)
 
-	newMap := make(map[interface{}]interface{})
+	newMap := make(map[any]any)
 	iter := strValue.MapRange()
 	for iter.Next() {
 		newMap[iter.Key().Interface()] = iter.Value().Interface()
@@ -122,7 +122,7 @@ func getByMap(src interface{}) (string, map[interface{}]interface{}, error) {
 
 	return "", newMap, err
 }
-func getBySlice(src interface{}) (string, []interface{}, error) {
+func getBySlice(src any) (string, []any, error) {
 	//如果是[]byte，则直接转为string
 	if strByte, ok := src.([]byte); ok {
 		return string(strByte), nil, nil
@@ -134,7 +134,7 @@ func getBySlice(src interface{}) (string, []interface{}, error) {
 	}
 	strValue := reflect.ValueOf(src)
 
-	newMap := make([]interface{}, 0)
+	newMap := make([]any, 0)
 	for i := 0; i < strValue.Len(); i++ {
 		oneItem := strValue.Index(i).Interface()
 		newMap = append(newMap, oneItem)
@@ -183,7 +183,7 @@ func getByKind(i any) (string, error) {
 	}
 }
 
-func getByType(src interface{}) (string, error) {
+func getByType(src any) (string, error) {
 	switch src.(type) {
 	case []byte:
 		return string(src.([]byte)), nil
@@ -216,7 +216,7 @@ func getByType(src interface{}) (string, error) {
 	return "", fmt.Errorf("type error")
 }
 
-func getByTypeString(src interface{}) (string, error) {
+func getByTypeString(src any) (string, error) {
 	strType := fmt.Sprintf("%T", src)
 	if strType == "errors.errorString" {
 		errTemp := fmt.Sprintf("%v", src)
@@ -231,7 +231,7 @@ func getByTypeString(src interface{}) (string, error) {
 		subTemp := lo.Substring(strType, 0, 2)
 		if subTemp == "[]" && strType != "[]string" {
 			arrTemp := reflect.ValueOf(src)
-			newArrTemp := make([]interface{}, 0)
+			newArrTemp := make([]any, 0)
 			for i := 0; i < arrTemp.Len(); i++ {
 				oneTemp := arrTemp.Index(i).Interface()
 				newArrTemp = append(newArrTemp, oneTemp)
@@ -243,7 +243,7 @@ func getByTypeString(src interface{}) (string, error) {
 
 	return "", fmt.Errorf("typeString error")
 }
-func getByCopy(src interface{}) (string, error) {
+func getByCopy(src any) (string, error) {
 	newStrTemp := mapDeepCopy(src) //concurrent map read and map write
 
 	retStr, err := getStringFromJson(newStrTemp)
@@ -253,7 +253,7 @@ func getByCopy(src interface{}) (string, error) {
 	return "", fmt.Errorf("copy error")
 }
 
-func getStringFromJson(src interface{}) (string, error) {
+func getStringFromJson(src any) (string, error) {
 	json, err := jsoniterForNil.MarshalToString(src)
 	if err == nil {
 		if len(json) >= 2 { //解决返回字符串首位带"的问题
@@ -285,16 +285,16 @@ func strFix(s string) string {
 	return s
 }
 
-func mapDeepCopy(value interface{}) interface{} {
+func mapDeepCopy(value any) any {
 	switch v := value.(type) {
-	case map[string]interface{}:
-		newMap := make(map[string]interface{})
+	case map[string]any:
+		newMap := make(map[string]any)
 		for k, v := range v {
 			newMap[k] = mapDeepCopy(v)
 		}
 		return newMap
-	case []interface{}:
-		newSlice := make([]interface{}, len(v))
+	case []any:
+		newSlice := make([]any, len(v))
 		for k, v := range v {
 			newSlice[k] = mapDeepCopy(v)
 		}

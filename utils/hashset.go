@@ -6,10 +6,10 @@ import (
 )
 
 // Hash集合数据结构
-type hashSortSet map[interface{}]int
+type hashSortSet map[any]int
 
 // add 往集合添加值
-func (h hashSortSet) add(value interface{}, sortNum int) bool {
+func (h hashSortSet) add(value any, sortNum int) bool {
 	if _, ok := h[value]; !ok {
 		h[value] = sortNum
 		return true
@@ -18,7 +18,7 @@ func (h hashSortSet) add(value interface{}, sortNum int) bool {
 }
 
 // delete 往集合删除值
-func (h hashSortSet) delete(value interface{}) bool {
+func (h hashSortSet) delete(value any) bool {
 	if _, ok := h[value]; ok {
 		delete(h, value)
 		return true
@@ -27,14 +27,14 @@ func (h hashSortSet) delete(value interface{}) bool {
 }
 
 // contains 值是否存在集合中
-func (h hashSortSet) contains(value interface{}) bool {
+func (h hashSortSet) contains(value any) bool {
 	_, ok := h[value]
 	return ok
 }
 
 // copy 复制hashSet
 func (h hashSortSet) copy() hashSortSet {
-	newSet := make(map[interface{}]int, len(h))
+	newSet := make(map[any]int, len(h))
 	for k, v := range h {
 		newSet[k] = v
 	}
@@ -56,7 +56,7 @@ type syncHashSet struct {
 }
 
 // Add 往set添加元素
-func (s *syncHashSet) Add(value interface{}) bool {
+func (s *syncHashSet) Add(value any) bool {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	s.sortNum = s.sortNum + 1
@@ -64,29 +64,29 @@ func (s *syncHashSet) Add(value interface{}) bool {
 }
 
 // Delete 删除元素
-func (s *syncHashSet) Delete(value interface{}) bool {
+func (s *syncHashSet) Delete(value any) bool {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	return s.values.delete(value)
 }
 
 // Contains 检查元素存在性
-func (s *syncHashSet) Contains(value interface{}) bool {
+func (s *syncHashSet) Contains(value any) bool {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	return s.values.contains(value)
 }
 
 // List 返回列表的元素
-func (s *syncHashSet) List() []interface{} {
+func (s *syncHashSet) List() []any {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	list := s.values.copy()
 
-	listTemp := make([]interface{}, 0)
+	listTemp := make([]any, 0)
 
 	listKey := make([]int, 0)
-	listOld := make(map[int]interface{})
+	listOld := make(map[int]any)
 	for one, sortTemp := range list {
 		temp1 := sortTemp
 		temp2 := one

@@ -21,7 +21,7 @@ func TestCacheMap(t *testing.T) {
 	fmt.Println(firstThree)
 
 	var a AA
-	err := retry.New().WithInterval(1*time.Second).WithAttemptCount(7).Do(nil, func(ctx context.Context) (interface{}, error) {
+	err := retry.New().WithInterval(1*time.Second).WithAttemptCount(7).Do(nil, func(ctx context.Context) (any, error) {
 		return a, nil
 	}, &a)
 

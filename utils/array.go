@@ -41,7 +41,7 @@ func Split(s string, sep []string) []string {
 //}
 
 // Join 任意数组类型，通过分隔符连接成字符串
-func Join(i interface{}, s string) string {
+func Join(i any, s string) string {
 	if i == nil {
 		return ""
 	}
@@ -69,8 +69,8 @@ func Join(i interface{}, s string) string {
 			r = append(r, strconv.FormatInt(one, 10))
 		}
 		return strings.Join(r, s)
-	case []interface{}:
-		temp := i.([]interface{})
+	case []any:
+		temp := i.([]any)
 		for _, one := range temp {
 			r = append(r, conv.String(one))
 		}

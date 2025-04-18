@@ -20,7 +20,7 @@ const (
 )
 
 // Time 转换为Time
-func Time(val interface{}) (time.Time, bool) {
+func Time(val any) (time.Time, bool) {
 	timeRet := time.Time{}
 	if val == nil {
 		return timeRet, true

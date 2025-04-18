@@ -46,7 +46,7 @@ func (x *ctxLogger) WithLogExecute(logExec LogExecute) *ctxLogger {
 }
 
 // Debug Debug
-func (x *ctxLogger) Debug(v ...interface{}) {
+func (x *ctxLogger) Debug(v ...any) {
 	if x.Level() > DEBUG {
 		return
 	}
@@ -54,7 +54,7 @@ func (x *ctxLogger) Debug(v ...interface{}) {
 }
 
 // Error Error
-func (x *ctxLogger) Error(v ...interface{}) {
+func (x *ctxLogger) Error(v ...any) {
 	if x.Level() > ERROR {
 		return
 	}
@@ -62,7 +62,7 @@ func (x *ctxLogger) Error(v ...interface{}) {
 }
 
 // Info Info
-func (x *ctxLogger) Info(v ...interface{}) {
+func (x *ctxLogger) Info(v ...any) {
 	if x.Level() > INFO {
 		return
 	}
@@ -70,7 +70,7 @@ func (x *ctxLogger) Info(v ...interface{}) {
 }
 
 // Warn xx
-func (x *ctxLogger) Warn(v ...interface{}) {
+func (x *ctxLogger) Warn(v ...any) {
 	if x.Level() > WARNING {
 		return
 	}

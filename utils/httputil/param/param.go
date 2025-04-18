@@ -84,8 +84,8 @@ func (p *Param) SetValidatorCustomErrorMessages(customErrorMessages map[string]s
 	return p
 }
 
-func getMapFromHeaderCookieQuery(l Location, r *http.Request, querySplit string, pathFunc ParsePathFunc) (map[string]interface{}, interface{}, bool) {
-	allRetParamMap := make(map[string]interface{})
+func getMapFromHeaderCookieQuery(l Location, r *http.Request, querySplit string, pathFunc ParsePathFunc) (map[string]any, any, bool) {
+	allRetParamMap := make(map[string]any)
 	if l == LocationHeader {
 		headerMap := getParamFromHeader(r)
 		for k, v := range headerMap {
@@ -111,7 +111,7 @@ func getMapFromHeaderCookieQuery(l Location, r *http.Request, querySplit string,
 
 	return nil, nil, false
 }
-func getMapFromBody(r *http.Request, defaultBodyKeyName string, valueToString bool, querySplit string) (map[string]interface{}, interface{}, error) {
+func getMapFromBody(r *http.Request, defaultBodyKeyName string, valueToString bool, querySplit string) (map[string]any, any, error) {
 	allRetParamMap, bodyDataStr, err := getMapFromBodyForm(r, defaultBodyKeyName)
 
 	if json.Valid([]byte(bodyDataStr)) {
@@ -138,9 +138,9 @@ func getMapFromBody(r *http.Request, defaultBodyKeyName string, valueToString bo
 	return allRetParamMap, bodyDataStr, err
 }
 
-func getMapFromBodyJsonString(bodyDataStr string, valueToString bool) (map[string]interface{}, interface{}, error) {
-	allRetParamMap := make(map[string]interface{})
-	paasParamMap := make(map[string]interface{})
+func getMapFromBodyJsonString(bodyDataStr string, valueToString bool) (map[string]any, any, error) {
+	allRetParamMap := make(map[string]any)
+	paasParamMap := make(map[string]any)
 	err := conv.Unmarshal(bodyDataStr, &paasParamMap)
 	if err == nil && len(paasParamMap) > 0 {
 		//表示是map格式
@@ -155,7 +155,7 @@ func getMapFromBodyJsonString(bodyDataStr string, valueToString bool) (map[strin
 		return allRetParamMap, paasParamMap, nil
 	}
 	//array
-	paasParamArray := make([]interface{}, 0)
+	paasParamArray := make([]any, 0)
 	err = conv.Unmarshal(bodyDataStr, &paasParamArray)
 	if err == nil && len(paasParamArray) > 0 {
 		return allRetParamMap, paasParamArray, nil
@@ -167,8 +167,8 @@ func getMapFromBodyJsonString(bodyDataStr string, valueToString bool) (map[strin
 
 	return allRetParamMap, bodyDataStr, err
 }
-func getMapFromBodyQueryString(bodyDataStr string, valueToString bool, querySplit string) (map[string]interface{}, error) {
-	allRetParamMap := make(map[string]interface{})
+func getMapFromBodyQueryString(bodyDataStr string, valueToString bool, querySplit string) (map[string]any, error) {
+	allRetParamMap := make(map[string]any)
 
 	// 如果body中有aaa=bbb&ccc=ddd的格式的话，则直接转换过来
 	paramMap, err := getMapByQueryString(bodyDataStr)
@@ -194,13 +194,13 @@ func getMapFromBodyQueryString(bodyDataStr string, valueToString bool, querySpli
 	return allRetParamMap, err
 }
 
-func getMapFromBodyForm(r *http.Request, defaultBodyKeyName string) (map[string]interface{}, string, error) {
-	bodyForm := make(map[string]interface{})
+func getMapFromBodyForm(r *http.Request, defaultBodyKeyName string) (map[string]any, string, error) {
+	bodyForm := make(map[string]any)
 
 	//先取form的值
 	forms := getParamFromForm(r)
-	for key, val := range forms {
-		bodyForm[key] = val
+	for key, _ := range forms {
+		bodyForm[key] = forms.Get(key)
 	}
 
 	var bodyDataStr string
@@ -225,7 +225,7 @@ func getMapFromBodyForm(r *http.Request, defaultBodyKeyName string) (map[string]
 		}
 	}
 
-	allRetParamMap := make(map[string]interface{})
+	allRetParamMap := make(map[string]any)
 	for key, val := range bodyForm {
 		if key != "" {
 			allRetParamMap[key] = val
@@ -239,7 +239,7 @@ func getMapFromBodyForm(r *http.Request, defaultBodyKeyName string) (map[string]
 	return allRetParamMap, bodyDataStr, err
 }
 
-func getAllByLocation(r *http.Request, l Location, defaultBodyKeyName string, valueToString bool, querySplit string, pathFunc ParsePathFunc) (map[string]interface{}, interface{}, error) {
+func getAllByLocation(r *http.Request, l Location, defaultBodyKeyName string, valueToString bool, querySplit string, pathFunc ParsePathFunc) (map[string]any, any, error) {
 	if l == "" {
 		return nil, nil, fmt.Errorf("location is null")
 	}
@@ -255,24 +255,24 @@ func getAllByLocation(r *http.Request, l Location, defaultBodyKeyName string, va
 		return getMapFromBody(r, defaultBodyKeyName, valueToString, querySplit)
 	}
 
-	allRetParamMap := make(map[string]interface{})
+	allRetParamMap := make(map[string]any)
 	return allRetParamMap, nil, fmt.Errorf("location error: %s", l)
 }
 
-// GetAll 转成interface{}
-func (p *Param) GetAll(r *http.Request) interface{} {
-	allParamMap := make(map[string]interface{})
+// GetAll 转成any
+func (p *Param) GetAll(r *http.Request) any {
+	allParamMap := make(map[string]any)
 	for _, one := range p.locationOrder {
 		oneParamMap, oneParamRet, err := getAllByLocation(r, one, p.defaultBodyKeyName, false, p.querySplit, p.parsePathFunc)
 		for key, val := range oneParamMap {
 			allParamMap[key] = val
 		}
 		if err == nil && oneParamRet != nil {
-			if oneParamMapTemp, ok := oneParamRet.(map[string]interface{}); ok {
+			if oneParamMapTemp, ok := oneParamRet.(map[string]any); ok {
 				for key, val := range oneParamMapTemp {
 					allParamMap[key] = val
 				}
-			} else if oneParamList, ok := oneParamRet.([]interface{}); ok {
+			} else if oneParamList, ok := oneParamRet.([]any); ok {
 				return oneParamList
 			}
 		}
@@ -289,13 +289,13 @@ func (p *Param) GetAll(r *http.Request) interface{} {
 }
 
 // GetAllMap 转成map hasAll 包含所有的变量，false则去掉默认的data返回值，简化内容
-func (p *Param) GetAllMap(r *http.Request, hasAll bool) map[string]interface{} {
+func (p *Param) GetAllMap(r *http.Request, hasAll bool) map[string]any {
 	paramMap := p.getAllBasic(r, false)
 	if hasAll {
 		return paramMap
 	}
 	//重新复制，不破坏原来的值
-	newParamMap := make(map[string]interface{})
+	newParamMap := make(map[string]any)
 	err := conv.Unmarshal(paramMap, &newParamMap)
 	if err != nil {
 		return paramMap
@@ -314,7 +314,7 @@ func (p *Param) GetAllMap(r *http.Request, hasAll bool) map[string]interface{} {
 
 // Parse 简单赋值
 // openValidate 打开检查，默认是true; dst 传指针
-func (p *Param) Parse(r *http.Request, dst interface{}, openValidate ...bool) error {
+func (p *Param) Parse(r *http.Request, dst any, openValidate ...bool) error {
 	paramMap := p.GetAllMap(r, true)
 	err := conv.Unmarshal(paramMap, dst)
 	if err != nil {
@@ -395,8 +395,8 @@ func (p *Param) GetAllString(r *http.Request) map[string]string {
 	return allParamStr
 }
 
-func (p *Param) getAllBasic(r *http.Request, valueToString bool) map[string]interface{} {
-	allParamMap := make(map[string]interface{})
+func (p *Param) getAllBasic(r *http.Request, valueToString bool) map[string]any {
+	allParamMap := make(map[string]any)
 	for _, one := range p.locationOrder {
 		oneParamMap, _, err := getAllByLocation(r, one, p.defaultBodyKeyName, valueToString, p.querySplit, p.parsePathFunc)
 		if err == nil && oneParamMap != nil {
@@ -439,7 +439,7 @@ func (p *Param) GetAllBody(r *http.Request) string {
 		return ""
 	}
 
-	retMap := make(map[string]interface{})
+	retMap := make(map[string]any)
 	for key, one := range forms {
 		retMap[key] = one
 	}

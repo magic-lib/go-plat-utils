@@ -85,7 +85,7 @@ func StartJobs(jobs ...map[string]func()) error {
 	}
 	oneCron.isStart = true
 	//异步启动
-	goroutines.GoAsync(func(params ...interface{}) {
+	goroutines.GoAsync(func(params ...any) {
 		oneCron.c.Run()
 		select {}
 	})

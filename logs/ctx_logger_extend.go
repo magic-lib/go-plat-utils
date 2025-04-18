@@ -6,7 +6,7 @@ import (
 	"github.com/magic-lib/go-plat-utils/utils"
 )
 
-func (x *ctxLogger) printlnComm(level LogLevel, msg ...interface{}) {
+func (x *ctxLogger) printlnComm(level LogLevel, msg ...any) {
 	if len(msg) == 0 {
 		return
 	}

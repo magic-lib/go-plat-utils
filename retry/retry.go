@@ -15,7 +15,7 @@ type retry struct {
 	errCallFun   ErrCallbackFunc //执行错误的方法
 }
 
-type Executable func(context.Context) (interface{}, error)
+type Executable func(context.Context) (any, error)
 
 /*
 ErrCallbackFunc 回调函数
@@ -53,7 +53,7 @@ func (r *retry) WithErrCallback(errFun ErrCallbackFunc) *retry {
 }
 
 // Do 执行一个函数
-func (r *retry) Do(parentCtx context.Context, f Executable, valuePtr ...interface{}) error {
+func (r *retry) Do(parentCtx context.Context, f Executable, valuePtr ...any) error {
 	if len(valuePtr) > 0 && valuePtr != nil {
 		if valuePtr[0] != nil {
 			rf := reflect.ValueOf(valuePtr[0])
@@ -63,7 +63,7 @@ func (r *retry) Do(parentCtx context.Context, f Executable, valuePtr ...interfac
 		}
 	}
 
-	var retData interface{}
+	var retData any
 	var err error
 	if parentCtx != nil {
 		retData, err = r.doRetryWithCtx(parentCtx, f)
@@ -100,13 +100,13 @@ func (r *retry) Do(parentCtx context.Context, f Executable, valuePtr ...interfac
 }
 
 // DoCtx 执行一个函数
-func (r *retry) doRetryWithCtx(parentCtx context.Context, fn Executable) (interface{}, error) {
+func (r *retry) doRetryWithCtx(parentCtx context.Context, fn Executable) (any, error) {
 	ctx, cancel := context.WithCancel(parentCtx)
 	defer cancel()
 
 	nowAttemptCount := 0
 	fail := make(chan error, 1)
-	success := make(chan interface{}, 1)
+	success := make(chan any, 1)
 
 	for {
 		goroutines.GoAsync(func(params ...any) {
@@ -153,7 +153,7 @@ func (r *retry) doRetryWithCtx(parentCtx context.Context, fn Executable) (interf
 }
 
 // doRetry 执行一个函数
-func (r *retry) doRetry(f Executable) (val interface{}, err error) {
+func (r *retry) doRetry(f Executable) (val any, err error) {
 	nowAttemptCount := 0
 	parentCtx := context.Background()
 	for {

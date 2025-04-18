@@ -175,7 +175,7 @@ TjWDiQ4P6p8=
 
 func parseJWT(tokenString string, secret []byte) (*jwtA.Token, error) {
 	// 解析 JWT
-	token, err := jwtA.Parse(tokenString, func(token *jwtA.Token) (interface{}, error) {
+	token, err := jwtA.Parse(tokenString, func(token *jwtA.Token) (any, error) {
 		// 验证签名方法
 		if _, ok := token.Method.(*jwtA.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])

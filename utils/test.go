@@ -8,8 +8,8 @@ import (
 
 type TestStruct struct {
 	Name     string
-	Inputs   []interface{}
-	Expected []interface{}
+	Inputs   []any
+	Expected []any
 	Func     any //每个执行方法不同的情况
 }
 

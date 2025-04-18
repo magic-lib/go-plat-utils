@@ -5,7 +5,7 @@ import (
 )
 
 // IsNil 判断是否为空
-func IsNil(i interface{}) bool {
+func IsNil(i any) bool {
 	if i == nil {
 		return true
 	}

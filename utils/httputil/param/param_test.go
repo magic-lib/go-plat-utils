@@ -17,7 +17,7 @@ func TestToString(t *testing.T) {
 }
 func TestConvString(t *testing.T) {
 	II := getIns()
-	if oneParamMapTemp, ok := II.(map[string]interface{}); ok {
+	if oneParamMapTemp, ok := II.(map[string]any); ok {
 		for key, val := range oneParamMapTemp {
 			fmt.Println(key, val)
 		}
@@ -27,8 +27,8 @@ func TestConvString(t *testing.T) {
 	//fmt.Println(na)
 }
 
-func getIns() interface{} {
-	return map[string]interface{}{
+func getIns() any {
+	return map[string]any{
 		"aaa": 1,
 	}
 }

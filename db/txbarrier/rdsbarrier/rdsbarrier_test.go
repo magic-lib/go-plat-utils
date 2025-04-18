@@ -41,7 +41,7 @@ func TestRDSBarrierHook(t *testing.T) {
 		})
 		ret, err := cli.Eval(ctx, testScript, []string{"balance"}, -1).Slice()
 		require.Nil(t, err)
-		require.Equal(t, []interface{}{int64(29), "SUCCESS"}, ret)
+		require.Equal(t, []any{int64(29), "SUCCESS"}, ret)
 
 		// Confirm
 		ctx = txbarrier.NewCtxWithBarrier(context.TODO(), &txbarrier.Barrier{
@@ -52,7 +52,7 @@ func TestRDSBarrierHook(t *testing.T) {
 		})
 		ret, err = cli.Eval(ctx, testScript, []string{"balance"}, 0).Slice()
 		require.Nil(t, err)
-		require.Equal(t, []interface{}{int64(29), "SUCCESS"}, ret)
+		require.Equal(t, []any{int64(29), "SUCCESS"}, ret)
 	})
 	t.Run("test: cancel", func(t *testing.T) {
 		s := miniredis.RunT(t)
@@ -69,7 +69,7 @@ func TestRDSBarrierHook(t *testing.T) {
 		})
 		ret, err := cli.Eval(ctx, testScript, []string{"balance"}, -1).Slice()
 		require.Nil(t, err)
-		require.Equal(t, []interface{}{int64(29), "SUCCESS"}, ret)
+		require.Equal(t, []any{int64(29), "SUCCESS"}, ret)
 
 		// Cancel
 		ctx = txbarrier.NewCtxWithBarrier(context.TODO(), &txbarrier.Barrier{
@@ -80,7 +80,7 @@ func TestRDSBarrierHook(t *testing.T) {
 		})
 		ret, err = cli.Eval(ctx, testScript, []string{"balance"}, 1).Slice()
 		require.Nil(t, err)
-		require.Equal(t, []interface{}{int64(30), "SUCCESS"}, ret)
+		require.Equal(t, []any{int64(30), "SUCCESS"}, ret)
 	})
 	t.Run("test: idempotent", func(t *testing.T) {
 		s := miniredis.RunT(t)
@@ -97,7 +97,7 @@ func TestRDSBarrierHook(t *testing.T) {
 		})
 		ret, err := cli.Eval(ctx, testScript, []string{"balance"}, -1).Slice()
 		require.Nil(t, err)
-		require.Equal(t, []interface{}{int64(29), "SUCCESS"}, ret)
+		require.Equal(t, []any{int64(29), "SUCCESS"}, ret)
 
 		// retry
 		ctx = txbarrier.NewCtxWithBarrier(context.TODO(), &txbarrier.Barrier{
@@ -156,7 +156,7 @@ func TestRDSBarrierHookEvalsha(t *testing.T) {
 		})
 		ret, err := cli.EvalSha(ctx, scriptSha, []string{"balance"}, -1).Slice()
 		require.Nil(t, err)
-		require.Equal(t, []interface{}{int64(29), "SUCCESS"}, ret)
+		require.Equal(t, []any{int64(29), "SUCCESS"}, ret)
 
 		// Confirm
 		ctx = txbarrier.NewCtxWithBarrier(context.TODO(), &txbarrier.Barrier{
@@ -167,7 +167,7 @@ func TestRDSBarrierHookEvalsha(t *testing.T) {
 		})
 		ret, err = cli.EvalSha(ctx, scriptSha, []string{"balance"}, 0).Slice()
 		require.Nil(t, err)
-		require.Equal(t, []interface{}{int64(29), "SUCCESS"}, ret)
+		require.Equal(t, []any{int64(29), "SUCCESS"}, ret)
 	})
 }
 

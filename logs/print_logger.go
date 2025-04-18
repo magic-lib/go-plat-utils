@@ -73,7 +73,7 @@ func defaultPrintLogExecute(ctx context.Context, logInfo *LogData) {
 	}
 }
 
-func (x *printLogger) printlnComm(level LogLevel, msg ...interface{}) {
+func (x *printLogger) printlnComm(level LogLevel, msg ...any) {
 	if len(msg) == 0 {
 		return
 	}
@@ -98,7 +98,7 @@ func (x *printLogger) printlnComm(level LogLevel, msg ...interface{}) {
 }
 
 // Debug Debug
-func (x *printLogger) Debug(v ...interface{}) {
+func (x *printLogger) Debug(v ...any) {
 	if x.Level() > DEBUG {
 		return
 	}
@@ -106,7 +106,7 @@ func (x *printLogger) Debug(v ...interface{}) {
 }
 
 // Error Error
-func (x *printLogger) Error(v ...interface{}) {
+func (x *printLogger) Error(v ...any) {
 	if x.Level() > ERROR {
 		return
 	}
@@ -114,7 +114,7 @@ func (x *printLogger) Error(v ...interface{}) {
 }
 
 // Info Info
-func (x *printLogger) Info(v ...interface{}) {
+func (x *printLogger) Info(v ...any) {
 	if x.Level() > INFO {
 		return
 	}
@@ -122,7 +122,7 @@ func (x *printLogger) Info(v ...interface{}) {
 }
 
 // Warn xx
-func (x *printLogger) Warn(v ...interface{}) {
+func (x *printLogger) Warn(v ...any) {
 	if x.Level() > WARNING {
 		return
 	}

@@ -19,7 +19,7 @@ import (
 1、目前不能解决继承为小写的情况
 2、已有值了，填充没有的情况
 */
-func AssignTo(srcStruct interface{}, dstPoint interface{}) error {
+func AssignTo(srcStruct any, dstPoint any) error {
 	//对 srcStruct 和 dstPoint 进行处理
 	fill := new(getNewService)
 	dstValue, err := fill.GetByDstAll(srcStruct, reflect.TypeOf(dstPoint))
@@ -59,7 +59,7 @@ func AssignTo(srcStruct interface{}, dstPoint interface{}) error {
 	return nil
 }
 
-func NewPtrByType(dstType reflect.Type) interface{} {
+func NewPtrByType(dstType reflect.Type) any {
 	if dstType.Kind() == reflect.Slice {
 		newType := reflect.New(dstType)
 		dstSliceValue := reflect.MakeSlice(dstType, 0, 0)
@@ -107,7 +107,7 @@ type getNewService struct {
 }
 
 // GetByDstAll 根据Dst的类型，获取srcInterface的值
-func (c *getNewService) GetByDstAll(srcInterface interface{}, dstType reflect.Type) (newDstValue reflect.Value, err error) {
+func (c *getNewService) GetByDstAll(srcInterface any, dstType reflect.Type) (newDstValue reflect.Value, err error) {
 	//fmt.Println("GetByDstAll param:", srcInterface, dstType.String())
 
 	srcType := reflect.TypeOf(srcInterface)
@@ -155,13 +155,13 @@ func (c *getNewService) GetByDstAll(srcInterface interface{}, dstType reflect.Ty
 }
 
 // getByDstSlice 根据DstSlice获取列表
-func (c *getNewService) getByDstSlice(srcSlice interface{}, dstType reflect.Type) (newDstList reflect.Value, err error) {
+func (c *getNewService) getByDstSlice(srcSlice any, dstType reflect.Type) (newDstList reflect.Value, err error) {
 	if dstType.Kind() != reflect.Slice {
 		//nolint:goerr113
 		return reflect.Value{}, fmt.Errorf(errStrNotSlice, dstType.String())
 	}
 
-	toPointList := make([]interface{}, 0)
+	toPointList := make([]any, 0)
 
 	srcByte, err2 := jsoniterForNil.Marshal(srcSlice)
 	if err2 != nil {
@@ -191,7 +191,7 @@ func (c *getNewService) getByDstSlice(srcSlice interface{}, dstType reflect.Type
 }
 
 // getByDstPtr 根据Ptr获得一个指针对象
-func (c *getNewService) getByDstPtr(srcInterface interface{}, dstType reflect.Type) (newDstPtr reflect.Value, err error) {
+func (c *getNewService) getByDstPtr(srcInterface any, dstType reflect.Type) (newDstPtr reflect.Value, err error) {
 	if dstType.Kind() != reflect.Ptr {
 		//nolint:goerr113
 		return reflect.Value{}, fmt.Errorf(errStrGetByDstPtr, dstType.String())
@@ -218,7 +218,7 @@ func (c *getNewService) getByDstPtr(srcInterface interface{}, dstType reflect.Ty
 }
 
 // getByDstStruct 根据Struct获得一个
-func (c *getNewService) getByDstStruct(srcStruct interface{}, dstType reflect.Type) (newDstStruct reflect.Value, err error) {
+func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (newDstStruct reflect.Value, err error) {
 	if dstType.Kind() != reflect.Struct {
 		return reflect.Value{}, fmt.Errorf(errStrGetByDstMapNotStruct, dstType.String())
 	}
@@ -304,7 +304,7 @@ func (c *getNewService) getByDstStruct(srcStruct interface{}, dstType reflect.Ty
 }
 
 // getByDstMap 根据map获得一个指针对象
-func (c *getNewService) getByDstMap(srcStruct interface{}, dstType reflect.Type) (newDstStruct reflect.Value, err error) {
+func (c *getNewService) getByDstMap(srcStruct any, dstType reflect.Type) (newDstStruct reflect.Value, err error) {
 	if dstType.Kind() != reflect.Map {
 		return reflect.Value{}, fmt.Errorf(errStrGetByDstMapNotMap, dstType.String())
 	}
@@ -318,7 +318,7 @@ func (c *getNewService) getByDstMap(srcStruct interface{}, dstType reflect.Type)
 		return reflect.Value{}, fmt.Errorf(errStrGetByDstMap, keyType.String())
 	}
 
-	toMap := make(map[string]interface{})
+	toMap := make(map[string]any)
 	err2 = jsoniterForNil.Unmarshal(srcByte, &toMap)
 	if err2 != nil {
 		return reflect.Value{}, err2
@@ -347,7 +347,7 @@ func (c *getNewService) getByDstMap(srcStruct interface{}, dstType reflect.Type)
 }
 
 // getByDstOther 根据map获得一个指针对象
-func (c *getNewService) getByDstOther(srcOther interface{}, dstType reflect.Type) (newDstOther reflect.Value, err error) {
+func (c *getNewService) getByDstOther(srcOther any, dstType reflect.Type) (newDstOther reflect.Value, err error) {
 	newPtr := reflect.New(dstType)
 	srcValue := reflect.ValueOf(srcOther)
 
@@ -397,7 +397,7 @@ func (c *getNewService) getByDstOther(srcOther interface{}, dstType reflect.Type
 }
 
 // getByDstDefault 自定义的格式转换
-func (c *getNewService) getByDstDefault(srcDefault interface{}, dstType reflect.Type) (newDstOther reflect.Value, err error) {
+func (c *getNewService) getByDstDefault(srcDefault any, dstType reflect.Type) (newDstOther reflect.Value, err error) {
 	//fmt.Println("getByDstDefault:", srcDefault, dstType.String())
 
 	srcValue := reflect.ValueOf(srcDefault)
@@ -425,7 +425,7 @@ func (c *getNewService) getByDstDefault(srcDefault interface{}, dstType reflect.
 	return reflect.Value{}, fmt.Errorf("no change")
 }
 
-func (c *getNewService) changeValueToDstByDstType(srcValue reflect.Value, dstType reflect.Type) (interface{}, bool) {
+func (c *getNewService) changeValueToDstByDstType(srcValue reflect.Value, dstType reflect.Type) (any, bool) {
 	dstTypeName := dstType.Name()
 	dstTypeString := dstType.String()
 
@@ -688,7 +688,7 @@ func (c *getNewService) changeValueStringToStringList(srcValue reflect.Value) ([
 	return []string{}, false
 }
 
-func (c *getNewService) changeFromString(srcValue reflect.Value, dstTypeName string) (interface{}, bool) {
+func (c *getNewService) changeFromString(srcValue reflect.Value, dstTypeName string) (any, bool) {
 	srcColumnValueString := srcValue.String()
 	if dstTypeName == "float32" {
 		sFloat, err := strconv.ParseFloat(srcColumnValueString, 32)
@@ -722,7 +722,7 @@ func (c *getNewService) changeFromString(srcValue reflect.Value, dstTypeName str
 	return nil, false
 }
 
-func (c *getNewService) changeFromByte(srcValue reflect.Value, dstTypeName string) (interface{}, bool) {
+func (c *getNewService) changeFromByte(srcValue reflect.Value, dstTypeName string) (any, bool) {
 	srcInterface := srcValue.Interface()
 	if byteTemp, ok := srcInterface.([]byte); ok {
 		srcColumnValueString := string(byteTemp)
@@ -752,7 +752,7 @@ func (c *getNewService) changeFromByte(srcValue reflect.Value, dstTypeName strin
 	}
 	return nil, false
 }
-func (c *getNewService) changeFromUint8(srcValue reflect.Value, dstTypeName string) (interface{}, bool) {
+func (c *getNewService) changeFromUint8(srcValue reflect.Value, dstTypeName string) (any, bool) {
 	srcInterface := srcValue.Interface()
 	srcString := String(srcInterface)
 	if dstTypeName == "int" {
@@ -771,7 +771,7 @@ func (c *getNewService) changeFromUint8(srcValue reflect.Value, dstTypeName stri
 
 	return srcString, true
 }
-func (c *getNewService) changeFromFloat64(srcValue reflect.Value, dstTypeName string) (interface{}, bool) {
+func (c *getNewService) changeFromFloat64(srcValue reflect.Value, dstTypeName string) (any, bool) {
 	float64Num := srcValue.Float()
 	if dstTypeName == "int" {
 		intNum := int(float64Num)
@@ -788,7 +788,7 @@ func (c *getNewService) changeFromFloat64(srcValue reflect.Value, dstTypeName st
 	return nil, false
 }
 
-func (c *getNewService) changeValueToDstBySrcType(srcValue reflect.Value, dstType reflect.Type) (interface{}, bool) {
+func (c *getNewService) changeValueToDstBySrcType(srcValue reflect.Value, dstType reflect.Type) (any, bool) {
 	dstTypeName := dstType.Name()
 	srcTypeString := srcValue.Type().String()
 
@@ -839,7 +839,7 @@ func (c *getNewService) changeValueToDstBySrcType(srcValue reflect.Value, dstTyp
 
 	if srcTypeString == "map[string]interface {}" {
 		srcInterface := srcValue.Interface()
-		if _, ok := srcInterface.(map[string]interface{}); ok {
+		if _, ok := srcInterface.(map[string]any); ok {
 			//for kkk, vvv := range mapTemp {
 			//
 			//}
@@ -852,7 +852,7 @@ func (c *getNewService) changeValueToDstBySrcType(srcValue reflect.Value, dstTyp
 }
 
 // GetSrcFromStructField 取下一级的数据
-func (c *getNewService) GetSrcFromStructField(srcInterface interface{}, dstColumn reflect.StructField) interface{} {
+func (c *getNewService) GetSrcFromStructField(srcInterface any, dstColumn reflect.StructField) any {
 	//1、如果是struct，则首先从struct中进行匹配，名称完全一样的进行匹配
 	srcType := reflect.TypeOf(srcInterface)
 	if srcType.Kind() == reflect.Struct {
@@ -866,7 +866,7 @@ func (c *getNewService) GetSrcFromStructField(srcInterface interface{}, dstColum
 	return c.getColumnValueFromType(srcInterface, dstColumn)
 }
 
-func (c *getNewService) getColumnValueFromStruct(srcStruct interface{}, dstColumn reflect.StructField) interface{} {
+func (c *getNewService) getColumnValueFromStruct(srcStruct any, dstColumn reflect.StructField) any {
 	//1、如果是struct，则首先从struct中进行匹配，名称完全一样的进行匹配
 	srcType := reflect.TypeOf(srcStruct)
 	srcValue := reflect.ValueOf(srcStruct)
@@ -913,7 +913,7 @@ func (c *getNewService) getColumnValueFromStruct(srcStruct interface{}, dstColum
 	return retVal.Interface()
 }
 
-func (c *getNewService) getColumnValueFromMap(srcMap interface{}, dstColumn reflect.StructField) interface{} {
+func (c *getNewService) getColumnValueFromMap(srcMap any, dstColumn reflect.StructField) any {
 	//1、如果是map，则先用原来的名字，再用json的名字
 	srcValue := reflect.ValueOf(srcMap)
 
@@ -960,13 +960,13 @@ func (c *getNewService) getColumnValueFromMap(srcMap interface{}, dstColumn refl
 }
 
 // getColumnValueFromType 从里面拿一个值，而不是取本身
-func (c *getNewService) getColumnValueFromType(srcInterface interface{}, dstColumn reflect.StructField) interface{} {
+func (c *getNewService) getColumnValueFromType(srcInterface any, dstColumn reflect.StructField) any {
 	srcByte, err2 := jsoniterForNil.Marshal(srcInterface)
 	if err2 != nil {
 		return nil
 	}
 
-	toMap := make(map[string]interface{})
+	toMap := make(map[string]any)
 	err2 = jsoniterForNil.Unmarshal(srcByte, &toMap)
 	if err2 != nil {
 		return nil

@@ -12,7 +12,7 @@ var Marshal = String
 
 // Unmarshal 将前一个的对象填充到后一个对象中，字段名相同的覆盖值，
 // 返回 interface 的作用是如果toPoint为nil的时候，也能正常返回对象.
-func Unmarshal(srcStruct interface{}, dstPoint interface{}) error {
+func Unmarshal(srcStruct any, dstPoint any) error {
 	if srcStruct == nil {
 		return nil
 	}

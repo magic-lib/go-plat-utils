@@ -69,14 +69,14 @@ func lockWithLocker(locker Locker, key string, callFunc func(), runOnce bool, ex
 	if useMemLock {
 		if runOnce {
 			if gmlock.TryLock(key) {
-				goroutines.GoSync(func(params ...interface{}) {
+				goroutines.GoSync(func(params ...any) {
 					callFunc()
 				}, nil)
 			}
 			return false, nil
 		}
 		gmlock.LockFunc(key, func() {
-			goroutines.GoSync(func(params ...interface{}) {
+			goroutines.GoSync(func(params ...any) {
 				callFunc()
 			}, nil)
 		})
@@ -86,7 +86,7 @@ func lockWithLocker(locker Locker, key string, callFunc func(), runOnce bool, ex
 	if runOnce {
 		if ok, err := locker.TryLock(ctx); ok && err == nil {
 			defer locker.UnLock(ctx)
-			goroutines.GoSync(func(params ...interface{}) {
+			goroutines.GoSync(func(params ...any) {
 				callFunc()
 			}, nil)
 		}
@@ -99,7 +99,7 @@ func lockWithLocker(locker Locker, key string, callFunc func(), runOnce bool, ex
 			return true, nil
 		}
 		defer locker.UnLock(ctx)
-		goroutines.GoSync(func(params ...interface{}) {
+		goroutines.GoSync(func(params ...any) {
 			callFunc()
 		}, nil)
 		return false, nil

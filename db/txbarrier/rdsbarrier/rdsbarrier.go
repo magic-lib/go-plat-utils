@@ -166,7 +166,7 @@ func (h *Hook) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
 
 		// Builds new args.
 		firstPhaseOp := string(cancelMapFirstPhase[b.Op])
-		nArgs := append([]interface{}{firstPhaseOp, h.timeout}, sArgs...)
+		nArgs := append([]any{firstPhaseOp, h.timeout}, sArgs...)
 
 		// Builds new redis.Cmd and assigns it to the old one.
 		nc := h.buildEvalCmd(ctx, name, nPayload, nKeys, nArgs)
@@ -180,7 +180,7 @@ func (h *Hook) ProcessHook(next redis.ProcessHook) redis.ProcessHook {
 }
 
 // extractEvalCmd is a reverse method of buildEvalCmd used to parse the argument of the "eval" command.
-func (h *Hook) extractEvalCmd(cmd *redis.Cmd) (payload string, keys []string, args []interface{}, err error) {
+func (h *Hook) extractEvalCmd(cmd *redis.Cmd) (payload string, keys []string, args []any, err error) {
 	payload, ok := cmd.Args()[1].(string)
 	if !ok {
 		err = fmt.Errorf("rdsbarrier: cmd.Args()[1] is %v, type %T, expected payload as string", cmd.Args()[1], cmd.Args()[1])
@@ -198,7 +198,7 @@ func (h *Hook) extractEvalCmd(cmd *redis.Cmd) (payload string, keys []string, ar
 		keys = append(keys, cmd.Args()[3+i].(string))
 	}
 
-	args = make([]interface{}, 0, len(cmd.Args()[3+keysLen:]))
+	args = make([]any, 0, len(cmd.Args()[3+keysLen:]))
 	args = append(args, cmd.Args()[3+keysLen:]...)
 	return
 }
@@ -236,8 +236,8 @@ func (h *Hook) buildNewKeys(b *txbarrier.Barrier, oldKeys []string) ([]string, e
 }
 
 // buildEvalCmd copies from redis.v9 package.
-func (h *Hook) buildEvalCmd(ctx context.Context, name, payload string, keys []string, args []interface{}) *redis.Cmd {
-	cmdArgs := make([]interface{}, 3+len(keys), 3+len(keys)+len(args))
+func (h *Hook) buildEvalCmd(ctx context.Context, name, payload string, keys []string, args []any) *redis.Cmd {
+	cmdArgs := make([]any, 3+len(keys), 3+len(keys)+len(args))
 	cmdArgs[0] = name
 	cmdArgs[1] = payload
 	cmdArgs[2] = len(keys)
@@ -258,7 +258,7 @@ func (h *Hook) buildEvalCmd(ctx context.Context, name, payload string, keys []st
 // code from perceiving the barrier logic.
 func (h *Hook) parseBarrierResult(cmd *redis.Cmd) error {
 	// only barrier logic returns single result
-	_, ok := cmd.Val().([]interface{})
+	_, ok := cmd.Val().([]any)
 	if ok {
 		return nil
 	}

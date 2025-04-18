@@ -134,7 +134,7 @@ func Int64(i any) (int64, bool) {
 	}
 }
 
-func forceToInt64(i interface{}) (int64, bool) {
+func forceToInt64(i any) (int64, bool) {
 	switch i.(type) {
 	case uint:
 		return int64(i.(uint)), true

@@ -106,7 +106,7 @@ func (c *toolsService) getAllStructColumn(srcType reflect.Type, srcValue reflect
 	return allStructList, allValueList
 }
 
-func (c *toolsService) assignTo(srcValue reflect.Value, dstPoint interface{}) (err error) {
+func (c *toolsService) assignTo(srcValue reflect.Value, dstPoint any) (err error) {
 	if dstPoint == nil {
 		return fmt.Errorf("assignTo dstPoint is nil")
 	}
@@ -193,7 +193,7 @@ func (c *toolsService) split(s string, sep []string) []string {
 	return strings.Split(s, sepStr)
 }
 
-func (c *toolsService) AssignTo(srcValue reflect.Value, dstPoint interface{}) (err error) {
+func (c *toolsService) AssignTo(srcValue reflect.Value, dstPoint any) (err error) {
 	if dstPoint == nil {
 		return fmt.Errorf("continueAssignTo dstPoint is nil")
 	}
@@ -248,7 +248,7 @@ func (c *toolsService) AssignTo(srcValue reflect.Value, dstPoint interface{}) (e
 	return fmt.Errorf("AssignTo can not set dstPoint")
 }
 
-func (c *toolsService) getSrcStruct(srcStruct interface{}) interface{} {
+func (c *toolsService) getSrcStruct(srcStruct any) any {
 	srcValue := reflect.ValueOf(srcStruct)
 	srcType := reflect.TypeOf(srcStruct)
 
@@ -267,12 +267,12 @@ func (c *toolsService) getSrcStruct(srcStruct interface{}) interface{} {
 	}
 
 	if srcType.Kind() == reflect.String { //字符串类型
-		newStruct := make(map[string]interface{})
+		newStruct := make(map[string]any)
 		srcStructString := String(srcStruct)
 		err := jsoniterForNil.UnmarshalFromString(srcStructString, &newStruct)
 		// 数组
 		if err != nil {
-			newList := make([]interface{}, 0)
+			newList := make([]any, 0)
 			err = jsoniterForNil.UnmarshalFromString(srcStructString, &newList)
 			if err == nil {
 				srcStruct = newList
@@ -285,13 +285,13 @@ func (c *toolsService) getSrcStruct(srcStruct interface{}) interface{} {
 	return srcStruct
 }
 
-func (c *toolsService) getDstPointType(dstPoint interface{}) (newDstPoint interface{}, dstType reflect.Type) {
+func (c *toolsService) getDstPointType(dstPoint any) (newDstPoint any, dstType reflect.Type) {
 	if dstPoint == nil {
-		dstPoint = new(map[string]interface{})
+		dstPoint = new(map[string]any)
 	}
 	dstValue := reflect.ValueOf(dstPoint)
 	if dstValue.Kind() != reflect.Ptr {
-		dstPoint = new(map[string]interface{})
+		dstPoint = new(map[string]any)
 		dstValue = reflect.ValueOf(dstPoint)
 	}
 	dstStruct := dstValue.Elem().Interface()
@@ -311,13 +311,13 @@ func (c *toolsService) getNewValueByType(dstType reflect.Type) (newDstPoint refl
 		return sonSliceValue
 	}
 
-	dstPoint := new(map[string]interface{})
+	dstPoint := new(map[string]any)
 
 	return reflect.ValueOf(dstPoint)
 }
 
-func (c *toolsService) GetNewSrcAndDst(srcStruct interface{}, dstPoint interface{}) (
-	newSrcStruct interface{}, newDstPoint interface{}) {
+func (c *toolsService) GetNewSrcAndDst(srcStruct any, dstPoint any) (
+	newSrcStruct any, newDstPoint any) {
 	if srcStruct == nil {
 		return nil, dstPoint
 	}
@@ -327,9 +327,9 @@ func (c *toolsService) GetNewSrcAndDst(srcStruct interface{}, dstPoint interface
 	return srcStruct, newDstPoint
 }
 
-func (c *toolsService) extendPartDst(srcByte []byte, srcType reflect.Type, dstPoint interface{}) (interface{}, error) {
+func (c *toolsService) extendPartDst(srcByte []byte, srcType reflect.Type, dstPoint any) (any, error) {
 	if srcType.Kind() == reflect.Slice {
-		toPointList := make([]interface{}, 0)
+		toPointList := make([]any, 0)
 		err2 := jsoniterForNil.Unmarshal(srcByte, &toPointList)
 		if err2 == nil {
 			srcByte, err2 = jsoniterForNil.Marshal(toPointList)
@@ -339,7 +339,7 @@ func (c *toolsService) extendPartDst(srcByte []byte, srcType reflect.Type, dstPo
 			}
 		}
 	} else {
-		toPointMap := make(map[string]interface{})
+		toPointMap := make(map[string]any)
 		err2 := jsoniterForNil.Unmarshal(srcByte, &toPointMap)
 		if err2 == nil {
 			toPointMap2 := make(map[string]string)
