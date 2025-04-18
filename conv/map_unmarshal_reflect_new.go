@@ -157,7 +157,8 @@ func (c *getNewService) GetByDstAll(srcInterface interface{}, dstType reflect.Ty
 // getByDstSlice 根据DstSlice获取列表
 func (c *getNewService) getByDstSlice(srcSlice interface{}, dstType reflect.Type) (newDstList reflect.Value, err error) {
 	if dstType.Kind() != reflect.Slice {
-		return reflect.Value{}, fmt.Errorf("getByDstSlice is not slice:" + dstType.String())
+		//nolint:goerr113
+		return reflect.Value{}, fmt.Errorf(errStrNotSlice, dstType.String())
 	}
 
 	toPointList := make([]interface{}, 0)
@@ -192,7 +193,8 @@ func (c *getNewService) getByDstSlice(srcSlice interface{}, dstType reflect.Type
 // getByDstPtr 根据Ptr获得一个指针对象
 func (c *getNewService) getByDstPtr(srcInterface interface{}, dstType reflect.Type) (newDstPtr reflect.Value, err error) {
 	if dstType.Kind() != reflect.Ptr {
-		return reflect.Value{}, fmt.Errorf("getByDstPtr is not ptr:" + dstType.String())
+		//nolint:goerr113
+		return reflect.Value{}, fmt.Errorf(errStrGetByDstPtr, dstType.String())
 	}
 
 	t := new(toolsService)
@@ -218,7 +220,7 @@ func (c *getNewService) getByDstPtr(srcInterface interface{}, dstType reflect.Ty
 // getByDstStruct 根据Struct获得一个
 func (c *getNewService) getByDstStruct(srcStruct interface{}, dstType reflect.Type) (newDstStruct reflect.Value, err error) {
 	if dstType.Kind() != reflect.Struct {
-		return reflect.Value{}, fmt.Errorf("getByDstStruct is not Struct:" + dstType.String())
+		return reflect.Value{}, fmt.Errorf(errStrGetByDstMapNotStruct, dstType.String())
 	}
 
 	//屏蔽意外的错误
@@ -226,7 +228,7 @@ func (c *getNewService) getByDstStruct(srcStruct interface{}, dstType reflect.Ty
 		errTemp := recover()
 		if !cond.IsNil(errTemp) {
 			log.Println("Unmarshal error:", errTemp)
-			err = fmt.Errorf(fmt.Sprintf("getByDstStruct error: %v", errTemp))
+			err = fmt.Errorf(errStrRecover2, errTemp)
 		}
 	}()
 
@@ -275,8 +277,6 @@ func (c *getNewService) getByDstStruct(srcStruct interface{}, dstType reflect.Ty
 			continue
 		}
 
-		//fmt.Println("getByDstStruct: ", dstColumnField.Name, srcStruct)
-
 		//从src获取每一个目标的值,src 是一个整体，需要一一读取
 		valueTemp := c.GetSrcFromStructField(srcStruct, dstColumnField)
 		if cond.IsNil(valueTemp) {
@@ -306,7 +306,7 @@ func (c *getNewService) getByDstStruct(srcStruct interface{}, dstType reflect.Ty
 // getByDstMap 根据map获得一个指针对象
 func (c *getNewService) getByDstMap(srcStruct interface{}, dstType reflect.Type) (newDstStruct reflect.Value, err error) {
 	if dstType.Kind() != reflect.Map {
-		return reflect.Value{}, fmt.Errorf("getByDstMap is not Map:" + dstType.String())
+		return reflect.Value{}, fmt.Errorf(errStrGetByDstMapNotMap, dstType.String())
 	}
 	srcByte, err2 := jsoniterForNil.Marshal(srcStruct)
 	if err2 != nil {
@@ -315,7 +315,7 @@ func (c *getNewService) getByDstMap(srcStruct interface{}, dstType reflect.Type)
 
 	keyType := dstType.Key()
 	if keyType.Kind() != reflect.String {
-		return reflect.Value{}, fmt.Errorf("getByDstMap is not string:" + keyType.String())
+		return reflect.Value{}, fmt.Errorf(errStrGetByDstMap, keyType.String())
 	}
 
 	toMap := make(map[string]interface{})
@@ -354,7 +354,7 @@ func (c *getNewService) getByDstOther(srcOther interface{}, dstType reflect.Type
 	defer func() {
 		errTemp := recover()
 		if !cond.IsNil(errTemp) {
-			err = fmt.Errorf(fmt.Sprintf("getByDstOther error: %v", errTemp))
+			err = fmt.Errorf(errStrGetByDstOther, errTemp)
 		}
 	}()
 
@@ -474,7 +474,7 @@ func (c *getNewService) changeValueToDstByDstType(srcValue reflect.Value, dstTyp
 		if err != nil {
 			return nil, false
 		}
-		return i64, true
+		return reflect.ValueOf(i64).Convert(dstType).Interface(), true
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		if srcInterface == nil {
 			return nil, true
@@ -484,7 +484,7 @@ func (c *getNewService) changeValueToDstByDstType(srcValue reflect.Value, dstTyp
 		if err != nil {
 			return nil, false
 		}
-		return u64, true
+		return reflect.ValueOf(u64).Convert(dstType).Interface(), true
 	case reflect.Float32, reflect.Float64:
 		if srcInterface == nil {
 			return nil, true
@@ -494,7 +494,7 @@ func (c *getNewService) changeValueToDstByDstType(srcValue reflect.Value, dstTyp
 		if err != nil {
 			return nil, false
 		}
-		return f64, true
+		return reflect.ValueOf(f64).Convert(dstType).Interface(), true
 	}
 
 	if dstType.Kind() == reflect.Bool {

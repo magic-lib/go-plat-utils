@@ -267,7 +267,8 @@ func getStringFromJson(src interface{}) (string, error) {
 		//解决 & 会转换成 \u0026 的问题
 		return strFix(json), nil
 	}
-	return "", fmt.Errorf("getStringFromJsoniter error:" + err.Error())
+	//nolint:goerr113
+	return "", fmt.Errorf(errStrGetStringFromJson, err)
 }
 
 func strFix(s string) string {

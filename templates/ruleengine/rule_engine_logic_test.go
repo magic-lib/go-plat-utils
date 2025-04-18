@@ -31,6 +31,13 @@ func TestCheckOneRule22(t *testing.T) {
 	fmt.Println(kk, err)
 
 }
+func TestCheckOneRule33(t *testing.T) {
+	f1 := 0.1
+	f2 := 0.2
+	fmt.Println(f1 + f2)
+	fmt.Println(f1)
+	fmt.Println(f2)
+}
 
 // TestCheckRuleList 判断规则是否满足条件
 func TestCheckRuleList(t *testing.T) {

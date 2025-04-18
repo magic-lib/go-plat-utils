@@ -115,7 +115,8 @@ func (c *toolsService) assignTo(srcValue reflect.Value, dstPoint interface{}) (e
 	dstValue := reflect.ValueOf(dstPoint)
 
 	if dstType.Kind() != reflect.Ptr {
-		return fmt.Errorf("assignTo dstPoint is not pointer:" + dstType.String())
+		//nolint:goerr113
+		return fmt.Errorf(errStrNotPointer2, dstType.String())
 	}
 
 	g := new(getNewService)
@@ -201,7 +202,8 @@ func (c *toolsService) AssignTo(srcValue reflect.Value, dstPoint interface{}) (e
 	dstValue := reflect.ValueOf(dstPoint)
 
 	if dstType.Kind() != reflect.Ptr {
-		return fmt.Errorf("continueAssignTo dstPoint is not pointer:" + dstType.String())
+		//nolint:goerr113
+		return fmt.Errorf(errStrNotPointer, dstType.String())
 	}
 
 	newData := reflect.New(dstType.Elem())
@@ -209,7 +211,8 @@ func (c *toolsService) AssignTo(srcValue reflect.Value, dstPoint interface{}) (e
 	defer func() {
 		errTemp := recover()
 		if !cond.IsNil(errTemp) {
-			err = fmt.Errorf(fmt.Sprintf("continueAssignTo error: %v", errTemp))
+			//nolint:goerr113
+			err = fmt.Errorf(errStrRecover, errTemp)
 		}
 	}()
 

@@ -7,7 +7,6 @@ import (
 	gouuid "github.com/nu7hatch/gouuid"
 	"github.com/rs/xid"
 )
-import "github.com/google/uuid"
 
 // GetXId 20字符 id 生成器,如：cvhmhh6s295a4l56g4a0
 func GetXId() string {
@@ -17,21 +16,26 @@ func GetXId() string {
 
 // getUUIDv7 36字符 id 生成器,如：0195d052-4c80-7217-ad19-1acb84b04d4f
 func getUUIDv7() string {
-	id, _ := uuid.NewV7()
+	id, _ := gguid.NewV7() //时间排序
 	return id.String()
 }
 
 // NewUUID 新建uuid
+// 版本1: 基于时间戳和MAC地址
+// 版本2: DCE安全UUID
+// 版本3: 基于MD5哈希和命名空间
+// 版本4: 基于随机数（最常用）
+// 版本5: 基于SHA-1哈希和命名空间
 func NewUUID() string {
 	uuidGenerators := []func() (string, error){ // 定义一个切片，存储不同的UUID生成函数
 		func() (string, error) {
-			uuids, err := gguid.NewUUID()
+			uuids, err := gguid.NewUUID() //版本1
 			if err != nil {
 				return "", err
 			}
 			return uuids.String(), nil
-		}, // 使用gguid生成UUID
-		func() (string, error) { return gguid.New().String(), nil }, // 使用gguid的另一个生成方法
+		},
+		func() (string, error) { return gguid.New().String(), nil }, // 版本4
 		func() (string, error) { return getUUIDv7(), nil },          // 使用gguid的另一个生成方法
 		func() (string, error) {
 			uuidTemp, err := gouuid.NewV4()

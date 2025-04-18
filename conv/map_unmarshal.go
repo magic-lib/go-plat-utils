@@ -84,7 +84,8 @@ func Unmarshal(srcStruct interface{}, dstPoint interface{}) error {
 		srcType.Kind() != reflect.Slice {
 		//如果是字符串，则需要保证是json格式的
 		if isString {
-			return fmt.Errorf("Unmarshal error:" + oldString)
+			//nolint:goerr113
+			return fmt.Errorf(errStrUnmarshal1, oldString)
 		}
 		return errJson
 	}
