@@ -44,7 +44,7 @@ dayOfWeek  = field(fields[5], dow)
 */
 
 // StartJobs 启动定时任务，格式：分钟 小时 天 月 星期
-func StartJobs(jobs ...map[string]func()) error {
+func StartJobs(immediateRun bool, jobs ...map[string]func()) error {
 	runningMu.Lock()
 	defer runningMu.Unlock()
 
@@ -62,10 +62,15 @@ func StartJobs(jobs ...map[string]func()) error {
 
 	log.Println("[crontab] StartJobs start:", allKey)
 
+	runList := make([]func(), 0)
+
 	allSuccess := true //如果全部出错的，则不用启动
 	for _, jobMap := range jobs {
 		for times := range jobMap {
 			var err error
+			if immediateRun {
+				runList = append(runList, jobMap[times])
+			}
 			//列表里需要将所有的内容保存一份，这样就可以到时候进行删除了
 			_, err = oneCron.c.AddFunc(times, jobMap[times])
 			if err != nil {
@@ -84,6 +89,15 @@ func StartJobs(jobs ...map[string]func()) error {
 		return nil
 	}
 	oneCron.isStart = true
+	//立即执行
+	if immediateRun {
+		goroutines.GoAsync(func(params ...any) {
+			for _, runFunc := range runList {
+				runFunc()
+			}
+		})
+	}
+
 	//异步启动
 	goroutines.GoAsync(func(params ...any) {
 		oneCron.c.Run()

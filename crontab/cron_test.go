@@ -8,7 +8,7 @@ import "fmt"
 
 func TestCrontab(t *testing.T) {
 
-	crontab.StartJobs(map[string]func(){
+	crontab.StartJobs(true, map[string]func(){
 		"*/2 * * * *": func() {
 			fmt.Println("1分钟1")
 		},
@@ -20,12 +20,12 @@ func TestCrontab(t *testing.T) {
 	select {}
 }
 func TestCrontabLockKey(t *testing.T) {
-	crontab.StartJobs(map[string]func(){
+	crontab.StartJobs(true, map[string]func(){
 		"* * * * *": func() {
 			fmt.Println("1分钟1")
 		},
 	})
-	crontab.StartJobs(map[string]func(){
+	crontab.StartJobs(true, map[string]func(){
 		"* * * * *": func() {
 			fmt.Println("1分钟2")
 		},
