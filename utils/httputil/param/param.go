@@ -320,13 +320,15 @@ func (p *Param) Parse(r *http.Request, dst any, openValidate ...bool) error {
 	if err != nil {
 		//用post里的数据整体进行，如果传的是数组的话
 		var listErr error
+		var convertList bool
 		dstValue := reflect.Indirect(reflect.ValueOf(dst))
 		if dstValue.Kind() == reflect.Slice {
 			if listStr, ok := paramMap[p.defaultBodyKeyName]; ok {
 				listErr = conv.Unmarshal(listStr, dst)
+				convertList = true
 			}
 		}
-		if listErr != nil {
+		if !convertList || listErr != nil {
 			return err
 		}
 	}
