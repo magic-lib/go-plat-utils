@@ -318,7 +318,17 @@ func (p *Param) Parse(r *http.Request, dst any, openValidate ...bool) error {
 	paramMap := p.GetAllMap(r, true)
 	err := conv.Unmarshal(paramMap, dst)
 	if err != nil {
-		return err
+		//用post里的数据整体进行，如果传的是数组的话
+		var listErr error
+		dstValue := reflect.Indirect(reflect.ValueOf(dst))
+		if dstValue.Kind() == reflect.Slice {
+			if listStr, ok := paramMap[p.defaultBodyKeyName]; ok {
+				listErr = conv.Unmarshal(listStr, dst)
+			}
+		}
+		if listErr != nil {
+			return err
+		}
 	}
 	isCheck := true
 
