@@ -87,15 +87,14 @@ func GoSync(task func(params ...any), params ...any) {
 			n := runtime.Stack(buf, false)
 			stackInfo := fmt.Sprintf("%s", buf[:n])
 			stackInfo = strings.ReplaceAll(stackInfo, "\n", "|")
-			errStr := fmt.Sprintf("panic_stack_info: %s ### %s", err, stackInfo)
-
+			errFormat := "panic_stack_info: %s ### %s"
 			defaultAsyncObj.panicMutex.RLock()
 			if defaultAsyncObj.panicHandle != nil {
-				defaultAsyncObj.panicHandle(fmt.Errorf(errStr), err)
+				defaultAsyncObj.panicHandle(fmt.Errorf(errFormat, err, stackInfo), err)
 				defaultAsyncObj.panicMutex.RUnlock()
 			} else {
 				defaultAsyncObj.panicMutex.RUnlock()
-				log.Println(errStr)
+				log.Println(fmt.Sprintf(errFormat, err, stackInfo))
 			}
 			return
 		}

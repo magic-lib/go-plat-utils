@@ -129,6 +129,11 @@ func NextByRing[T any](vsList []T, last T, nt func(this T, last T) bool) T {
 		r.Value = vsList[i]
 		r = r.Next()
 	}
+
+	//r.Do(func(p interface{}) {
+	//	fmt.Println(p)
+	//})
+
 	start := r
 	found := false
 	var current *ring.Ring

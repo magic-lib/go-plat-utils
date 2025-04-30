@@ -20,6 +20,26 @@ func NextDayDuration() time.Duration {
 	return next.Sub(time.Now())
 }
 
+// NowStartDay 今天开始时间
+func NowStartDay() time.Time {
+	now := time.Now()
+	return DayStartTime(now)
+}
+
+// NowEndDay 今天最后时间
+func NowEndDay() time.Time {
+	now := time.Now()
+	return DayEndTime(now)
+}
+func DayStartTime(now time.Time) time.Time {
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	return startOfDay
+}
+func DayEndTime(now time.Time) time.Time {
+	endOfDay := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, now.Location())
+	return endOfDay
+}
+
 // MilliTime 毫秒
 func MilliTime() int64 {
 	return time.Now().UnixMilli()

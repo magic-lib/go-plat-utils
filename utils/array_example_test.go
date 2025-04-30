@@ -252,64 +252,83 @@ func TestIO(t *testing.T) {
 }
 
 type OneData struct {
-	Id int64 `db:"id" json:"id"` // 主键
+	Id   int64  `db:"id" json:"id"` // 主键
+	Name string `db:"id" json:"id"` // 主键
 }
 
 func TestRingArray(t *testing.T) {
 	vsList := make([]*OneData, 0)
 	vsList = append(vsList, &OneData{
-		Id: 4,
+		Id:   22,
+		Name: "admin",
 	})
 	vsList = append(vsList, &OneData{
-		Id: 7,
+		Id:   23,
+		Name: "john_do11e",
 	})
-	//vsList = append(vsList, &OneData{
-	//	Id: 8,
-	//})
+	vsList = append(vsList, &OneData{
+		Id:   25,
+		Name: "john_do1125555e",
+	})
+	vsList = append(vsList, &OneData{
+		Id:   36,
+		Name: "john_do112e",
+	})
+	vsList = append(vsList, &OneData{
+		Id:   37,
+		Name: "12234",
+	})
+
+	fmt.Println("admin" > "john_do11e")
+	fmt.Println("john_do11e" > "john_do1125555e")
+	fmt.Println("john_do11e" < "john_do1125555e")
 
 	nt := func(this *OneData, last *OneData) bool {
-		return this.Id > last.Id
+		return this.Name > last.Name
 	}
 
 	one := utils.NextByRing[*OneData](vsList, &OneData{
-		Id: 3,
+		Id:   22,
+		Name: "admin",
 	}, nt)
 	fmt.Println(one.Id)
 	one = utils.NextByRing[*OneData](vsList, &OneData{
-		Id: 4,
+		Id:   23,
+		Name: "john_do11e",
 	}, nt)
 	fmt.Println(one.Id)
 	one = utils.NextByRing[*OneData](vsList, &OneData{
-		Id: 5,
+		Id:   25,
+		Name: "john_do1125555e",
 	}, nt)
 	fmt.Println(one.Id)
 	one = utils.NextByRing[*OneData](vsList, &OneData{
-		Id: 7,
+		Id: 36,
 	}, nt)
 	fmt.Println(one.Id)
 	one = utils.NextByRing[*OneData](vsList, &OneData{
-		Id: 8,
+		Id: 37,
 	}, nt)
 	fmt.Println(one.Id)
-	one = utils.NextByRing[*OneData](vsList, &OneData{
-		Id: 10,
-	}, nt)
-	fmt.Println(one.Id)
-
-	fmt.Println("//////////////////")
-	one = utils.NextByRing[*OneData](vsList, &OneData{
-		Id: 0,
-	}, nt)
-	fmt.Println(one.Id)
-	one = utils.NextByRing[*OneData](vsList, one, nt)
-	fmt.Println(one.Id)
-	one = utils.NextByRing[*OneData](vsList, one, nt)
-	fmt.Println(one.Id)
-	one = utils.NextByRing[*OneData](vsList, one, nt)
-	fmt.Println(one.Id)
-	one = utils.NextByRing[*OneData](vsList, one, nt)
-	fmt.Println(one.Id)
-	one = utils.NextByRing[*OneData](vsList, one, nt)
-	fmt.Println(one.Id)
+	//one = utils.NextByRing[*OneData](vsList, &OneData{
+	//	Id: 10,
+	//}, nt)
+	//fmt.Println(one.Id)
+	//
+	//fmt.Println("//////////////////")
+	//one = utils.NextByRing[*OneData](vsList, &OneData{
+	//	Id: 0,
+	//}, nt)
+	//fmt.Println(one.Id)
+	//one = utils.NextByRing[*OneData](vsList, one, nt)
+	//fmt.Println(one.Id)
+	//one = utils.NextByRing[*OneData](vsList, one, nt)
+	//fmt.Println(one.Id)
+	//one = utils.NextByRing[*OneData](vsList, one, nt)
+	//fmt.Println(one.Id)
+	//one = utils.NextByRing[*OneData](vsList, one, nt)
+	//fmt.Println(one.Id)
+	//one = utils.NextByRing[*OneData](vsList, one, nt)
+	//fmt.Println(one.Id)
 
 }

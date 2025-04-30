@@ -15,7 +15,7 @@ func TestAsyncExecuteDataList(t *testing.T) {
 		arr = append(arr, i+1)
 	}
 	num := 0
-	ret, err := goroutines.AsyncExecuteDataList(1*time.Second, arr, func(key int, value int) (breakFlag bool, err error) {
+	ret, err := goroutines.AsyncExecuteDataList(1*time.Second, arr, func(value int, key int) (breakFlag bool, err error) {
 		fmt.Println("key=", key, "; value=", value)
 		num++
 		time.Sleep(1 * time.Second)

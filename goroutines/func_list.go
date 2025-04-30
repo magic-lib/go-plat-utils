@@ -16,7 +16,7 @@ func AsyncExecuteFuncList(timeout time.Duration, calls ...func() (bool, error)) 
 	for _, call := range calls {
 		dataList = append(dataList, call)
 	}
-	callback := func(key int, value func() (bool, error)) (bool, error) {
+	callback := func(value func() (bool, error), key int) (bool, error) {
 		return value()
 	}
 	return AsyncExecuteDataList(timeout, dataList, callback)
@@ -25,7 +25,7 @@ func AsyncExecuteFuncList(timeout time.Duration, calls ...func() (bool, error)) 
 // AsyncExecuteDataList 异步执行数据列表，返回是否全部执行
 // return: bool 是否完成循环。  error  执行过程中是否有错误
 func AsyncExecuteDataList[T any](timeout time.Duration, dataList []T,
-	callback func(key int, value T) (breakFlag bool, err error)) (complete bool, errExec error) {
+	callback func(value T, key int) (breakFlag bool, err error)) (complete bool, errExec error) {
 	if dataList == nil || len(dataList) == 0 {
 		return true, nil
 	}
@@ -34,64 +34,55 @@ func AsyncExecuteDataList[T any](timeout time.Duration, dataList []T,
 
 	var breakDataListFlag int64 = 0
 	var errTotal *multierror.Error
+	var mu sync.Mutex // 用于保护 errTotal
 
-	//如果dataList太长，这样会并发很多也不合理，所以分为二维数组会更合理一些，每50一组
-	pageSize := 50
-outLoop:
+	pageSize := 50 //如果dataList太长，这样会并发很多也不合理，所以分为二维数组会更合理一些，每50一组
 	for i := 0; i < len(dataList); {
-		aw := sync.WaitGroup{}
-		if len(dataList)-i > pageSize {
-			aw.Add(pageSize)
-		} else {
-			aw.Add(len(dataList) - i)
+		limit := i + pageSize
+		if limit > len(dataList) {
+			limit = len(dataList)
 		}
-		for j := 0; j < pageSize; j++ {
-			if i >= len(dataList) {
-				break outLoop
-			}
-			if breakDataListFlag > 0 {
-				//如果循环中有跳出的指令以后，则后续的循环都直接全部完成
+
+		var aw sync.WaitGroup
+		aw.Add(limit - i)
+
+		for j := i; j < limit; j++ {
+			i++
+			if atomic.LoadInt64(&breakDataListFlag) > 0 {
 				waitGroupTemp.done()
-				i++
 				aw.Done()
 				continue
 			}
-			GoAsync(func(params ...interface{}) {
-				oneIndexTemp, ok0 := params[0].(int)
-				oneValTemp, ok1 := params[1].(T)
-				if ok0 && ok1 {
-					if breakDataListFlag > 0 {
-						//如果循环中有跳出的指令以后，则后续的循环都直接全部完成
-						waitGroupTemp.done()
-						aw.Done()
-						return
-					}
 
-					breakFlag, err := callback(oneIndexTemp, oneValTemp)
-					if err != nil {
-						errTotal = multierror.Append(errTotal, err)
-					}
-					if breakFlag {
-						//表示需要跳出后续循环,原子操作，避免竞态
-						atomic.AddInt64(&breakDataListFlag, 1)
-					}
-					//如果完成了，才能关闭
+			index := j
+			value := dataList[index]
+			GoAsync(func(_ ...interface{}) {
+				if atomic.LoadInt64(&breakDataListFlag) > 0 {
 					waitGroupTemp.done()
+					aw.Done()
+					return
 				}
-				aw.Done() //无论是否真正完成，都标记完成
-			}, i, dataList[i])
 
-			i++
+				breakFlag, err := callback(value, index)
+				if err != nil {
+					mu.Lock()
+					errTotal = multierror.Append(errTotal, err)
+					mu.Unlock()
+				}
+				if breakFlag {
+					atomic.AddInt64(&breakDataListFlag, 1)
+				}
+				waitGroupTemp.done()
+				aw.Done()
+			})
 		}
 		aw.Wait()
 	}
 
 	err := waitGroupTemp.wait()
 	if err != nil {
-		//因为超时没有完成
 		return false, err
 	}
-	//完成，但有执行的错误
 	if errTotal != nil {
 		return true, errTotal
 	}
