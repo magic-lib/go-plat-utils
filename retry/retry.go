@@ -9,6 +9,11 @@ import (
 	"time"
 )
 
+var (
+	errNotPointer = fmt.Errorf("valuePtr parameter is not a pointer")
+	errSetValue   = fmt.Errorf("call of reflect.Value.Set on zero Value")
+)
+
 type retry struct {
 	attemptCount int             //最大尝试次数
 	interval     time.Duration   //间隔时间
@@ -54,45 +59,34 @@ func (r *retry) WithErrCallback(errFun ErrCallbackFunc) *retry {
 
 // Do 执行一个函数
 func (r *retry) Do(parentCtx context.Context, f Executable, valuePtr ...any) error {
-	if len(valuePtr) > 0 && valuePtr != nil {
-		if valuePtr[0] != nil {
-			rf := reflect.ValueOf(valuePtr[0])
-			if rf.Type().Kind() != reflect.Ptr {
-				return fmt.Errorf("valuePtr parameter is not a pointer")
-			}
+	if len(valuePtr) > 0 && valuePtr[0] != nil {
+		rf := reflect.ValueOf(valuePtr[0])
+		if rf.Type().Kind() != reflect.Ptr {
+			return errNotPointer
 		}
 	}
 
 	var retData any
 	var err error
-	if parentCtx != nil {
-		retData, err = r.doRetryWithCtx(parentCtx, f)
-	} else {
-		retData, err = r.doRetry(f)
+	if parentCtx == nil {
+		parentCtx = context.Background()
+	}
+	retData, err = r.doRetryWithCtx(parentCtx, f)
+	if len(valuePtr) == 0 || valuePtr[0] == nil {
+		return err
 	}
 
-	if len(valuePtr) > 0 && valuePtr != nil {
-		if valuePtr[0] != nil {
-			rf := reflect.ValueOf(valuePtr[0])
-			if rf.Elem().CanSet() {
-				fv := reflect.ValueOf(retData)
-				isSet := false
-				if fv.Kind() == reflect.Ptr && fv.Type() == rf.Type() {
-					if fv.Elem().IsValid() {
-						isSet = true
-						rf.Elem().Set(fv.Elem())
-					}
-				} else {
-					if fv.IsValid() {
-						isSet = true
-						rf.Elem().Set(fv)
-					}
-				}
-				if !isSet {
-					if err == nil {
-						err = fmt.Errorf("call Return: call of reflect.Value.Set on zero Value")
-					}
-				}
+	rf := reflect.ValueOf(valuePtr[0])
+	if rf.Elem().CanSet() {
+		fv := reflect.ValueOf(retData)
+		if fv.IsValid() {
+			if fv.Kind() == reflect.Ptr {
+				fv = reflect.Indirect(fv)
+			}
+			rf.Elem().Set(fv)
+		} else {
+			if err == nil {
+				err = errSetValue
 			}
 		}
 	}
@@ -105,10 +99,9 @@ func (r *retry) doRetryWithCtx(parentCtx context.Context, fn Executable) (any, e
 	defer cancel()
 
 	nowAttemptCount := 0
-	fail := make(chan error, 1)
-	success := make(chan any, 1)
-
 	for {
+		fail := make(chan error, 1)
+		success := make(chan any, 1)
 		goroutines.GoAsync(func(params ...any) {
 			val, err := fn(ctx)
 			if err != nil {
@@ -123,23 +116,22 @@ func (r *retry) doRetryWithCtx(parentCtx context.Context, fn Executable) (any, e
 		case <-parentCtx.Done():
 			return nil, parentCtx.Err()
 		case err := <-fail:
-			if parentCtxErr := parentCtx.Err(); parentCtxErr != nil {
-				return nil, parentCtxErr
+			if parentCtx.Err() != nil {
+				return nil, parentCtx.Err()
 			}
 
-			nowError := fmt.Errorf("Max retries exceeded (%v).\n", nowAttemptCount)
-
 			if r.errCallFun != nil {
-				errError := r.errCallFun(err)
-				if errError != nil {
-					return nil, nowError
+				callbackErr := r.errCallFun(err)
+				if callbackErr != nil {
+					//表示这个是致命错误，不用重试了
+					return nil, callbackErr
 				}
 			}
 
 			nowAttemptCount++
 
 			if nowAttemptCount >= r.attemptCount {
-				return nil, nowError
+				return nil, fmt.Errorf("max retries exceeded (%v)", nowAttemptCount)
 			}
 
 			if r.interval > 0 {
@@ -148,35 +140,6 @@ func (r *retry) doRetryWithCtx(parentCtx context.Context, fn Executable) (any, e
 
 		case val := <-success:
 			return val, nil
-		}
-	}
-}
-
-// doRetry 执行一个函数
-func (r *retry) doRetry(f Executable) (val any, err error) {
-	nowAttemptCount := 0
-	parentCtx := context.Background()
-	for {
-		nowAttemptCount++
-
-		val, err = f(parentCtx)
-		if err == nil {
-			return
-		}
-		if r.errCallFun != nil {
-			errError := r.errCallFun(err)
-			if errError != nil {
-				//表示这个是致命错误，不用重试了
-				return
-			}
-		}
-
-		if nowAttemptCount >= r.attemptCount {
-			return
-		}
-
-		if r.interval > 0 {
-			time.Sleep(r.interval)
 		}
 	}
 }
