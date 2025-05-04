@@ -121,7 +121,7 @@ func (rc *RetryConfig) createRetryTable() error {
 }
 
 // AddRecord 插入请求记录到数据库
-func (rc *RetryConfig) AddRecord(r *RetryRecord, f func(param []any) (any, error)) error {
+func (rc *RetryConfig) AddRecord(r *RetryRecord) error {
 	if r.Interval == 0 {
 		r.Interval = defaultInterval * time.Second
 	}
