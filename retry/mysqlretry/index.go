@@ -35,6 +35,7 @@ type retryRecord struct {
 	Namespace      string    `json:"namespace"`  // 命名空间，用于区分不同的业务
 	RetryType      string    `json:"retry_type"` // 重试类型，函数里定义特殊的执行方法
 	Param          string    `json:"param"`
+	Extend         string    `json:"extend"` // 扩展字段，用于存储额外的信息，比如请求的URL、请求的参数、请求的头信息等
 	Errors         string    `json:"errors"`
 	Response       string    `json:"response"`
 	Retries        int       `json:"retries"`
@@ -60,6 +61,7 @@ type RetryService struct {
 type RetryRecord struct {
 	RetryType     string        `json:"retry_type"`
 	Param         []any         `json:"param"`
+	Extend        any           `json:"extend"`
 	MaxRetries    int           `json:"max_retries"`
 	Interval      time.Duration `json:"interval"`
 	RetryExecutor RetryExecutor
@@ -141,6 +143,7 @@ func (rs *RetryService) createRetryTable() error {
             namespace VARCHAR(100) NOT NULL,
             retry_type VARCHAR(100) NOT NULL,
             param TEXT NOT NULL,
+            extend TEXT,
             errors TEXT,
             response TEXT,
             retries INT DEFAULT 0,
@@ -189,6 +192,7 @@ func (rs *RetryService) Insert(r *RetryRecord) error {
 		Namespace:      rs.namespace,
 		RetryType:      r.RetryType,
 		Param:          conv.String(r.Param),
+		Extend:         conv.String(r.Extend),
 		MaxRetries:     r.MaxRetries,
 		IntervalSecond: int64(r.Interval.Seconds()),
 		NextRetry:      nextRetry,
