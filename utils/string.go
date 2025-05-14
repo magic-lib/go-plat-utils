@@ -114,3 +114,12 @@ func ReplaceDynamicVariables(input string, startDelimiter, endDelimiter string, 
 
 	return output
 }
+
+// LeftPadding 字符串左侧补全
+func LeftPadding(length int, str string, complement rune) string {
+	if len(str) >= length {
+		return str
+	}
+	padding := strings.Repeat(string(complement), length-len(str))
+	return fmt.Sprintf("%s%s", padding, str)
+}

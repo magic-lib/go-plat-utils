@@ -132,6 +132,43 @@ func TestCheckRuleVars(t *testing.T) {
 	fmt.Println(customList)
 	return
 }
+func TestCheckInAndHas(t *testing.T) {
+	//condTypeCustomVarPattern := `In(M6_MEMBER_COMPANY_NO, ('M6-002','M6-004','M6-005','M6-006','M6-007','M6-009','M6-010'))`
+	//ruleLogic := ruleengine.NewEngineLogic()
+	//customList, err := ruleLogic.RunOneRuleString(condTypeCustomVarPattern, map[string]interface{}{
+	//	"M6_MEMBER_COMPANY_NO": "M6-006",
+	//})
+	//if err != nil {
+	//	return
+	//}
+	//fmt.Println(customList)
+
+	//condTypeCustomVarPattern := `Has(('M6-002','M6-004','M6-005','M6-006','M6-007','M6-009','M6-010'), M6_MEMBER_COMPANY_NO)`
+	//ruleLogic := ruleengine.NewEngineLogic()
+	//customList, err := ruleLogic.RunOneRuleString(condTypeCustomVarPattern, map[string]interface{}{
+	//	"M6_MEMBER_COMPANY_NO": "M6-006",
+	//})
+	//if err != nil {
+	//	return
+	//}
+	//fmt.Println(customList)
+
+	condTypeCustomVarPattern := `Has(M6_MEMBER_COMPANY_NO_LIST, "M6-006")`
+	ruleLogic := ruleengine.NewEngineLogic()
+	customList, err := ruleLogic.RunOneRuleString(condTypeCustomVarPattern, map[string]interface{}{
+		"M6_MEMBER_COMPANY_NO": "M6-006",
+		"M6_MEMBER_COMPANY_NO_LIST": []string{
+			"M6-006",
+			"M6-007",
+		},
+	})
+	if err != nil {
+		return
+	}
+	fmt.Println(customList)
+
+	return
+}
 
 type AA struct {
 	Name string
