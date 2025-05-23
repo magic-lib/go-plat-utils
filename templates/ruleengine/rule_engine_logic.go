@@ -44,6 +44,8 @@ func NewEngineLogic() *EngineLogic {
 		"DivByNumber": ruleLogicFunc.DivByNumber,
 		"Has":         ruleLogicFunc.Has,
 		"In":          ruleLogicFunc.In,
+		"Is":          ruleLogicFunc.Is,
+		"If":          ruleLogicFunc.If,
 	}
 	return ruleLogic
 }

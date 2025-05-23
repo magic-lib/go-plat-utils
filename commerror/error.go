@@ -68,6 +68,7 @@ func Wrap(err error, code ...int) error {
 	return New(errStr, tempCode)
 }
 
+// GrpcError grpc错误信息
 func GrpcError(code codes.Code, msg string, details ...CommError) error {
 	codesCode := codes.Internal
 	codesMsg := codesCode.String()
@@ -103,22 +104,24 @@ func FromGrpcError(err error) (CommError, codes.Code) {
 	if err == nil {
 		return nil, codes.OK
 	}
+	grpcStatus := codes.Unknown
 	s, ok := status.FromError(err)
 	if ok && s != nil {
+		grpcStatus = s.Code()
 		for _, d := range s.Details() {
 			if detail, ok := d.(*errpb.ErrorDetail); ok {
 				if codes.Code(detail.Code) == codes.OK { //如果是正确的，则直接返回nil
 					return nil, codes.OK
 				}
-				return New(detail.Message, int(detail.Code)), s.Code()
+				return New(detail.Message, int(detail.Code)), grpcStatus
 			}
 		}
-		return New(s.Message(), int(s.Code())), s.Code()
+		return New(s.Message(), int(s.Code())), grpcStatus
 	}
 
 	var commErr CommError
 	if errors.As(err, &commErr) {
-		return commErr, codes.Unknown
+		return commErr, grpcStatus
 	}
-	return New(err.Error()), codes.Unknown
+	return New(err.Error()), grpcStatus
 }

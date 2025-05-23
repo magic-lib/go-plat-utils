@@ -1,9 +1,12 @@
 package ruleengine
 
 import (
+	"fmt"
+	"github.com/magic-lib/go-plat-utils/cond"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/shopspring/decimal"
 	"reflect"
+	"strings"
 )
 
 // customerFunc 自定义方法列表
@@ -87,8 +90,8 @@ func (r *customerFunc) DivByNumber(args ...interface{}) (interface{}, error) {
 
 // Has 数组是否包含某元素
 func (r *customerFunc) Has(args ...interface{}) (interface{}, error) {
-	if args == nil || len(args) != 2 {
-		return false, nil
+	if len(args) != 2 {
+		return false, fmt.Errorf("参数数量不对：%v", args)
 	}
 	listInterface := args[0]
 	item := conv.String(args[1])
@@ -115,8 +118,46 @@ func (r *customerFunc) Has(args ...interface{}) (interface{}, error) {
 
 // In 是否存在某数组中
 func (r *customerFunc) In(args ...interface{}) (interface{}, error) {
-	if args == nil || len(args) != 2 {
-		return false, nil
+	if len(args) != 2 {
+		return false, fmt.Errorf("参数数量不对：%v", args)
 	}
 	return r.Has(args[1], args[0])
+}
+
+// Is 是否是某一个类型
+func (r *customerFunc) Is(args ...interface{}) (interface{}, error) {
+	if len(args) <= 1 {
+		return false, fmt.Errorf("参数数量不对：%v", args)
+	}
+	typeName := conv.String(args[0])
+	typeName = strings.ToLower(typeName)
+	if typeName == "nil" {
+		return cond.IsNil(args[1]), nil
+	}
+	if typeName == "zero" {
+		return cond.IsZero(args[1]), nil
+	}
+	if typeName == "number" {
+		return cond.IsNumeric(args[1]), nil
+	}
+	if typeName == "time" {
+		return cond.IsTime(conv.String(args[1])), nil
+	}
+	return false, fmt.Errorf("不支持的格式：%s", typeName)
+}
+
+// If 三元运算符
+func (r *customerFunc) If(args ...interface{}) (interface{}, error) {
+	if len(args) != 3 {
+		return nil, fmt.Errorf("ternary function requires exactly 3 arguments: condition, trueValue, falseValue")
+	}
+	// 第一个参数必须是布尔类型
+	condition, ok := args[0].(bool)
+	if !ok {
+		return nil, fmt.Errorf("first argument to ternary must be a boolean")
+	}
+	if condition {
+		return args[1], nil
+	}
+	return args[2], nil
 }

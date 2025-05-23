@@ -132,6 +132,24 @@ func TestCheckRuleVars(t *testing.T) {
 	fmt.Println(customList)
 	return
 }
+func TestFunction(t *testing.T) {
+	condTypeCustomVarPattern := `If(3==4, 'K1', 'K2')`
+	condTypeCustomVarPattern = `Has(Names, 'K5')`
+	ruleLogic := ruleengine.NewEngineLogic()
+	customList, err := ruleLogic.RunOneRuleString(condTypeCustomVarPattern, map[string]interface{}{
+		"Names": []string{
+			"K1",
+			"K2",
+			"K3",
+			"K4",
+		},
+	})
+	if err != nil {
+		return
+	}
+	fmt.Println(customList)
+	return
+}
 func TestCheckInAndHas(t *testing.T) {
 	//condTypeCustomVarPattern := `In(M6_MEMBER_COMPANY_NO, ('M6-002','M6-004','M6-005','M6-006','M6-007','M6-009','M6-010'))`
 	//ruleLogic := ruleengine.NewEngineLogic()
