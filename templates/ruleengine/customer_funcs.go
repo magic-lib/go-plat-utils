@@ -91,6 +91,15 @@ func (r *customerFunc) DivByNumber(args ...interface{}) (interface{}, error) {
 // Has 数组是否包含某元素
 func (r *customerFunc) Has(args ...interface{}) (interface{}, error) {
 	if len(args) != 2 {
+		if len(args) == 1 {
+			return false, nil
+		}
+		if len(args) > 2 {
+			//这是一个bug，会将数组变成动态参数
+			arg1 := args[0 : len(args)-1]
+			return r.Has(arg1, args[len(args)-1])
+		}
+
 		return false, fmt.Errorf("参数数量不对：%v", args)
 	}
 	listInterface := args[0]
@@ -147,7 +156,7 @@ func (r *customerFunc) Is(args ...interface{}) (interface{}, error) {
 }
 
 // If 三元运算符
-func (r *customerFunc) If(args ...interface{}) (interface{}, error) {
+func (r *customerFunc) If(args ...any) (any, error) {
 	if len(args) != 3 {
 		return nil, fmt.Errorf("ternary function requires exactly 3 arguments: condition, trueValue, falseValue")
 	}

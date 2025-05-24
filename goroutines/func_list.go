@@ -56,7 +56,7 @@ func AsyncExecuteDataList[T any](timeout time.Duration, dataList []T,
 
 			index := j
 			value := dataList[index]
-			GoAsync(func(_ ...interface{}) {
+			GoAsync(func(_ ...any) {
 				if atomic.LoadInt64(&breakDataListFlag) > 0 {
 					waitGroupTemp.done()
 					aw.Done()

@@ -2,7 +2,7 @@ package ruleengine
 
 import (
 	"fmt"
-	"github.com/Knetic/govaluate"
+	govaluate "github.com/magic-lib/go-plat-utils/internal/govaluate-3.0.0"
 	"github.com/magic-lib/go-plat-utils/utils"
 	"strings"
 	"sync"

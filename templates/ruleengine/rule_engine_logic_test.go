@@ -132,9 +132,16 @@ func TestCheckRuleVars(t *testing.T) {
 	fmt.Println(customList)
 	return
 }
+func TestCheckRuleVars2(t *testing.T) {
+	args := []any{1, 2, 3, 4, 5}
+	//这是一个bug，会将数组变成动态参数
+	arg1 := args[0 : len(args)-1]
+	fmt.Println(arg1, args[len(args)-1])
+	return
+}
 func TestFunction(t *testing.T) {
-	condTypeCustomVarPattern := `If(3==4, 'K1', 'K2')`
-	condTypeCustomVarPattern = `Has(Names, 'K5')`
+	condTypeCustomVarPattern := "If(Is('nil',birthday),\"1000-01-01 00:00:00\",birthday)"
+	//condTypeCustomVarPattern = `Has(Names, 'K5')`
 	ruleLogic := ruleengine.NewEngineLogic()
 	customList, err := ruleLogic.RunOneRuleString(condTypeCustomVarPattern, map[string]interface{}{
 		"Names": []string{
@@ -143,8 +150,45 @@ func TestFunction(t *testing.T) {
 			"K3",
 			"K4",
 		},
+		"birthday":  nil,
+		"birthday1": "1000-01-01 00:00:00",
 	})
 	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(customList)
+	return
+}
+
+func TestIfFunction(t *testing.T) {
+	condTypeCustomVarPattern := `If(true,'1000-01-01 00:00:00',birthday)`
+	ruleLogic := ruleengine.NewEngineLogic()
+	customList, err := ruleLogic.RunOneRuleString(condTypeCustomVarPattern, map[string]interface{}{
+		"birthday": nil,
+	})
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(customList)
+	return
+}
+func TestHasFunction(t *testing.T) {
+	condTypeCustomVarPattern := `Has(('K1', 'K2', 'K5'), 'K5')`
+	ruleLogic := ruleengine.NewEngineLogic()
+	customList, err := ruleLogic.RunOneRuleString(condTypeCustomVarPattern, map[string]interface{}{
+		"Names": []string{
+			"K1",
+			"K2",
+			"K3",
+			"K4",
+		},
+		"birthday":  nil,
+		"birthday1": "1000-01-01 00:00:00",
+	})
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
 	fmt.Println(customList)
