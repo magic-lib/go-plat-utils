@@ -90,6 +90,9 @@ func AsyncForEachWhile[T any](collection []T,
 			default:
 				option.ChunkSize = 10
 			}
+			if len(collection) < option.ChunkSize {
+				option.ChunkSize = 1
+			}
 		}
 		if option.MaxConcurrency == 0 {
 			option.MaxConcurrency = runtime.NumCPU() * 4
