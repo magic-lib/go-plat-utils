@@ -15,12 +15,29 @@ func TestAsyncExecuteDataList(t *testing.T) {
 		arr = append(arr, i+1)
 	}
 	num := 0
-	ret, err := goroutines.AsyncExecuteDataList(1*time.Second, arr, func(value int, key int) (breakFlag bool, err error) {
+	ret, err := goroutines.AsyncExecuteDataList(12*time.Second, arr, func(value int, key int) (breakFlag bool, err error) {
 		fmt.Println("key=", key, "; value=", value)
 		num++
 		time.Sleep(1 * time.Second)
-		return true, fmt.Errorf("3333")
+		return false, fmt.Errorf("3333")
 	})
+	fmt.Println(num, ret, err)
+}
+func TestAsyncForEachWhile(t *testing.T) {
+	arr := make([]int, 0)
+	for i := 0; i < 10; i++ {
+		arr = append(arr, i+1)
+	}
+	num := 0
+	ret, err := goroutines.AsyncForEachWhile(arr, func(value int, key int) (bool, error) {
+		fmt.Println("value=", value)
+		num++
+		//time.Sleep(1 * time.Second)
+		if value > 4 {
+			return true, fmt.Errorf("eeee")
+		}
+		return true, nil
+	}, goroutines.AsyncForEachWhileOptions{ChunkSize: 2, MaxConcurrency: 2})
 	fmt.Println(num, ret, err)
 }
 func TestGoroutineId(t *testing.T) {

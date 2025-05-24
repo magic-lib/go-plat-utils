@@ -38,7 +38,7 @@ func (w *group) add(index int) {
 				w.gc <- true
 			}
 		})
-	} else if index < 0 {
+	} else {
 		for i := index; i < 0; i++ {
 			<-w.gc
 		}
@@ -47,9 +47,23 @@ func (w *group) add(index int) {
 
 // done 关闭一个协程
 func (w *group) done() {
-	<-w.gc
+	w.doneN(1)
+}
+
+// done 关闭N个协程
+func (w *group) doneN(n int) {
+	if n <= 0 {
+		return
+	}
+	// 先消费 channel 中的信号
+	for i := 0; i < n; i++ {
+		<-w.gc
+	}
 	w.mutex.Lock()
-	w.cap--
+	w.cap -= n
+	if w.cap < 0 {
+		w.cap = 0 // 防止负值
+	}
 	w.mutex.Unlock()
 }
 
@@ -64,7 +78,6 @@ func (w *group) wait() error {
 		default:
 			w.mutex.Lock()
 			if w.cap <= 0 {
-				log.Println("goroutines: wait all  done")
 				w.mutex.Unlock()
 				return nil
 			}
