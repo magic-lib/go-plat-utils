@@ -208,7 +208,8 @@ func getByType(src any) (string, error) {
 				//return "", nil
 			}
 			if cst := conf.TimeLocation(); cst != nil {
-				return oneTime.In(cst).Format(fullTimeForm), nil
+				// 将时间转换为字符串时，如果加了时区，则显示的结果和预期不一致了，所以这里不处理
+				//return oneTime.In(cst).Format(fullTimeForm), nil
 			}
 			return oneTime.Format(fullTimeForm), nil
 		}

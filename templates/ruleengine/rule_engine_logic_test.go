@@ -174,6 +174,20 @@ func TestIfFunction(t *testing.T) {
 	fmt.Println(customList)
 	return
 }
+func TestIfFunction11(t *testing.T) {
+	condTypeCustomVarPattern := `birthday+',' + birthday2`
+	ruleLogic := ruleengine.NewEngineLogic()
+	customList, err := ruleLogic.RunOneRuleString(condTypeCustomVarPattern, map[string]interface{}{
+		"birthday":  "bbbb",
+		"birthday2": "aaaa",
+	})
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(customList)
+	return
+}
 func TestHasFunction(t *testing.T) {
 	condTypeCustomVarPattern := `Has(('K1', 'K2', 'K5'), 'K5')`
 	ruleLogic := ruleengine.NewEngineLogic()

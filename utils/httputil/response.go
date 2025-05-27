@@ -23,6 +23,8 @@ type CommResponse struct {
 type PageModel struct {
 	Count      int64 `json:"count"`                 // 数据总数
 	PageNow    int   `json:"page_now,omitempty"`    // 当前页数
+	PageStart  uint  `json:"page_start,omitempty"`  // 当前开始页数
+	PageEnd    uint  `json:"page_end,omitempty"`    // 当前结束页数
 	PageOffset int   `json:"page_offset,omitempty"` // 当前页面的偏移量
 	PageSize   int   `json:"page_size,omitempty"`   // 每页显示的数目
 	PageTotal  int   `json:"page_total,omitempty"`  // 总页数
