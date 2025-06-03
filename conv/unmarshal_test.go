@@ -26,3 +26,15 @@ func TestUnmarshal(t *testing.T) {
 	err := conv.Unmarshal(aa, dst)
 	fmt.Println(dst, err)
 }
+func TestInt(t *testing.T) {
+	str := "\u0000"
+	num, ok := conv.Int(str)
+
+	fmt.Println(num, ok)
+}
+func TestToString(t *testing.T) {
+	str := []uint8{0}
+	num := conv.String(str)
+
+	fmt.Println(num)
+}

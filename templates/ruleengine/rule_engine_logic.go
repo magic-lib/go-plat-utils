@@ -46,6 +46,8 @@ func NewEngineLogic() *EngineLogic {
 		"In":          ruleLogicFunc.In,
 		"Is":          ruleLogicFunc.Is,
 		"If":          ruleLogicFunc.If,
+		"As":          ruleLogicFunc.As,
+		"Replace":     ruleLogicFunc.Replace,
 	}
 	return ruleLogic
 }

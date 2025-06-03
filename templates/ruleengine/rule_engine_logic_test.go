@@ -174,6 +174,19 @@ func TestIfFunction(t *testing.T) {
 	fmt.Println(customList)
 	return
 }
+func TestAsFunction(t *testing.T) {
+	condTypeCustomVarPattern := `As('int',Replace(is_match_bank_card, '\\u', ''))`
+	ruleLogic := ruleengine.NewEngineLogic()
+	customList, err := ruleLogic.RunOneRuleString(condTypeCustomVarPattern, map[string]interface{}{
+		"is_match_bank_card": "\\u0001",
+	})
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(customList)
+	return
+}
 func TestIfFunction11(t *testing.T) {
 	condTypeCustomVarPattern := `birthday+',' + birthday2`
 	ruleLogic := ruleengine.NewEngineLogic()

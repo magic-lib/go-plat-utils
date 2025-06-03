@@ -7,6 +7,7 @@ import (
 	"github.com/shopspring/decimal"
 	"reflect"
 	"strings"
+	"time"
 )
 
 // customerFunc 自定义方法列表
@@ -153,6 +154,58 @@ func (r *customerFunc) Is(args ...interface{}) (interface{}, error) {
 		return cond.IsTime(conv.String(args[1])), nil
 	}
 	return false, fmt.Errorf("不支持的格式：%s", typeName)
+}
+func (r *customerFunc) As(args ...interface{}) (interface{}, error) {
+	if len(args) <= 1 {
+		return false, fmt.Errorf("参数数量不对：%v", args)
+	}
+	typeName := conv.String(args[0])
+	typeName = strings.ToLower(typeName)
+	if typeName == "nil" {
+		return nil, nil
+	}
+	if typeName == "string" {
+		return conv.String(args[1]), nil
+	}
+	if typeName == "int" {
+		if intTemp, ok := conv.Int(args[1]); ok {
+			return intTemp, nil
+		}
+		return 0, fmt.Errorf("参数不是int类型：%v", args[1])
+	}
+	if typeName == "int64" {
+		if intTemp, ok := conv.Int64(args[1]); ok {
+			return intTemp, nil
+		}
+		return 0, fmt.Errorf("参数不是int64类型：%v", args[1])
+	}
+	if typeName == "bool" {
+		if boolTemp, ok := conv.Bool(args[1]); ok {
+			return boolTemp, nil
+		}
+		return false, fmt.Errorf("参数不是bool类型：%v", args[1])
+	}
+	if typeName == "time" {
+		if timeTemp, ok := conv.Time(args[1]); ok {
+			return timeTemp, nil
+		}
+		return time.Time{}, fmt.Errorf("参数不是time类型：%v", args[1])
+	}
+	return false, fmt.Errorf("不支持的格式：%s", typeName)
+}
+func (r *customerFunc) Replace(args ...interface{}) (interface{}, error) {
+	if len(args) <= 2 {
+		return false, fmt.Errorf("参数数量不对：%v", args)
+	}
+	oldStr := conv.String(args[1])
+	newStr := conv.String(args[2])
+	num := -1
+	if len(args) >= 4 {
+		if numTemp, ok := conv.Int(args[3]); ok {
+			num = numTemp
+		}
+	}
+	return strings.Replace(conv.String(args[0]), oldStr, newStr, num), nil
 }
 
 // If 三元运算符
