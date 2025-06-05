@@ -5,6 +5,7 @@ import (
 	"github.com/magic-lib/go-plat-utils/internal"
 	"github.com/panjf2000/ants/v2"
 	"github.com/timandy/routine"
+	_ "go.uber.org/automaxprocs"
 	"log"
 	"runtime"
 	"strings"
@@ -25,8 +26,8 @@ var (
 	}
 )
 
-// SetDefaultPanicHandle panic的方法
-func SetDefaultPanicHandle(c func(err error, retRecover any)) {
+// SetPanicHandle panic的方法
+func SetPanicHandle(c func(err error, retRecover any)) {
 	if c != nil {
 		defaultAsyncObj.panicMutex.Lock()
 		defer defaultAsyncObj.panicMutex.Unlock()
@@ -115,5 +116,8 @@ func GoAsync(task func(params ...any), params ...any) {
 	}
 	defaultAsyncObj.poolMutex.RLock()
 	defer defaultAsyncObj.poolMutex.RUnlock()
-	defaultAsyncObj.antsPool.Submit(taskFun.Run)
+	err := defaultAsyncObj.antsPool.Submit(taskFun.Run)
+	if err != nil {
+		return
+	}
 }

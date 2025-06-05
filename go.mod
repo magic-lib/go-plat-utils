@@ -55,11 +55,14 @@ require (
 	github.com/tmc/langgraphgo v0.0.0-20240324234251-3b0caeaffd16
 	github.com/zeromicro/go-zero v1.8.1
 	go.mongodb.org/mongo-driver v1.17.3
+	go.uber.org/automaxprocs v1.6.0
 	go.uber.org/ratelimit v0.3.1
 	golang.org/x/crypto v0.36.0
 	golang.org/x/net v0.38.0
 	golang.org/x/sync v0.12.0
 	golang.org/x/time v0.11.0
+	google.golang.org/grpc v1.65.0
+	google.golang.org/protobuf v1.36.5
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -128,7 +131,7 @@ require (
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
-	google.golang.org/protobuf v1.36.5 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect
 	gopkg.in/redis.v5 v5.2.9 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
