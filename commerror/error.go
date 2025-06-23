@@ -17,8 +17,8 @@ type CommError interface {
 }
 
 type commErr struct {
-	code    int    `json:"code"`
-	message string `json:"message"`
+	code    int
+	message string
 }
 
 // Error 错误信息返回，实现error接口
@@ -36,7 +36,7 @@ func (err *commErr) Code() int {
 }
 
 // New 新建错误对象
-func New(msg string, code ...int) *commErr {
+func New(msg string, code ...int) CommError {
 	err := &commErr{
 		code:    conf.DefaultErrorCode,
 		message: msg,
@@ -48,15 +48,12 @@ func New(msg string, code ...int) *commErr {
 }
 
 // Wrap 新增error Code
-func Wrap(err error, code ...int) error {
+func Wrap(err error, code ...int) CommError {
 	if err == nil {
 		return nil
 	}
-	errStr := ""
-	if err != nil {
-		errStr = err.Error()
-	}
-	var tempCode int = conf.DefaultErrorCode
+	errStr := err.Error()
+	var tempCode = conf.DefaultErrorCode
 	var errTemp CommError
 	if errors.As(err, &errTemp) {
 		tempCode = errTemp.Code()
@@ -73,18 +70,16 @@ func GrpcError(code codes.Code, msg string, details ...CommError) error {
 	codesCode := codes.Internal
 	codesMsg := codesCode.String()
 	//系统默认的值，msg不能进行改变
-	if code >= codes.OK &&
-		code <= codes.Unauthenticated {
+	if code <= codes.Unauthenticated {
 		codesCode = code
-		codesMsg = codesCode.String()
+		codesMsg = code.String()
 	} else {
 		// 自定义的值
 		oneError := New(msg, int(code))
 		if len(details) == 0 {
-			details = []CommError{oneError}
-		} else {
-			details = append(details, oneError)
+			details = []CommError{}
 		}
+		details = append(details, oneError)
 	}
 	if len(details) == 0 {
 		return status.Error(codesCode, codesMsg)
