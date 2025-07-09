@@ -136,15 +136,14 @@ func Template(format string, data interface{}, delis ...string) (string, error) 
 	}
 	var doc bytes.Buffer
 	err = templateIns.Execute(&doc, data)
+	docStr := doc.String()
 	if err == nil {
 		// 如果没有值也不会报错，所以这里需要处理一下
-		docStr := doc.String()
 		HasNoValueIndex := strings.Index(docStr, "<no value>")
 		if HasNoValueIndex < 0 {
 			return docStr, nil
 		}
 		return docStr, fmt.Errorf("模板有未覆盖的变量")
 	}
-
-	return doc.String(), err
+	return docStr, err
 }
