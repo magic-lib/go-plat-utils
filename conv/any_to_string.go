@@ -7,6 +7,7 @@ import (
 	"github.com/magic-lib/go-plat-utils/conf"
 	jsoniterForNil "github.com/magic-lib/go-plat-utils/internal/jsoniter/go"
 	"github.com/samber/lo"
+	"github.com/spf13/cast"
 	"math"
 	"reflect"
 	"regexp"
@@ -79,6 +80,10 @@ func String(src any) string {
 	}
 
 	retStr, err = getByCopy(src) //concurrent map read and map write
+	if err == nil {
+		return retStr
+	}
+	retStr, err = cast.ToStringE(src)
 	if err == nil {
 		return retStr
 	}
