@@ -63,7 +63,7 @@ func TestCheckRuleList(t *testing.T) {
 		},
 		{
 			Key:        "5",
-			RuleString: "RULE_1 && (RULE_4 > 45 || RULE_4 > 30) && MulByNumber(age1, age2) > 23",
+			RuleString: "RULE_1 && (RULE_4 > 45 || RULE_4 > 30) && Mul(age1, age2) > 23",
 		},
 	}
 	ruleEngine := ruleengine.NewEngineLogic()
@@ -75,7 +75,7 @@ func TestCheckRuleList(t *testing.T) {
 	})
 	fmt.Println(ok, err)
 
-	result, err := ruleEngine.RunOneRuleString("5 + MulByNumber(age1,AddByNumber(age1, age2))", map[string]interface{}{
+	result, err := ruleEngine.RunOneRuleString("5 + Mul(age1,Add(age1, age2))", map[string]interface{}{
 		"age1": 0.1,
 		"age2": 0.2,
 	})
@@ -92,7 +92,7 @@ func TestCheckRuleList(t *testing.T) {
 		},
 		{
 			Key:        "5",
-			RuleString: "MulByNumber(age1, age2) > 23",
+			RuleString: "Mul(age1, age2) > 23",
 		},
 	}
 
