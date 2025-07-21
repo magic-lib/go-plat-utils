@@ -14,7 +14,7 @@ import (
 type customerFunc struct {
 }
 
-func (r *customerFunc) getAllDecimalList(args ...interface{}) []decimal.Decimal {
+func (r *customerFunc) getAllDecimalList(args ...any) []decimal.Decimal {
 	decimalList := make([]decimal.Decimal, 0)
 	for _, arg := range args {
 		var d decimal.Decimal
@@ -44,7 +44,7 @@ func (r *customerFunc) getAllDecimalList(args ...interface{}) []decimal.Decimal 
 }
 
 // relationByNumber 两数相互运算
-func (r *customerFunc) relationByNumber(f func(d1 decimal.Decimal, d2 decimal.Decimal) decimal.Decimal, args ...interface{}) float64 {
+func (r *customerFunc) relationByNumber(f func(d1 decimal.Decimal, d2 decimal.Decimal) decimal.Decimal, args ...any) float64 {
 	decimalList := r.getAllDecimalList(args...)
 	if len(decimalList) == 0 {
 		return 0
@@ -57,40 +57,39 @@ func (r *customerFunc) relationByNumber(f func(d1 decimal.Decimal, d2 decimal.De
 		}
 		total = f(total, d)
 	}
-	ret, _ := total.Float64()
-	return ret
+	return total.InexactFloat64()
 }
 
 // Add 两数相加
-func (r *customerFunc) Add(args ...interface{}) (interface{}, error) {
+func (r *customerFunc) Add(args ...any) (any, error) {
 	return r.relationByNumber(func(d1 decimal.Decimal, d2 decimal.Decimal) decimal.Decimal {
 		return d1.Add(d2)
 	}, args...), nil
 }
 
 // Sub 两数相减
-func (r *customerFunc) Sub(args ...interface{}) (interface{}, error) {
+func (r *customerFunc) Sub(args ...any) (any, error) {
 	return r.relationByNumber(func(d1 decimal.Decimal, d2 decimal.Decimal) decimal.Decimal {
 		return d1.Sub(d2)
 	}, args...), nil
 }
 
 // Mul 两数相乘
-func (r *customerFunc) Mul(args ...interface{}) (interface{}, error) {
+func (r *customerFunc) Mul(args ...any) (any, error) {
 	return r.relationByNumber(func(d1 decimal.Decimal, d2 decimal.Decimal) decimal.Decimal {
 		return d1.Mul(d2)
 	}, args...), nil
 }
 
 // Div 两数相除
-func (r *customerFunc) Div(args ...interface{}) (interface{}, error) {
+func (r *customerFunc) Div(args ...any) (any, error) {
 	return r.relationByNumber(func(d1 decimal.Decimal, d2 decimal.Decimal) decimal.Decimal {
 		return d1.Div(d2)
 	}, args...), nil
 }
 
 // Has 数组是否包含某元素
-func (r *customerFunc) Has(args ...interface{}) (interface{}, error) {
+func (r *customerFunc) Has(args ...any) (any, error) {
 	if len(args) != 2 {
 		if len(args) == 1 {
 			return false, nil
@@ -127,7 +126,7 @@ func (r *customerFunc) Has(args ...interface{}) (interface{}, error) {
 }
 
 // In 是否存在某数组中
-func (r *customerFunc) In(args ...interface{}) (interface{}, error) {
+func (r *customerFunc) In(args ...any) (any, error) {
 	if len(args) != 2 {
 		return false, fmt.Errorf("参数数量不对：%v", args)
 	}
@@ -135,7 +134,7 @@ func (r *customerFunc) In(args ...interface{}) (interface{}, error) {
 }
 
 // Is 是否是某一个类型
-func (r *customerFunc) Is(args ...interface{}) (interface{}, error) {
+func (r *customerFunc) Is(args ...any) (any, error) {
 	if len(args) <= 1 {
 		return false, fmt.Errorf("参数数量不对：%v", args)
 	}
@@ -155,7 +154,7 @@ func (r *customerFunc) Is(args ...interface{}) (interface{}, error) {
 	}
 	return false, fmt.Errorf("不支持的格式：%s", typeName)
 }
-func (r *customerFunc) As(args ...interface{}) (interface{}, error) {
+func (r *customerFunc) As(args ...any) (any, error) {
 	if len(args) <= 1 {
 		return false, fmt.Errorf("参数数量不对：%v", args)
 	}
@@ -193,7 +192,7 @@ func (r *customerFunc) As(args ...interface{}) (interface{}, error) {
 	}
 	return false, fmt.Errorf("不支持的格式：%s", typeName)
 }
-func (r *customerFunc) Replace(args ...interface{}) (interface{}, error) {
+func (r *customerFunc) Replace(args ...any) (any, error) {
 	if len(args) <= 2 {
 		return false, fmt.Errorf("参数数量不对：%v", args)
 	}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	govaluate "github.com/magic-lib/go-plat-utils/internal/govaluate-3.0.0"
 	"github.com/magic-lib/go-plat-utils/utils"
+	"github.com/shopspring/decimal"
 	"strings"
 	"sync"
 )
@@ -35,7 +36,7 @@ func NewEngineLogic() *EngineLogic {
 	ruleLogic := &EngineLogic{
 		retRulePrefix: defaultRulePrefix,
 	}
-	ruleLogicFunc := &customerFunc{}
+	ruleLogicFunc := new(customerFunc)
 	// 内置方法
 	ruleLogic.functions = map[string]govaluate.ExpressionFunction{
 		"Add":     ruleLogicFunc.Add,
@@ -52,12 +53,22 @@ func NewEngineLogic() *EngineLogic {
 	return ruleLogic
 }
 
-// SetRetRulePrefix 设置返回值的key前缀
-func (r *EngineLogic) SetRetRulePrefix(prefix string) *EngineLogic {
+// WithRetRulePrefix 设置返回值的key前缀
+func (r *EngineLogic) WithRetRulePrefix(prefix string) *EngineLogic {
 	if prefix == "" {
 		prefix = defaultRulePrefix
 	}
 	r.retRulePrefix = prefix
+	return r
+}
+
+// WithDelimiter 设置变量包裹字符串
+func (r *EngineLogic) WithDelimiter(pre, after string) *EngineLogic {
+	if pre == "" || after == "" {
+		return r
+	}
+	r.preString = pre
+	r.afterString = after
 	return r
 }
 
@@ -78,16 +89,6 @@ func (r *EngineLogic) SetCustomerFunctions(functions map[string]govaluate.Expres
 		return fmt.Errorf("自定义函数有重复的key: %v", repeatKeyList)
 	}
 	return nil
-}
-
-// SetDelimitedString 设置变量包裹字符串
-func (r *EngineLogic) SetDelimitedString(pre, after string) *EngineLogic {
-	if pre == "" || after == "" {
-		return r
-	}
-	r.preString = pre
-	r.afterString = after
-	return r
 }
 
 func (r *EngineLogic) getExpressionByRuleString(ruleString string) (*govaluate.EvaluableExpression, error) {
@@ -122,7 +123,7 @@ func (r *EngineLogic) replaceRuleString(ruleString string) string {
 }
 
 // runOneRuleString 一个规则进行判断
-func (r *EngineLogic) runOneRuleString(ruleString string, parameters map[string]interface{}) (interface{}, error) {
+func (r *EngineLogic) runOneRuleString(ruleString string, parameters map[string]any) (any, error) {
 	ruleString = r.replaceRuleString(ruleString)
 
 	expression, err := r.getExpressionByRuleString(ruleString)
@@ -130,8 +131,26 @@ func (r *EngineLogic) runOneRuleString(ruleString string, parameters map[string]
 	if err != nil {
 		return nil, err
 	}
+	//需要对parameters里的Decimal类型特殊处理
+	parameters = r.convertParameters(parameters)
 
 	return expression.Evaluate(parameters)
+}
+func (r *EngineLogic) convertParameters(parameters map[string]any) map[string]any {
+	newParameters := make(map[string]any)
+	for key, val := range parameters {
+		if valDecimal, ok := val.(decimal.Decimal); ok {
+			valDecimal.CoefficientInt64()
+			if valDecimal.IsInteger() {
+				newParameters[key] = valDecimal.CoefficientInt64()
+				continue
+			}
+			newParameters[key] = valDecimal.InexactFloat64()
+			continue
+		}
+		newParameters[key] = val
+	}
+	return newParameters
 }
 
 func (r *EngineLogic) getRetValueKey(key string) string {
@@ -143,15 +162,47 @@ func (r *EngineLogic) Vars(ruleString string) ([]string, error) {
 	if ruleString == "" {
 		return []string{}, nil
 	}
+	ruleString = r.replaceRuleString(ruleString)
+
 	exp, err := r.getExpressionByRuleString(ruleString)
 	if err != nil {
 		return nil, err
 	}
-	return exp.Vars(), nil
+
+	var varList []string
+	for _, val := range exp.Tokens() {
+		if val.Kind == govaluate.VARIABLE {
+			//oneVarList := r.varCheckList(val.Value.(string))
+			//需要判断是否是字符串值，如果是，则需要跳过
+			varList = utils.AppendUniq(varList, val.Value.(string))
+		}
+	}
+	return varList, nil
 }
 
-// RunOneRuleString 一个规则，返回所有规则的结果
-func (r *EngineLogic) RunOneRuleString(ruleString string, parameters map[string]interface{}) (interface{}, error) {
+//func (r *EngineLogic) varCheckList(varString string) []string {
+//	varString = strings.TrimSpace(varString)
+//	//不包含"和'
+//	if !(strings.HasPrefix(varString, "\"") || strings.HasPrefix(varString, "'")) {
+//		return []string{varString}
+//	}
+//	//如果是单个字符串，而不是变量，则返回空
+//	oneVar := regexp.MustCompile(`^('([^']+)')$|^("([^"]+)")$`)
+//	isOneStr := oneVar.MatchString(varString)
+//	if isOneStr {
+//		return []string{}
+//	}
+//	varList := strings.Split(varString, ",")
+//	allVarList := make([]string, 0)
+//	for _, val := range varList {
+//		oneVarList := r.varCheckList(val)
+//		allVarList = append(allVarList, oneVarList...)
+//	}
+//	return allVarList
+//}
+
+// RunString 一个规则，返回规则的结果
+func (r *EngineLogic) RunString(ruleString string, parameters map[string]any) (any, error) {
 	if ruleString == "" {
 		return nil, nil
 	}
@@ -163,7 +214,7 @@ func (r *EngineLogic) RunOneRuleString(ruleString string, parameters map[string]
 }
 
 // RunRuleList 一个规则组列表，返回所有规则的结果
-func (r *EngineLogic) RunRuleList(ruleList []*RuleInfo, allData map[string]interface{}) (map[string]interface{}, error) {
+func (r *EngineLogic) RunRuleList(ruleList []*RuleInfo, allData map[string]any) (map[string]any, error) {
 	if len(ruleList) == 0 {
 		return allData, nil
 	}
@@ -172,13 +223,14 @@ func (r *EngineLogic) RunRuleList(ruleList []*RuleInfo, allData map[string]inter
 		if err != nil {
 			return allData, err
 		}
-		allData[r.getRetValueKey(rule.Key)] = retVal
+		retKey := r.getRetValueKey(rule.Key)
+		allData[retKey] = retVal
 	}
 	return allData, nil
 }
 
-// CheckLastRuleByList 一个规则组列表，返回最后一条的结果，最后一条必须返回 true or false
-func (r *EngineLogic) CheckLastRuleByList(ruleList []*RuleInfo, allData map[string]interface{}) (bool, error) {
+// CheckLastRuleList 一个规则组列表，返回最后一条的结果，最后一条必须返回 true or false
+func (r *EngineLogic) CheckLastRuleList(ruleList []*RuleInfo, allData map[string]any) (bool, error) {
 	if len(ruleList) == 0 {
 		return true, nil
 	}
@@ -198,7 +250,7 @@ func (r *EngineLogic) CheckLastRuleByList(ruleList []*RuleInfo, allData map[stri
 }
 
 // CheckAllRuleList 一个规则组列表，通过 operator 将所有Rule连起来，返回结果
-func (r *EngineLogic) CheckAllRuleList(ruleList []*RuleInfo, operator string, allData map[string]interface{}) (bool, error) {
+func (r *EngineLogic) CheckAllRuleList(ruleList []*RuleInfo, operator string, allData map[string]any) (bool, error) {
 	if len(ruleList) == 0 {
 		return true, nil
 	}
@@ -228,7 +280,7 @@ func (r *EngineLogic) CheckAllRuleList(ruleList []*RuleInfo, operator string, al
 	}
 
 	checkRuleString := fmt.Sprintf("(%s)", strings.Join(checkRuleList, fmt.Sprintf(" %s ", operator)))
-	retVal, err := r.RunOneRuleString(checkRuleString, allRetData)
+	retVal, err := r.RunString(checkRuleString, allRetData)
 	if err != nil {
 		return false, err
 	}

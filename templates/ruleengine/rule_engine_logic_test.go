@@ -10,23 +10,24 @@ import (
 )
 
 func TestCheckOneRule(t *testing.T) {
-	dataMap := map[string]interface{}{
+	dataMap := map[string]any{
 		"name": "jacky",
 		"age":  decimal.NewFromInt(20),
+		//"age": 20,
 	}
 
 	rule := "age>18"
 
 	ruleEngine := ruleengine.NewEngineLogic()
-	ok, err := ruleEngine.RunOneRuleString(rule, dataMap)
+	ok, err := ruleEngine.RunString(rule, dataMap)
 	fmt.Println(ok, err)
 }
 
 func TestCheckOneRule22(t *testing.T) {
 	ruleEngine := ruleengine.NewEngineLogic()
-	ruleEngine.SetDelimitedString("{{", "}}")
+	ruleEngine.WithDelimiter("{{", "}}")
 
-	kk, err := ruleEngine.Vars("age1 + age2")
+	kk, err := ruleEngine.Vars("{{age1}} + {{age2}}")
 
 	fmt.Println(kk, err)
 
@@ -37,14 +38,18 @@ func TestCheckOneRule33(t *testing.T) {
 	fmt.Println(f1 + f2)
 	fmt.Println(f1)
 	fmt.Println(f2)
+
+	ruleEngine := ruleengine.NewEngineLogic()
+	ok, err := ruleEngine.RunString("Add(f1, f2)", map[string]any{
+		"f1": f1,
+		"f2": f2,
+	})
+
+	fmt.Println(ok, err)
 }
 
 // TestCheckRuleList 判断规则是否满足条件
 func TestCheckRuleList(t *testing.T) {
-	var f1 float64 = 0.1
-	var f2 float64 = 0.2
-	fmt.Println(f1 > f2)
-
 	d1 := decimal.NewFromFloat(0.1)
 	d2 := decimal.NewFromFloat(0.2)
 	// 进行加法运算
@@ -67,15 +72,15 @@ func TestCheckRuleList(t *testing.T) {
 		},
 	}
 	ruleEngine := ruleengine.NewEngineLogic()
-	ruleEngine.SetRetRulePrefix("RULE_")
-	ok, err := ruleEngine.CheckLastRuleByList(ruleList, map[string]interface{}{
+	ruleEngine.WithRetRulePrefix("RULE_")
+	ok, err := ruleEngine.CheckLastRuleList(ruleList, map[string]any{
 		"name": "jack",
 		"age1": 24,
 		"age2": 20,
 	})
 	fmt.Println(ok, err)
 
-	result, err := ruleEngine.RunOneRuleString("5 + Mul(age1,Add(age1, age2))", map[string]interface{}{
+	result, err := ruleEngine.RunString("5 + Mul(age1,Add(age1, age2))", map[string]any{
 		"age1": 0.1,
 		"age2": 0.2,
 	})
@@ -88,7 +93,7 @@ func TestCheckRuleList(t *testing.T) {
 		},
 		{
 			Key:        "2",
-			RuleString: "name",
+			RuleString: "name=='aa'",
 		},
 		{
 			Key:        "5",
@@ -96,7 +101,7 @@ func TestCheckRuleList(t *testing.T) {
 		},
 	}
 
-	ok, err = ruleEngine.CheckAllRuleList(ruleList, "&&", map[string]interface{}{
+	ok, err = ruleEngine.CheckAllRuleList(ruleList, "&&", map[string]any{
 		"name": "jack",
 		"age1": 24,
 		"age2": 20,
@@ -123,7 +128,14 @@ func TestCheckRuleList1(t *testing.T) {
 	return
 }
 func TestCheckRuleVars(t *testing.T) {
-	condTypeCustomVarPattern := `((Has(MEMBER_TAGS, 'M6') && Has(MEMBER_TAGS, 'Y') && Has(MEMBER_TAGS, 'K1') && In(M6_MEMBER_COMPANY_NO, ['M6-002','M6-004','M6-005','M6-006','M6-007','M6-009','M6-010']) && true))`
+	aa := `'aaa'`
+
+	one := regexp.MustCompile(`('([^']+)')|("([^"]+)")`)
+	is := one.MatchString(aa)
+
+	fmt.Println(is)
+
+	condTypeCustomVarPattern := `((In(MEMBER_TAGS, ('M6')) && In(MEMBER_TAGS, ('Y',"N")) && Has(MEMBER_TAGS, 'K1') && In(M6_MEMBER_COMPANY_NO, ('M6-002','M6-004','M6-005','M6-006',MM,'M6-007','M6-009','M6-010')) && true))`
 	ruleLogic := ruleengine.NewEngineLogic()
 	customList, err := ruleLogic.Vars(condTypeCustomVarPattern)
 	if err != nil {
@@ -143,7 +155,7 @@ func TestFunction(t *testing.T) {
 	condTypeCustomVarPattern := "If(Is('nil',birthday),\"1000-01-01 00:00:00\",birthday)"
 	//condTypeCustomVarPattern = `Has(Names, 'K5')`
 	ruleLogic := ruleengine.NewEngineLogic()
-	customList, err := ruleLogic.RunOneRuleString(condTypeCustomVarPattern, map[string]interface{}{
+	customList, err := ruleLogic.RunString(condTypeCustomVarPattern, map[string]any{
 		"Names": []string{
 			"K1",
 			"K2",
@@ -164,7 +176,7 @@ func TestFunction(t *testing.T) {
 func TestIfFunction(t *testing.T) {
 	condTypeCustomVarPattern := `If(true,'1000-01-01 00:00:00',birthday)`
 	ruleLogic := ruleengine.NewEngineLogic()
-	customList, err := ruleLogic.RunOneRuleString(condTypeCustomVarPattern, map[string]interface{}{
+	customList, err := ruleLogic.RunString(condTypeCustomVarPattern, map[string]any{
 		"birthday": nil,
 	})
 	if err != nil {
@@ -177,7 +189,7 @@ func TestIfFunction(t *testing.T) {
 func TestAsFunction(t *testing.T) {
 	condTypeCustomVarPattern := `As('int',Replace(is_match_bank_card, '\\u', ''))`
 	ruleLogic := ruleengine.NewEngineLogic()
-	customList, err := ruleLogic.RunOneRuleString(condTypeCustomVarPattern, map[string]interface{}{
+	customList, err := ruleLogic.RunString(condTypeCustomVarPattern, map[string]any{
 		"is_match_bank_card": "\\u0001",
 	})
 	if err != nil {
@@ -190,7 +202,7 @@ func TestAsFunction(t *testing.T) {
 func TestIfFunction11(t *testing.T) {
 	condTypeCustomVarPattern := `birthday+',' + birthday2`
 	ruleLogic := ruleengine.NewEngineLogic()
-	customList, err := ruleLogic.RunOneRuleString(condTypeCustomVarPattern, map[string]interface{}{
+	customList, err := ruleLogic.RunString(condTypeCustomVarPattern, map[string]any{
 		"birthday":  "bbbb",
 		"birthday2": "aaaa",
 	})
@@ -204,7 +216,7 @@ func TestIfFunction11(t *testing.T) {
 func TestHasFunction(t *testing.T) {
 	condTypeCustomVarPattern := `Has(('K1', 'K2', 'K5'), 'K5')`
 	ruleLogic := ruleengine.NewEngineLogic()
-	customList, err := ruleLogic.RunOneRuleString(condTypeCustomVarPattern, map[string]interface{}{
+	customList, err := ruleLogic.RunString(condTypeCustomVarPattern, map[string]any{
 		"Names": []string{
 			"K1",
 			"K2",
@@ -222,19 +234,19 @@ func TestHasFunction(t *testing.T) {
 	return
 }
 func TestCheckInAndHas(t *testing.T) {
-	//condTypeCustomVarPattern := `In(M6_MEMBER_COMPANY_NO, ('M6-002','M6-004','M6-005','M6-006','M6-007','M6-009','M6-010'))`
-	//ruleLogic := ruleengine.NewEngineLogic()
-	//customList, err := ruleLogic.RunOneRuleString(condTypeCustomVarPattern, map[string]interface{}{
-	//	"M6_MEMBER_COMPANY_NO": "M6-006",
-	//})
-	//if err != nil {
-	//	return
-	//}
-	//fmt.Println(customList)
+	condTypeCustomVarPattern := `In(M6_MEMBER_COMPANY_NO, ('M6-002','M6-004','M6-005','M6-006','M6-007','M6-009','M6-010'))`
+	ruleLogic := ruleengine.NewEngineLogic()
+	customList, err := ruleLogic.RunString(condTypeCustomVarPattern, map[string]any{
+		"M6_MEMBER_COMPANY_NO": "M6-010",
+	})
+	if err != nil {
+		return
+	}
+	fmt.Println(customList)
 
 	//condTypeCustomVarPattern := `Has(('M6-002','M6-004','M6-005','M6-006','M6-007','M6-009','M6-010'), M6_MEMBER_COMPANY_NO)`
 	//ruleLogic := ruleengine.NewEngineLogic()
-	//customList, err := ruleLogic.RunOneRuleString(condTypeCustomVarPattern, map[string]interface{}{
+	//customList, err := ruleLogic.RunOneRuleString(condTypeCustomVarPattern, map[string]any{
 	//	"M6_MEMBER_COMPANY_NO": "M6-006",
 	//})
 	//if err != nil {
@@ -242,9 +254,9 @@ func TestCheckInAndHas(t *testing.T) {
 	//}
 	//fmt.Println(customList)
 
-	condTypeCustomVarPattern := `Has(M6_MEMBER_COMPANY_NO_LIST, "M6-006")`
-	ruleLogic := ruleengine.NewEngineLogic()
-	customList, err := ruleLogic.RunOneRuleString(condTypeCustomVarPattern, map[string]interface{}{
+	condTypeCustomVarPattern = `Has(M6_MEMBER_COMPANY_NO_LIST, "M6-006")`
+	ruleLogic = ruleengine.NewEngineLogic()
+	customList, err = ruleLogic.RunString(condTypeCustomVarPattern, map[string]any{
 		"M6_MEMBER_COMPANY_NO": "M6-006",
 		"M6_MEMBER_COMPANY_NO_LIST": []string{
 			"M6-006",
