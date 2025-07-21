@@ -38,16 +38,16 @@ func NewEngineLogic() *EngineLogic {
 	ruleLogicFunc := &customerFunc{}
 	// 内置方法
 	ruleLogic.functions = map[string]govaluate.ExpressionFunction{
-		"AddByNumber": ruleLogicFunc.AddByNumber,
-		"SubByNumber": ruleLogicFunc.SubByNumber,
-		"MulByNumber": ruleLogicFunc.MulByNumber,
-		"DivByNumber": ruleLogicFunc.DivByNumber,
-		"Has":         ruleLogicFunc.Has,
-		"In":          ruleLogicFunc.In,
-		"Is":          ruleLogicFunc.Is,
-		"If":          ruleLogicFunc.If,
-		"As":          ruleLogicFunc.As,
-		"Replace":     ruleLogicFunc.Replace,
+		"Add":     ruleLogicFunc.Add,
+		"Sub":     ruleLogicFunc.Sub,
+		"Mul":     ruleLogicFunc.Mul,
+		"Div":     ruleLogicFunc.Div,
+		"Has":     ruleLogicFunc.Has,
+		"In":      ruleLogicFunc.In,
+		"Is":      ruleLogicFunc.Is,
+		"If":      ruleLogicFunc.If,
+		"As":      ruleLogicFunc.As,
+		"Replace": ruleLogicFunc.Replace,
 	}
 	return ruleLogic
 }

@@ -43,7 +43,7 @@ func (r *customerFunc) getAllDecimalList(args ...interface{}) []decimal.Decimal 
 	return decimalList
 }
 
-// relationByNumber 两数相加
+// relationByNumber 两数相互运算
 func (r *customerFunc) relationByNumber(f func(d1 decimal.Decimal, d2 decimal.Decimal) decimal.Decimal, args ...interface{}) float64 {
 	decimalList := r.getAllDecimalList(args...)
 	if len(decimalList) == 0 {
@@ -61,29 +61,29 @@ func (r *customerFunc) relationByNumber(f func(d1 decimal.Decimal, d2 decimal.De
 	return ret
 }
 
-// AddByNumber 两数相加
-func (r *customerFunc) AddByNumber(args ...interface{}) (interface{}, error) {
+// Add 两数相加
+func (r *customerFunc) Add(args ...interface{}) (interface{}, error) {
 	return r.relationByNumber(func(d1 decimal.Decimal, d2 decimal.Decimal) decimal.Decimal {
 		return d1.Add(d2)
 	}, args...), nil
 }
 
-// SubByNumber 两数相减
-func (r *customerFunc) SubByNumber(args ...interface{}) (interface{}, error) {
+// Sub 两数相减
+func (r *customerFunc) Sub(args ...interface{}) (interface{}, error) {
 	return r.relationByNumber(func(d1 decimal.Decimal, d2 decimal.Decimal) decimal.Decimal {
 		return d1.Sub(d2)
 	}, args...), nil
 }
 
-// MulByNumber 两数相乘
-func (r *customerFunc) MulByNumber(args ...interface{}) (interface{}, error) {
+// Mul 两数相乘
+func (r *customerFunc) Mul(args ...interface{}) (interface{}, error) {
 	return r.relationByNumber(func(d1 decimal.Decimal, d2 decimal.Decimal) decimal.Decimal {
 		return d1.Mul(d2)
 	}, args...), nil
 }
 
-// DivByNumber 两数相除
-func (r *customerFunc) DivByNumber(args ...interface{}) (interface{}, error) {
+// Div 两数相除
+func (r *customerFunc) Div(args ...interface{}) (interface{}, error) {
 	return r.relationByNumber(func(d1 decimal.Decimal, d2 decimal.Decimal) decimal.Decimal {
 		return d1.Div(d2)
 	}, args...), nil
