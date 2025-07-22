@@ -49,6 +49,7 @@ func NewEngineLogic() *EngineLogic {
 		"If":      ruleLogicFunc.If,
 		"As":      ruleLogicFunc.As,
 		"Replace": ruleLogicFunc.Replace,
+		"Split":   ruleLogicFunc.Split,
 	}
 	return ruleLogic
 }

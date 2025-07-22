@@ -38,3 +38,12 @@ func IsZero(val any) bool {
 
 	return reflect.ValueOf(val).IsZero()
 }
+
+// IsPointer 判断是否是指针类型
+func IsPointer(val any) bool {
+	if val == nil {
+		return false // nil没有类型，不算指针
+	}
+	// 获取值的类型并判断其Kind是否为指针
+	return reflect.TypeOf(val).Kind() == reflect.Ptr
+}

@@ -20,6 +20,7 @@ require (
 	github.com/gomodule/redigo v1.9.2
 	github.com/google/gofuzz v1.2.0
 	github.com/google/uuid v1.6.0
+	github.com/gorilla/rpc v1.2.1
 	github.com/gorilla/securecookie v1.1.2
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/iancoleman/orderedmap v0.3.0
@@ -47,6 +48,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/soniah/evaler v2.2.0+incompatible
 	github.com/sony/sonyflake v1.2.0
+	github.com/spf13/cast v1.3.1
 	github.com/stretchr/testify v1.10.0
 	github.com/tidwall/gjson v1.18.0
 	github.com/tidwall/sjson v1.2.5

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/cond"
 	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/utils"
+	"github.com/samber/lo"
 	"github.com/shopspring/decimal"
 	"reflect"
 	"strings"
@@ -205,6 +207,16 @@ func (r *customerFunc) Replace(args ...any) (any, error) {
 		}
 	}
 	return strings.Replace(conv.String(args[0]), oldStr, newStr, num), nil
+}
+func (r *customerFunc) Split(args ...any) (any, error) {
+	if len(args) < 2 {
+		return false, fmt.Errorf("参数数量不对：%v", args)
+	}
+	splitArr := make([]string, 0)
+	lo.ForEach(args[1:], func(item any, _ int) {
+		splitArr = append(splitArr, conv.String(item))
+	})
+	return utils.Split(conv.String(args[0]), splitArr), nil
 }
 
 // If 三元运算符
