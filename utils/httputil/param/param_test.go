@@ -89,7 +89,7 @@ func TestParse(t *testing.T) {
 	}).SetValidatorCustomErrorMessages(map[string]string{
 		"aaaa":               "dddd",
 		"AAA.Name2.required": "aaaaaajkjkjk",
-	}).Parse(req, aaa)
+	}, nil).Parse(req, aaa)
 
 	fmt.Println(aaa, err)
 }

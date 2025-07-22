@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 type foo struct {
@@ -286,29 +287,32 @@ func TestRingArray(t *testing.T) {
 	nt := func(this *OneData, last *OneData) bool {
 		return this.Name > last.Name
 	}
+	key := func(this *OneData) int64 {
+		return this.Id
+	}
 
-	one := utils.NextByRing[*OneData](vsList, &OneData{
+	one := utils.NextByRing[int64, *OneData](vsList, &OneData{
 		Id:   22,
 		Name: "admin",
-	}, nt)
+	}, key, nt)
 	fmt.Println(one.Id)
-	one = utils.NextByRing[*OneData](vsList, &OneData{
+	one = utils.NextByRing[int64, *OneData](vsList, &OneData{
 		Id:   23,
 		Name: "john_do11e",
-	}, nt)
+	}, key, nt)
 	fmt.Println(one.Id)
-	one = utils.NextByRing[*OneData](vsList, &OneData{
+	one = utils.NextByRing[int64, *OneData](vsList, &OneData{
 		Id:   25,
 		Name: "john_do1125555e",
-	}, nt)
+	}, key, nt)
 	fmt.Println(one.Id)
-	one = utils.NextByRing[*OneData](vsList, &OneData{
+	one = utils.NextByRing[int64, *OneData](vsList, &OneData{
 		Id: 36,
-	}, nt)
+	}, key, nt)
 	fmt.Println(one.Id)
-	one = utils.NextByRing[*OneData](vsList, &OneData{
+	one = utils.NextByRing[int64, *OneData](vsList, &OneData{
 		Id: 37,
-	}, nt)
+	}, key, nt)
 	fmt.Println(one.Id)
 	//one = utils.NextByRing[*OneData](vsList, &OneData{
 	//	Id: 10,
@@ -330,5 +334,74 @@ func TestRingArray(t *testing.T) {
 	//fmt.Println(one.Id)
 	//one = utils.NextByRing[*OneData](vsList, one, nt)
 	//fmt.Println(one.Id)
+
+}
+
+func TestRingArray2(t *testing.T) {
+
+	nums := []int{3, 1, 5, 2}
+	nt := func(this, last int) bool {
+		return this > last
+	}
+	key := func(this int) int {
+		return this
+	}
+
+	fmt.Println(utils.NextByRing[int, int](nums, 2, key, nt)) // 输出：3（2的下一个更大元素是3）
+	fmt.Println(utils.NextByRing[int, int](nums, 4, key, nt))
+	fmt.Println(utils.NextByRing[int, int](nums, 5, key, nt))
+	fmt.Println(utils.NextByRing[int, int](nums, 0, key, nt))
+
+	return
+}
+func TestRingArray1(t *testing.T) {
+	vsList := make([]*OneData, 0)
+	vsList = append(vsList, &OneData{
+		Id:   22,
+		Name: "admin",
+	})
+	vsList = append(vsList, &OneData{
+		Id:   23,
+		Name: "john_do11e",
+	})
+	vsList = append(vsList, &OneData{
+		Id:   25,
+		Name: "john_do1125555e",
+	})
+	vsList = append(vsList, &OneData{
+		Id:   36,
+		Name: "john_do112e",
+	})
+	vsList = append(vsList, &OneData{
+		Id:   37,
+		Name: "12234",
+	})
+
+	nt := func(this *OneData, last *OneData) bool {
+		return this.Id > last.Id
+	}
+	key := func(this *OneData) int64 {
+		return this.Id
+	}
+
+	userMap := make(map[int64]int)
+	lastOne := &OneData{
+		Id:   23,
+		Name: "john_do11e",
+	}
+	for i := 0; i < 113; i++ {
+		one := utils.NextByRing[int64, *OneData](vsList, lastOne, key, nt)
+		if _, ok := userMap[one.Id]; ok {
+			userMap[one.Id] = userMap[one.Id] + 1
+		} else {
+			userMap[one.Id] = 1
+		}
+		if i == 50 {
+			vsList = append(vsList[:2], vsList[3:]...)
+		}
+		lastOne = one
+		fmt.Println(userMap)
+		time.Sleep(500 * time.Millisecond)
+	}
 
 }

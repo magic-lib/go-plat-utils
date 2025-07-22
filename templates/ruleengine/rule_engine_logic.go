@@ -2,6 +2,7 @@ package ruleengine
 
 import (
 	"fmt"
+	"github.com/magic-lib/go-plat-utils/conv"
 	govaluate "github.com/magic-lib/go-plat-utils/internal/govaluate-3.0.0"
 	"github.com/magic-lib/go-plat-utils/utils"
 	"github.com/shopspring/decimal"
@@ -49,6 +50,7 @@ func NewEngineLogic() *EngineLogic {
 		"If":      ruleLogicFunc.If,
 		"As":      ruleLogicFunc.As,
 		"Replace": ruleLogicFunc.Replace,
+		"Split":   ruleLogicFunc.Split,
 	}
 	return ruleLogic
 }
@@ -211,6 +213,29 @@ func (r *EngineLogic) RunString(ruleString string, parameters map[string]any) (a
 		return nil, err
 	}
 	return retVal, nil
+}
+
+// RunStringAny 一个规则，返回规则的结果
+func (r *EngineLogic) RunStringAny(ruleString string, parameters any) (any, error) {
+	if ruleString == "" {
+		return nil, nil
+	}
+	if parameters == nil {
+		return nil, fmt.Errorf("input nil")
+	}
+	var parameterMap map[string]any
+
+	if parameterMapTemp, ok := parameters.(map[string]any); ok {
+		parameterMap = parameterMapTemp
+	} else {
+		parameterMap = make(map[string]any)
+		err := conv.Unmarshal(parameters, &parameterMap)
+		if err != nil {
+			return nil, fmt.Errorf("input change to map error:%w", err)
+		}
+	}
+
+	return r.RunString(ruleString, parameterMap)
 }
 
 // RunRuleList 一个规则组列表，返回所有规则的结果

@@ -68,3 +68,19 @@ func GetLogId() string {
 
 	return strings.ToLower(fmt.Sprintf("%s%s", logIdFront, logIdEnd))
 }
+
+// GetAvailablePort 获取可用端口号
+func GetAvailablePort() (int, error) {
+	// 创建临时 TCP 监听器，端口指定为 0（系统自动分配可用端口）
+	listener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return 0, fmt.Errorf("创建监听器失败: %w", err)
+	}
+	defer func() {
+		_ = listener.Close() // 关闭监听器，释放端口
+	}()
+
+	// 获取监听器实际绑定的地址
+	addr := listener.Addr().(*net.TCPAddr)
+	return addr.Port, nil
+}

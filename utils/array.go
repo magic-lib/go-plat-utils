@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"container/ring"
+	"github.com/magic-lib/go-plat-utils/cond"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/samber/lo"
 	"reflect"
@@ -116,47 +116,49 @@ func SliceDiff[T comparable](slice1 []T, slice2 []T) []T {
 }
 
 // NextByRing 从一个循环里取下一个，数组会构成一个圈
-func NextByRing[T any](vsList []T, last T, nt func(this T, last T) bool) T {
-	if len(vsList) == 0 {
+func NextByRing[K comparable, V any](
+	vsList []V,
+	last V,
+	key func(this V) K, // 用于元素唯一标识的提取函数，判断是否想等使用
+	next func(this V, last V) bool, // 如果未找到key，则用此来判断元素下一个元素的条件函数
+) V {
+	// 处理空切片情况
+	vLen := len(vsList)
+	if vLen == 0 {
 		return last
 	}
-	if len(vsList) == 1 {
+	// 只有一个元素时直接返回该元素
+	if vLen == 1 || cond.IsNil(last) {
 		return vsList[0]
 	}
 
-	r := ring.New(len(vsList))
-	for i := 0; i < r.Len(); i++ {
-		r.Value = vsList[i]
-		r = r.Next()
-	}
-
-	//r.Do(func(p interface{}) {
-	//	fmt.Println(p)
-	//})
-
-	start := r
-	found := false
-	var current *ring.Ring
-	i := 0
-	for {
-		if i > 0 {
-			//循环了一圈，则直接退出
-			if r == start {
-				break
+	idx := -1
+	var nextOne V
+	var foundNext bool
+	lo.ForEachWhile(vsList, func(item V, index int) bool {
+		if cond.IsNil(item) {
+			return true
+		}
+		if key(item) == key(last) {
+			idx = index
+			return false
+		}
+		if !foundNext {
+			// 只取第一个符合条件的元素
+			if next(item, last) {
+				foundNext = true
+				nextOne = item
 			}
 		}
-		oneData := r.Value.(T)
-		if nt(oneData, last) { //下一个条件
-			found = true
-			current = r
-			break
-		}
-		r = r.Next()
-		i++
+		return true
+	})
+	if idx >= 0 {
+		return vsList[(idx+1)%vLen]
 	}
-	if found {
-		return current.Value.(T)
+	// 返回找到的候选元素或列表第一个元素
+	if foundNext {
+		return nextOne
 	}
-	//表示最后面了，取第一个，循环
-	return start.Value.(T)
+
+	return vsList[0]
 }
