@@ -20,7 +20,6 @@ require (
 	github.com/gomodule/redigo v1.9.2
 	github.com/google/gofuzz v1.2.0
 	github.com/google/uuid v1.6.0
-	github.com/gorilla/rpc v1.2.1
 	github.com/gorilla/securecookie v1.1.2
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/iancoleman/orderedmap v0.3.0

@@ -1,6 +1,7 @@
 package cond
 
 import "regexp"
+import "encoding/json"
 
 // IsUUID 是否是UUID字符串
 func IsUUID(uuid string) bool {
@@ -16,4 +17,10 @@ func IsUUID(uuid string) bool {
 		return false
 	}
 	return match
+}
+
+// IsJson 是否是json字符串
+func IsJson(text string) bool {
+	var temp interface{}
+	return json.Unmarshal([]byte(text), &temp) == nil
 }
