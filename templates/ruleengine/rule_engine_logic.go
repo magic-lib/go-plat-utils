@@ -223,11 +223,18 @@ func (r *EngineLogic) RunStringAny(ruleString string, parameters any) (any, erro
 	if parameters == nil {
 		return nil, fmt.Errorf("input nil")
 	}
-	parameterMap := make(map[string]any)
-	err := conv.Unmarshal(parameters, &parameterMap)
-	if err != nil {
-		return nil, fmt.Errorf("input change to map error:%w", err)
+	var parameterMap map[string]any
+
+	if parameterMapTemp, ok := parameters.(map[string]any); ok {
+		parameterMap = parameterMapTemp
+	} else {
+		parameterMap = make(map[string]any)
+		err := conv.Unmarshal(parameters, &parameterMap)
+		if err != nil {
+			return nil, fmt.Errorf("input change to map error:%w", err)
+		}
 	}
+
 	return r.RunString(ruleString, parameterMap)
 }
 
