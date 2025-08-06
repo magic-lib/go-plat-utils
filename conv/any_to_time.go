@@ -3,6 +3,7 @@ package conv
 import (
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/cond"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"reflect"
 	"regexp"
 	"strings"
@@ -39,6 +40,10 @@ func Time(val any) (time.Time, bool) {
 	}
 	if val == "" {
 		return timeRet, true
+	}
+
+	if v, ok := val.(timestamppb.Timestamp); ok {
+		val = v.AsTime()
 	}
 
 	if v, ok := val.(time.Time); ok {

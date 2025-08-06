@@ -6,6 +6,7 @@ import (
 	"github.com/magic-lib/go-plat-utils/cond"
 	jsoniterForNil "github.com/magic-lib/go-plat-utils/internal/jsoniter/go"
 	"github.com/shopspring/decimal"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"log"
 	"reflect"
 	"strconv"
@@ -200,6 +201,13 @@ func (c *getNewService) getByDstPtr(srcInterface any, dstType reflect.Type) (new
 	t := new(toolsService)
 
 	dstDataType := t.getDirectTypeByPtr(dstType)
+
+	if dstType == reflect.TypeOf(&timestamppb.Timestamp{}) {
+		if oneTime, ok := Time(srcInterface); ok {
+			dstData := timestamppb.New(oneTime)
+			return reflect.ValueOf(dstData), nil
+		}
+	}
 
 	dstDataInterface, err := c.GetByDstAll(srcInterface, dstDataType)
 	if err != nil || !dstDataInterface.IsValid() {

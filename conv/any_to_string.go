@@ -8,6 +8,7 @@ import (
 	jsoniterForNil "github.com/magic-lib/go-plat-utils/internal/jsoniter/go"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"math"
 	"reflect"
 	"regexp"
@@ -24,44 +25,11 @@ func String(src any) string {
 		return ""
 	}
 
-	strType := reflect.TypeOf(src)
-	strValue := reflect.ValueOf(src)
-	if strType.Kind() == reflect.Ptr {
-		if strValue.IsNil() {
-			return ""
-		}
-		return String(strValue.Elem().Interface())
-	}
-
-	// 常用特殊类型
-	if strValue.Type().String() == "sync.Map" {
-		retStr := ""
-		if synMap, ok := src.(sync.Map); ok {
-			retStr = String(getBySyncMap(&synMap))
-		}
+	var retStr string
+	var ok bool
+	src, retStr, ok = getBySpecialType(src)
+	if ok {
 		return retStr
-	}
-
-	if strType.Kind() == reflect.Map {
-		if strValue.IsNil() {
-			return ""
-		}
-		retStr, newMap, err := getByMap(src)
-		if err == nil {
-			return retStr
-		}
-		src = newMap
-	}
-
-	if strType.Kind() == reflect.Slice {
-		if strValue.IsNil() {
-			return ""
-		}
-		retStr, newList, err := getBySlice(src)
-		if err == nil {
-			return retStr
-		}
-		src = newList
 	}
 
 	retStr, err := getByKind(src)
@@ -90,6 +58,69 @@ func String(src any) string {
 
 	fmt.Printf("jsoniter.Marshal error:%s", err.Error())
 	return fmt.Sprintf("%v", src)
+}
+
+func getBySpecialType(src any) (any, string, bool) {
+	strType := reflect.TypeOf(src)
+	strValue := reflect.ValueOf(src)
+	if strType.Kind() == reflect.Ptr {
+		if strValue.IsNil() {
+			return src, "", true
+		}
+		return src, String(strValue.Elem().Interface()), true
+	}
+
+	// 常用特殊类型
+	if strValue.Type().String() == "sync.Map" {
+		retStr := ""
+		if synMap, ok := src.(sync.Map); ok {
+			retStr = String(getBySyncMap(&synMap))
+		}
+		return src, retStr, true
+	}
+
+	if strType.Kind() == reflect.Map {
+		if strValue.IsNil() {
+			return src, "", true
+		}
+		retStr, newMap, err := getByMap(src)
+		if err == nil {
+			return src, retStr, true
+		}
+		src = newMap
+	}
+
+	if strType.Kind() == reflect.Slice {
+		if strValue.IsNil() {
+			return src, "", true
+		}
+		retStr, newList, err := getBySlice(src)
+		if err == nil {
+			return src, retStr, true
+		}
+		src = newList
+	}
+
+	strValue = reflect.ValueOf(src)
+	for strValue.Kind() == reflect.Ptr {
+		strValue = strValue.Elem()
+		if !strValue.IsValid() {
+			break
+		}
+		src = strValue.Interface()
+		if src == nil {
+			break
+		}
+		strValue = reflect.ValueOf(src)
+	}
+	if src != nil {
+		if v, ok := src.(timestamppb.Timestamp); ok {
+			src = v.AsTime()
+			return src, String(src), true
+		}
+	}
+
+	return src, "", false
 }
 
 func getBySyncMap(synMap *sync.Map) map[any]any {
