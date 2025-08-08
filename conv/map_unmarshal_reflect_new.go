@@ -109,7 +109,7 @@ type getNewService struct {
 
 // GetByDstAll 根据Dst的类型，获取srcInterface的值
 func (c *getNewService) GetByDstAll(srcInterface any, dstType reflect.Type) (newDstValue reflect.Value, err error) {
-	//fmt.Println("GetByDstAll param:", srcInterface, dstType.String())
+	//fmt.Println("GetByDstAll param:", String(srcInterface), dstType.String())
 
 	srcType := reflect.TypeOf(srcInterface)
 	if srcType == dstType {
@@ -209,6 +209,8 @@ func (c *getNewService) getByDstPtr(srcInterface any, dstType reflect.Type) (new
 		}
 	}
 
+	//fmt.Println(dstDataType.String())
+
 	dstDataInterface, err := c.GetByDstAll(srcInterface, dstDataType)
 	if err != nil || !dstDataInterface.IsValid() {
 		return reflect.Value{}, err
@@ -253,8 +255,6 @@ func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (new
 		dstColumnField := dstType.Field(i)
 		dstColumnValue := dstStructValue.Field(i)
 
-		//fmt.Println("dstColumnField index:", columnNum, dstColumnField.Name, i)
-
 		//继承
 		if dstColumnField.Name == dstColumnField.Type.Name() {
 			//fmt.Println("dstColumnField Type:", dstColumnField.Type.Name())
@@ -287,6 +287,9 @@ func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (new
 
 		//从src获取每一个目标的值,src 是一个整体，需要一一读取
 		valueTemp := c.GetSrcFromStructField(srcStruct, dstColumnField)
+
+		//fmt.Println(String(srcStruct), dstColumnField, valueTemp)
+
 		if cond.IsNil(valueTemp) {
 			//源数据为nil，则不用设置
 			continue
@@ -316,18 +319,14 @@ func (c *getNewService) getByDstMap(srcStruct any, dstType reflect.Type) (newDst
 	if dstType.Kind() != reflect.Map {
 		return reflect.Value{}, fmt.Errorf(errStrGetByDstMapNotMap, dstType.String())
 	}
-	srcByte, err2 := jsoniterForNil.Marshal(srcStruct)
-	if err2 != nil {
-		return reflect.Value{}, err2
-	}
-
 	keyType := dstType.Key()
 	if keyType.Kind() != reflect.String {
 		return reflect.Value{}, fmt.Errorf(errStrGetByDstMap, keyType.String())
 	}
 
 	toMap := make(map[string]any)
-	err2 = jsoniterForNil.Unmarshal(srcByte, &toMap)
+	srcString := String(srcStruct)
+	err2 := jsoniterForNil.Unmarshal([]byte(srcString), &toMap)
 	if err2 != nil {
 		return reflect.Value{}, err2
 	}
@@ -985,4 +984,15 @@ func (c *getNewService) getColumnValueFromType(srcInterface any, dstColumn refle
 	}
 
 	return c.getColumnValueFromMap(toMap, dstColumn)
+}
+
+// newPtrType 接收任意类型（包括指针），若为指针则创建同类型新指针
+func newPtrType(valType reflect.Type) any {
+	if valType.Kind() != reflect.Ptr {
+		valType = reflect.PointerTo(valType)
+	}
+	// 获取指针指向的元素类型（如 *int -> int）
+	elemType := valType.Elem()
+	newPtr := reflect.New(elemType)
+	return newPtr.Interface()
 }

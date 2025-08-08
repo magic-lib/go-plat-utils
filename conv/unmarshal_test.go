@@ -41,6 +41,32 @@ func TestToString(t *testing.T) {
 	fmt.Println(num)
 }
 
+type AAA struct {
+	CreateTime string `json:"create_time"`
+}
+type BBB struct {
+	CreateTime map[string]any `json:"create_time"`
+}
+
+func TestUnmarshalList(t *testing.T) {
+	//aa := AAA{
+	//	CreateTime: `{"tag_names":["M6","K1","N"]}`,
+	//}
+	//bb := new(BBB)
+	//_ = conv.Unmarshal(aa, bb)
+	//fmt.Println(bb)
+
+	aaaList := []*AAA{
+		{
+			CreateTime: `{"tag_names":["M6","K1","N"]}`,
+		},
+	}
+	bbbList := make([]*BBB, 0)
+	_ = conv.Unmarshal(aaaList, &bbbList)
+	fmt.Println(conv.String(bbbList))
+
+}
+
 type AA struct {
 	CreateTime time.Time `json:"create_time"`
 }

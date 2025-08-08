@@ -81,7 +81,8 @@ func Unmarshal(srcStruct any, dstPoint any) error {
 	srcType = reflect.TypeOf(srcStruct)
 	if srcType.Kind() != reflect.Struct &&
 		srcType.Kind() != reflect.Map &&
-		srcType.Kind() != reflect.Slice {
+		srcType.Kind() != reflect.Slice &&
+		srcType.Kind() != reflect.Array {
 		//如果是字符串，则需要保证是json格式的
 		if isString {
 			//nolint:goerr113
