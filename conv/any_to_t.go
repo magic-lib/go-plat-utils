@@ -45,3 +45,39 @@ func Convert[T any](v any) (T, bool) {
 
 	return reflect.ValueOf(targetPtrValue).Elem().Interface().(T), true
 }
+
+// ConvertForType 泛型转换
+func ConvertForType(targetType reflect.Type, v any) (any, bool) {
+	valueType := reflect.TypeOf(v)
+	// 检查类型是否匹配
+	if valueType == targetType {
+		return v, true
+	}
+
+	target := reflect.Zero(targetType)
+
+	elemType := targetType
+	// 判断T是否为指针类型
+	if targetType.Kind() == reflect.Ptr {
+		elemType = targetType.Elem()
+	}
+
+	targetPtrValue := reflect.New(elemType).Interface()
+	err := Unmarshal(v, targetPtrValue)
+	if err != nil {
+		err = AssignTo(v, targetPtrValue)
+		if err != nil {
+			return target, false
+		}
+		return reflect.ValueOf(targetPtrValue).Elem().Interface(), true
+	}
+
+	if targetType.Kind() == reflect.Ptr {
+		if reflect.TypeOf(targetPtrValue) == targetType {
+			return targetPtrValue, true
+		}
+		return target, false
+	}
+
+	return reflect.ValueOf(targetPtrValue).Elem().Interface(), true
+}
