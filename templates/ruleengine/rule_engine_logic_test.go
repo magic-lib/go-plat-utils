@@ -22,6 +22,11 @@ func TestCheckOneRule(t *testing.T) {
 	ok, err := ruleEngine.RunString(rule, dataMap)
 	fmt.Println(ok, err)
 }
+func TestCheckBoolRule(t *testing.T) {
+	ruleEngine := ruleengine.NewEngineLogic()
+	ok, err := ruleEngine.RunString("false", nil)
+	fmt.Println(ok, err)
+}
 
 func TestCheckOneRule22(t *testing.T) {
 	ruleEngine := ruleengine.NewEngineLogic()

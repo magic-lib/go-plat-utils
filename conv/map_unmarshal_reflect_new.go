@@ -35,7 +35,7 @@ func AssignTo(srcStruct any, dstPoint any) error {
 		return fmt.Errorf("UnmarshalByReflect error: %s, %s", reflect.TypeOf(dstPoint).String(), err.Error())
 	}
 
-	//fmt.Println("UnmarshalByReflect getData:", dstValue.Interface())
+	//fmt.Println("UnmarshalByReflect getData:", String(dstValue.Interface()))
 	t := new(toolsService)
 	dstStruct, _ := t.GetNewSrcAndDst(dstValue.Interface(), dstPoint)
 
@@ -380,7 +380,9 @@ func (c *getNewService) getByDstOther(srcOther any, dstType reflect.Type) (newDs
 	if !hasSet {
 		if srcValue.CanConvert(dstType) {
 			newV := srcValue.Convert(dstType)
-			if newPtr.Elem().Type() == newV.Type() {
+			//fmt.Println("newV", String(String(newV.Interface())), String(srcValue.Interface()))
+			//这里有可能将55数字转换为7字符的问题，不是想要的效果，所以需要对值进行判断
+			if newPtr.Elem().Type() == newV.Type() && String(newV.Interface()) == String(srcValue.Interface()) {
 				newPtr.Elem().Set(newV)
 				hasSet = true
 			}

@@ -103,3 +103,11 @@ func TestToTime(t *testing.T) {
 	//fmt.Println(conv.String(kk))
 
 }
+func TestConvert(t *testing.T) {
+	aa, ok := conv.Convert[int](55)
+	fmt.Println(aa, ok)
+	bb, ok := conv.Convert[string](55)
+	fmt.Println(bb, ok)
+	cc, ok := conv.Convert[int64](55)
+	fmt.Println(cc, ok)
+}

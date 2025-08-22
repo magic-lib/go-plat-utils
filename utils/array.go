@@ -119,7 +119,7 @@ func SliceDiff[T comparable](slice1 []T, slice2 []T) []T {
 func NextByRing[K comparable, V any](
 	vsList []V,
 	last V,
-	key func(this V) K, // 用于元素唯一标识的提取函数，判断是否想等使用
+	key func(this V) K,             // 用于元素唯一标识的提取函数，判断是否想等使用
 	next func(this V, last V) bool, // 如果未找到key，则用此来判断元素下一个元素的条件函数
 ) V {
 	// 处理空切片情况
