@@ -21,6 +21,18 @@ func IsUUID(uuid string) bool {
 
 // IsJson 是否是json字符串
 func IsJson(text string) bool {
-	var temp interface{}
-	return json.Unmarshal([]byte(text), &temp) == nil
+	var temp any
+	if err := json.Unmarshal([]byte(text), &temp); err != nil {
+		return false
+	}
+
+	// 检查解析后的类型是否为对象或数组
+	switch temp.(type) {
+	case map[string]any: // JSON对象
+		return true
+	case []any: // JSON数组
+		return false
+	default: // 其他类型（数字、字符串、布尔值、null等）
+		return false
+	}
 }

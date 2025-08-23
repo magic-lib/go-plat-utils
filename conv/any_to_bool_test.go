@@ -48,7 +48,8 @@ func TestAnyToBool(t *testing.T) {
 		{"complex128 0+0i", []any{complex128(0 + 0i)}, []any{false}, conv.Bool},
 		{"nil pointer", []any{(*int)(nil)}, []any{false}, conv.Bool},
 		{"non-nil pointer", []any{&iPtr}, []any{true}, conv.Bool},
-		{"empty slice", []any{[]int{}}, []any{false}, conv.Bool},
+		{"empty slice no value", []any{[]int{}}, []any{false, true}, conv.Bool},
+		{"empty slice has value", []any{[]int{1, 2, 3}}, []any{true, true}, conv.Bool},
 	}
 	utils.TestFunction(t, testCases, conv.Bool)
 }

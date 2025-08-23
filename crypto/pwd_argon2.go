@@ -60,7 +60,7 @@ func Argon2PasswordEncoder(password string, paramList ...*Argon2Params) (hash st
 		params = paramList[0]
 	}
 
-	salt, err := generateRandomBytes(params.SaltLength)
+	salt, err := RandomBytes(params.SaltLength)
 	if err != nil {
 		return "", err
 	}
@@ -106,13 +106,13 @@ func checkHash(password, hash string) (match bool, params *Argon2Params, err err
 	return false, params, nil
 }
 
-func generateRandomBytes(n uint32) ([]byte, error) {
+// RandomBytes 随机生成字节
+func RandomBytes(n uint32) ([]byte, error) {
 	b := make([]byte, n)
 	_, err := rand.Read(b)
 	if err != nil {
 		return nil, err
 	}
-
 	return b, nil
 }
 

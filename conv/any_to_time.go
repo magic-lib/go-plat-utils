@@ -24,22 +24,22 @@ const (
 func Time(val any) (time.Time, bool) {
 	timeRet := time.Time{}
 	if val == nil {
-		return timeRet, true
+		return timeRet, false
 	}
 	reValue := reflect.ValueOf(val)
 	for reValue.Kind() == reflect.Ptr {
 		reValue = reValue.Elem()
 		if !reValue.IsValid() {
-			return timeRet, true
+			return timeRet, false
 		}
 		val = reValue.Interface()
 		if val == nil {
-			return timeRet, true
+			return timeRet, false
 		}
 		reValue = reflect.ValueOf(val)
 	}
 	if val == "" {
-		return timeRet, true
+		return timeRet, false
 	}
 
 	if v, ok := val.(timestamppb.Timestamp); ok {
@@ -52,10 +52,10 @@ func Time(val any) (time.Time, bool) {
 
 	valTemp := String(val)
 	if timeTemp, ok := toTimeFromString(valTemp); ok {
-		return timeTemp, ok
+		return timeTemp, true
 	}
 
-	return timeRet, true
+	return timeRet, false
 }
 
 func milliTime() int64 {
@@ -99,7 +99,7 @@ func toTimeFromNormal(v string) (time.Time, error) {
 		}
 	}
 
-	return time.Time{}, fmt.Errorf("no found")
+	return time.Time{}, fmt.Errorf("can not convert to time: %s", v)
 }
 
 func toTimeFromString(v string) (time.Time, bool) {
@@ -158,6 +158,14 @@ func toTimeFromString(v string) (time.Time, bool) {
 	}
 
 	if err != nil {
+		// 从上往下来进行匹配
+		layout := "2006-1-2 3:04:05"
+		// 解析时间
+		parsedTime, err := time.Parse(layout, v)
+		if err == nil {
+			return parsedTime, true
+		}
+
 		{ //2023-04-14T10:09:00Z
 			timePattern := "^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})Z$"
 			isFind, err := regexp.MatchString(timePattern, v)

@@ -8,6 +8,6 @@ const (
 
 // Exchanger 从文本，csv等批量导入数据
 type Exchanger interface {
-	ExchangeList(exchangeType ExchangeType) ([][]string, error)
-	ExchangeOne(exchangeType ExchangeType) (string, error)
+	ExchangeList() ([]map[string]string, error)
+	ExchangeOne(rowIndex, columnIndex int) (string, error)
 }

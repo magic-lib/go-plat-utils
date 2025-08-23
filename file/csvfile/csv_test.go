@@ -3,6 +3,7 @@ package csvfile_test
 import (
 	"encoding/csv"
 	"fmt"
+	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/file/csvfile"
 	"os"
 	"testing"
@@ -13,17 +14,26 @@ func TestProcessFields(t *testing.T) {
 	filePath := "/Volumes/MacintoshData/tianlin0/Downloads/111.csv"
 	configTemp := csvfile.DefaultConfig[string]()
 
-	configTemp.HeaderRowIndex = 11
-	configTemp.DataRowIndex = [2]int{12, 19}
+	configTemp.HeaderRowIndex = 0
+	configTemp.DataRowIndex = [2]int{13, 20}
+	configTemp.DataColumnIndex = [2]int{1, 7}
+	configTemp.ColumnNumber = 7
 
 	file, err := os.Open(filePath)
 	if err != nil {
 		return
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
-	kk := csv.NewReader(file)
+	configTemp.SetCsvReader(csv.NewReader(file))
 
-	aa, bb, cc := configTemp.ReadToList(kk)
-	fmt.Println(aa, bb, cc)
+	aa, err := configTemp.ExchangeList()
+
+	bb, err := configTemp.ExchangeOne(5, 5)
+
+	fmt.Println(conv.String(aa))
+	fmt.Println(conv.String(bb))
+	fmt.Println(conv.String(err))
 }

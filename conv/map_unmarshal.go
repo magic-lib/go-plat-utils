@@ -83,6 +83,12 @@ func Unmarshal(srcStruct any, dstPoint any) error {
 		srcType.Kind() != reflect.Map &&
 		srcType.Kind() != reflect.Slice &&
 		srcType.Kind() != reflect.Array {
+		//普通类型能否相互转换，由 string 转换为 *int64
+		err = AssignTo(srcStruct, dstPoint)
+		if err == nil {
+			return nil
+		}
+
 		//如果是字符串，则需要保证是json格式的
 		if isString {
 			//nolint:goerr113
