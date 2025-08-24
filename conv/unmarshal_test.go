@@ -111,3 +111,9 @@ func TestConvert(t *testing.T) {
 	cc, ok := conv.Convert[int64](55)
 	fmt.Println(cc, ok)
 }
+func TestConvert111(t *testing.T) {
+	var targetPtrValue int
+	err := conv.AssignTo(true, &targetPtrValue)
+
+	fmt.Println(err, targetPtrValue)
+}

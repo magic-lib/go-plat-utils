@@ -136,7 +136,7 @@ func (c *getNewService) GetByDstAll(srcInterface any, dstType reflect.Type) (new
 
 	// 完成
 	if found {
-		if newDstList.IsValid() && err == nil {
+		if err == nil && newDstList.IsValid() {
 			return newDstList, nil
 		}
 		newDstList2, err2 := c.getByDstOther(srcInterface, dstType)
@@ -571,8 +571,9 @@ func asString(src any) string {
 		return strconv.FormatFloat(rv.Float(), 'g', -1, 32)
 	case reflect.Bool:
 		return strconv.FormatBool(rv.Bool())
+	default:
+		return fmt.Sprintf("%v", src)
 	}
-	return fmt.Sprintf("%v", src)
 }
 
 func (c *getNewService) changeValueToString(srcValue reflect.Value) (string, bool) {
@@ -730,6 +731,26 @@ func (c *getNewService) changeFromString(srcValue reflect.Value, dstTypeName str
 
 	return nil, false
 }
+func (c *getNewService) changeFromBool(srcValue reflect.Value, dstType reflect.Type) (any, bool) {
+	srcBool := srcValue.Bool()
+	switch dstType.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Float32, reflect.Float64:
+		disIns := reflect.New(dstType)
+		intNum := 0
+		if srcBool {
+			intNum = 1
+		}
+		disIns.Elem().Set(reflect.ValueOf(intNum))
+		return disIns.Elem().Interface(), true
+	case reflect.String:
+		if srcBool {
+			return "true", true
+		}
+		return "false", true
+	default:
+		return nil, false
+	}
+}
 
 func (c *getNewService) changeFromByte(srcValue reflect.Value, dstTypeName string) (any, bool) {
 	srcInterface := srcValue.Interface()
@@ -810,6 +831,12 @@ func (c *getNewService) changeValueToDstBySrcType(srcValue reflect.Value, dstTyp
 
 	if srcTypeKind == reflect.String {
 		if retData, found := c.changeFromString(srcValue, dstTypeName); found {
+			return retData, found
+		}
+	}
+	if srcTypeKind == reflect.Bool {
+
+		if retData, found := c.changeFromBool(srcValue, dstType); found {
 			return retData, found
 		}
 	}
