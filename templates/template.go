@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 	tmpl "text/template"
+	"github.com/tidwall/gjson"
 )
 
 const (
@@ -49,15 +50,37 @@ func NewTemplate(s string, fix ...string) template {
 func (t *impl) Replace(replaceMap ...interface{}) (string, error) {
 	tempStr := t.s
 	for _, one := range replaceMap {
-		newCurrParam := conv.KeyListFromMap(one)
-		for key, val := range newCurrParam {
-			valStr := conv.String(val)
-			if key == "." { //表示填充所有字符串的情况，用来做特殊处理的
-				tempStr = strings.ReplaceAll(tempStr, t.prefix+t.suffix, valStr)
+		re := regexp.MustCompile(fmt.Sprintf(`%s\s*(.*?)\s*%s`, t.prefix, t.suffix))
+		matches := re.FindAllStringSubmatch(tempStr, -1)
+		if len(matches) == 0 {
+			return tempStr, nil
+		}
+		jsonOne := conv.String(one)
+		for _, match := range matches {
+			content := strings.TrimSpace(match[1])
+			if content == "" {
 				continue
 			}
-			tempStr = strings.ReplaceAll(tempStr, t.prefix+key+t.suffix, valStr)
+			result := gjson.Get(jsonOne, content)
+			if result.Exists() {
+				re = regexp.MustCompile(fmt.Sprintf(`%s\s*%s\s*%s`, t.prefix, content, t.suffix))
+				tempStr = re.ReplaceAllString(tempStr, result.String())
+			}
 		}
+	}
+	// 处理最上层的值，全部的问题 {{.}} 表示替换所有内容
+	re := regexp.MustCompile(fmt.Sprintf(`%s\s*.\s*%s`, t.prefix, t.suffix))
+	replaceStr := ""
+	found := false
+	if len(replaceMap) == 1 {
+		replaceStr = conv.String(replaceMap[0])
+		found = true
+	}else if len(replaceMap) > 1 {
+		replaceStr = conv.String(replaceMap)
+		found = true
+	}
+	if found {
+		tempStr = re.ReplaceAllString(tempStr, replaceStr)
 	}
 	return tempStr, nil
 }
