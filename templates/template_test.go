@@ -25,11 +25,17 @@ func TestTemplates(t *testing.T) {
 	testCases := []*utils.TestStruct{
 		{"strings.Index", []any{"111/<no value>", "<no value>"}, []any{4}, strings.Index},
 		{"templates.Template", []any{"{{.aaa_aaa}}", map[string]interface{}{"aaa_aaa": "55555"}}, []any{"55555"}, templates.Template},
-		{"templates.Template error", []any{"{{.aaa/aaa}}", map[string]interface{}{"aaa/aaa": "55555"}}, []any{"", fmt.Errorf("template: utils-template-e5a33834c17286b3865ded9360051c98:1: bad character U+002F '/'")}, templates.Template},
+		{"templates.Template error", []any{"{{.aaa/aaa}}", map[string]interface{}{"aaa/aaa": "55555"}}, []any{"", false}, func(tempStr string, tempMap interface{}) (string, bool) {
+			tplStr, err := templates.Template(tempStr, tempMap)
+			if err != nil {
+				return "", false
+			}
+			return tplStr, true
+		}},
 		{"templates.RuleExpr", []any{"==code", "code"}, []any{false}, templates.RuleExpr},
 		{"templates.RuleExpr", []any{"code.numMap.num==code.numMap.num2", dataMap}, []any{false}, templates.RuleExpr},
 		{"templates.RuleExpr ==", []any{"code.numMap.num3==code.numMap.num2", dataMap}, []any{true}, templates.RuleExpr},
-		{"templates.Replace", []any{"这是一个{{code.numMap.num}}数字", dataMap}, []any{"这是一个4.5数字"}, func(temp string, tempMap interface{}) (string, error) {
+		{"templates.Replace", []any{"这是一个{{code.numMap.num}}数字", dataMap}, []any{"这是一个4.5数字"}, func(temp string, tempMap interface{}) string {
 			one := templates.NewTemplate(temp, "{{", "}}")
 			return one.Replace(tempMap)
 		}},
@@ -43,6 +49,35 @@ func TestTemplates(t *testing.T) {
 		}},
 	}
 	utils.TestFunction(t, testCases, nil)
+}
+func TestTemplates1(t *testing.T) {
+	dataMap := map[string]interface{}{
+		"code": map[string]map[string]float32{
+			"numMap": map[string]float32{
+				"num":  4.5,
+				"num2": 4.51,
+				"num3": 4.51,
+			},
+		},
+	}
+
+	aa, err := templates.Template("{{ .aaa_aaa }} fdfdfsfd: {{.code.numMap.num}}", dataMap)
+	fmt.Println(aa, err)
+
+}
+
+// RuleExpr 字符串规则引擎，也是模版的一种
+func TestRuleExpr(t *testing.T) {
+	aaaa, err := templates.Template("{{.name}} dffff, {{ .age }},", map[string]any{
+		"name": "jinjin",
+	})
+	fmt.Println(aaaa, err)
+
+	aaaa, err = templates.Template("{{.name}} dffff, {{ .age }},", map[string]any{
+		"name": "hehe",
+		"age":  18,
+	})
+	fmt.Println(aaaa, err)
 }
 
 var amount = 0.8

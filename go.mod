@@ -4,6 +4,7 @@ go 1.24.1
 
 require (
 	github.com/Knetic/govaluate v3.0.0+incompatible
+	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/PaesslerAG/gval v1.2.4
 	github.com/alicebob/miniredis/v2 v2.34.0
 	github.com/andybalholm/brotli v1.1.1
@@ -47,7 +48,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/soniah/evaler v2.2.0+incompatible
 	github.com/sony/sonyflake v1.2.0
-	github.com/spf13/cast v1.3.1
+	github.com/spf13/cast v1.7.0
 	github.com/stretchr/testify v1.10.0
 	github.com/tidwall/gjson v1.18.0
 	github.com/tidwall/sjson v1.2.5
@@ -70,6 +71,8 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
+	github.com/Masterminds/goutils v1.1.1 // indirect
+	github.com/Masterminds/semver/v3 v3.2.0 // indirect
 	github.com/adjust/rmq/v4 v4.0.0 // indirect
 	github.com/alexellis/hmac v0.0.0-20180624211220-5c52ab81c0de // indirect
 	github.com/alicebob/gopher-json v0.0.0-20230218143504-906a9b012302 // indirect
@@ -102,6 +105,8 @@ require (
 	github.com/google/pprof v0.0.0-20250208200701-d0013a598941 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
+	github.com/huandu/xstrings v1.5.0 // indirect
+	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/jasonlvhit/gocron v0.0.1 // indirect
 	github.com/jonboulle/clockwork v0.5.0 // indirect
 	github.com/julienschmidt/httprouter v1.3.0 // indirect
@@ -112,7 +117,9 @@ require (
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mitchellh/copystructure v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	github.com/mitchellh/reflectwalk v1.0.0 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/onsi/gomega v1.36.2 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
