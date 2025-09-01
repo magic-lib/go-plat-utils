@@ -28,7 +28,7 @@ func DefaultConfig[T any]() CsvConfig[T] {
 	}
 }
 
-func (c CsvConfig[T]) checkConfig() error {
+func (c CsvConfig[T]) validate() error {
 	if c.HeaderRowIndex > c.DataRowIndex[0] {
 		return fmt.Errorf("数据表头不能大于数据开始行")
 	}
@@ -50,8 +50,8 @@ func (c CsvConfig[T]) ReadToList(reader *csv.Reader) ([][]string, []string, erro
 	if c.Delimiter > 0 {
 		reader.Comma = c.Delimiter
 	}
-	err := c.checkConfig()
-	if err != nil {
+
+	if err := c.validate(); err != nil {
 		return nil, nil, fmt.Errorf("配置错误: %w", err)
 	}
 	records, err := reader.ReadAll()
@@ -59,7 +59,7 @@ func (c CsvConfig[T]) ReadToList(reader *csv.Reader) ([][]string, []string, erro
 		return nil, nil, fmt.Errorf("读取记录出错: %w", err)
 	}
 
-	headers, err := c.headerFields(records)
+	headers, err := c.extractHeaders(records)
 	if err != nil {
 		return nil, headers, fmt.Errorf("读取表头出错: %w", err)
 	}
@@ -89,7 +89,21 @@ func (c CsvConfig[T]) ReadToList(reader *csv.Reader) ([][]string, []string, erro
 }
 
 // headerFields 获取表头字段
-func (c CsvConfig[T]) headerFields(records [][]string) ([]string, error) {
+func (c CsvConfig[T]) extractHeaders(records [][]string) ([]string, error) {
+	// 无表头配置
+	if c.HeaderRowIndex < 0 {
+		return nil, nil
+	}
+
+	// 检查表头行索引有效性
+	if c.HeaderRowIndex >= len(records) {
+		return nil, fmt.Errorf("表头行索引(%d)超出记录范围(共%d行)",
+			c.HeaderRowIndex, len(records))
+	}
+
+	// 处理表头字段（去空格等）
+	return processFields(records[c.HeaderRowIndex], c.TrimSpaces), nil
+
 	if c.HeaderRowIndex >= 0 {
 		if c.HeaderRowIndex >= len(records) {
 			return nil, fmt.Errorf("表头行索引超出范围")
