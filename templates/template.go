@@ -7,7 +7,6 @@ import (
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/crypto"
 	gCache "github.com/patrickmn/go-cache"
-	"github.com/tidwall/gjson"
 	"regexp"
 	"strings"
 	tmpl "text/template"
@@ -92,30 +91,12 @@ func (t *impl) Replace(data ...any) string {
 		// 将数据项转换为JSON字符串，便于通过gjson解析
 		itemJSON := conv.String(item)
 
-		// 提取JSON值的函数，处理包含点的键
-		getValue := func(key string) (gjson.Result, bool) {
-			var value gjson.Result
-			// 处理包含点的键
-			if strings.Contains(key, ".") {
-				// 转义点字符
-				escapedKey := strings.ReplaceAll(key, ".", "\\.")
-				value = gjson.Get(itemJSON, escapedKey)
-				if value.Exists() {
-					return value, true
-				}
-			}
-			// 尝试直接获取键值
-			value = gjson.Get(itemJSON, key)
-			return value, value.Exists()
-		}
-
 		for _, key := range varKeys {
 			if key == "." {
 				continue // 全量替换在后面单独处理
 			}
-
 			// 获取JSON中的值
-			value, exists := getValue(key)
+			value, exists := JsonGet(itemJSON, key)
 			if !exists {
 				continue // 键不存在则跳过
 			}

@@ -183,3 +183,48 @@ func TestRuleGo(t *testing.T) {
 	ruleEngine.OnMsg(msg)
 
 }
+func TestRecursiveJSONGet(t *testing.T) {
+	// 测试用例：三种不同JSON结构，相同路径"name.age.age1"的不同含义
+	testCases := []struct {
+		name     string
+		jsonStr  string
+		path     string
+		expected string
+	}{
+		{
+			name:     "嵌套层级: name -> age -> age1",
+			jsonStr:  `{"name":{"age":{"age1":55}}}`,
+			path:     "name.age.age1",
+			expected: "55",
+		},
+		{
+			name:     "顶层键名带.: name.age -> age1",
+			jsonStr:  `{"name.age":{"age1":66}}`,
+			path:     "name.age.age1",
+			expected: "66",
+		},
+		{
+			name:     "中层键名带.: name -> age.age1",
+			jsonStr:  `{"name":{"age.age1":77}}`,
+			path:     "name.age.age1",
+			expected: "77",
+		},
+		{
+			name:     "混合场景: 优先匹配存在的值",
+			jsonStr:  `{"name.age":{"age1":88}, "name":{"age":{"age1":99}}}`,
+			path:     "name.age.age1",
+			expected: "88", // 按尝试顺序，先匹配到顶层键名带.的情况
+		},
+	}
+
+	// 执行测试
+	for _, tc := range testCases {
+		result, ok := templates.JsonGet(tc.jsonStr, tc.path)
+		status := "失败"
+		if ok && result.Exists() && result.String() == tc.expected {
+			status = "成功"
+		}
+		fmt.Printf("[%s] 路径: %s → 结果: %v (预期: %s) → %s\n",
+			tc.name, tc.path, result.String(), tc.expected, status)
+	}
+}
