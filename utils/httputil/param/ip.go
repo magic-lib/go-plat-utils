@@ -1,34 +1,30 @@
 package param
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 )
 
-const (
-	// LocalHostIP localhost ip
-	localHostIP = "127.0.0.1"
-)
-
-// GetInternalIPv4Address 获取内部IPv4地址
-func GetInternalIPv4Address() string {
+// IPv4 得到当前机器IP地址
+func IPv4() (net.IP, error) {
 	addrStr, err := net.InterfaceAddrs()
 	if err != nil {
-		return localHostIP
+		return nil, err
 	}
 	for _, addr := range addrStr {
-		ipaddr, _, err := net.ParseCIDR(addr.String())
+		ipAddr, _, err := net.ParseCIDR(addr.String())
 		if err != nil {
 			continue
 		}
-		if ipaddr.IsLoopback() {
+		if ipAddr.IsLoopback() {
 			continue
 		}
-		if ipaddr.To4() != nil {
-			return ipaddr.String()
+		if ipAddr.To4() != nil {
+			return ipAddr, nil
 		}
 	}
-	return localHostIP
+	return nil, fmt.Errorf("未找到IP地址")
 }
 
 // ClientIP 得到客户端IP地址

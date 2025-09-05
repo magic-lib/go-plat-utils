@@ -1,10 +1,9 @@
 package id
 
 import (
-	"fmt"
+	"github.com/magic-lib/go-plat-utils/utils/httputil/param"
 	"github.com/sony/sonyflake"
 	"log"
-	"net"
 	"strconv"
 	"sync"
 	"time"
@@ -112,24 +111,10 @@ func GeneratorBase32() string {
 
 // getMachineID 给 sonyFlake 的 machineID 方法赋值
 func getMachineID() (uint16, error) {
-	as, err := net.InterfaceAddrs()
+	ipv4, err := param.IPv4()
 	if err != nil {
 		return 0, err
 	}
-
-	for _, a := range as {
-		ipnet, ok := a.(*net.IPNet)
-		if !ok || ipnet.IP.IsLoopback() {
-			continue
-		}
-
-		ip := ipnet.IP.To4()
-		if ip == nil {
-			continue
-		}
-
-		return uint16(ip[2])<<8 + uint16(ip[3]), nil
-	}
-
-	return 0, fmt.Errorf("get nil ip")
+	ip := ipv4.To4()
+	return uint16(ip[2])<<8 + uint16(ip[3]), nil
 }

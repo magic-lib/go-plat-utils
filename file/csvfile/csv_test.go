@@ -23,7 +23,9 @@ func TestProcessFields(t *testing.T) {
 	if err != nil {
 		return
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	configTemp.SetCsvReader(csv.NewReader(file))
 
