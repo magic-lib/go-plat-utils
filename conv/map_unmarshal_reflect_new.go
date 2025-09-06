@@ -85,13 +85,10 @@ func NewPtrByType(dstType reflect.Type) any {
 		datMapValue := reflect.MakeMap(reflect.MapOf(keyType, valueType))
 		newType.Elem().Set(datMapValue)
 		return newType.Interface()
-	} else if dstType.Kind() == reflect.String {
-		oneStr := ""
-		return &oneStr
 	} else if dstType.Kind() == reflect.Int64 ||
-		dstType.Kind() == reflect.Int {
-		oneInt := 0
-		return &oneInt
+		dstType.Kind() == reflect.Int || dstType.Kind() == reflect.String { //常用的类型
+		ptrVal := reflect.New(dstType)
+		return ptrVal.Interface()
 	} else if dstType.Kind() == reflect.Bool {
 		oneBool := false
 		return &oneBool
