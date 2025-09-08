@@ -501,6 +501,8 @@ func (c *getNewService) changeValueToDstByDstType(srcValue reflect.Value, dstTyp
 			return nil, false
 		}
 		return reflect.ValueOf(f64).Convert(dstType).Interface(), true
+	default:
+		log.Println("getByDstDefault error:", dstType.String())
 	}
 
 	if dstType.Kind() == reflect.Bool {

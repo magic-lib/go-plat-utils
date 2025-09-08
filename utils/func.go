@@ -61,13 +61,15 @@ func FuncExecute(function any, args ...any) (result []any, err error) {
 					}
 
 					//需要检查是否是interface类型
-					if fnArgType.Kind() == reflect.Interface {
-						argSlice[i] = reflect.Zero(reflect.TypeOf((*any)(nil)).Elem())
-						continue
-					}
-					if fnArgType.Kind() == reflect.Ptr {
-						argSlice[i] = reflect.Zero(fnArgType)
-						continue
+					if fnArgType != nil {
+						if fnArgType.Kind() == reflect.Interface {
+							argSlice[i] = reflect.Zero(reflect.TypeOf((*any)(nil)).Elem())
+							continue
+						}
+						if fnArgType.Kind() == reflect.Ptr {
+							argSlice[i] = reflect.Zero(fnArgType)
+							continue
+						}
 					}
 				}
 			}

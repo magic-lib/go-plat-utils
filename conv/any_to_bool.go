@@ -56,6 +56,12 @@ func Bool(i any) (bool, bool) {
 			return true, false
 		}
 		return boolValue, true
+	case reflect.Slice, reflect.Array: //数组只要里面含有元素就表示为true
+		length := v.Len()
+		if length == 0 {
+			return false, true
+		}
+		return true, true
 	default:
 		return Bool(String(i))
 	}

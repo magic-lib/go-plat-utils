@@ -97,6 +97,14 @@ func toTimeFromNormal(v string) (time.Time, error) {
 		if len(timeArray) == 2 {
 			return time.Parse(time.DateTime, v)
 		}
+	} else {
+		// 从上往下来进行匹配
+		layout := "2006-1-2 3:04:05"
+		// 解析时间
+		parsedTime, err := time.Parse(layout, v)
+		if err == nil {
+			return parsedTime, nil
+		}
 	}
 
 	return time.Time{}, fmt.Errorf("no found")
