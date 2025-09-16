@@ -158,12 +158,21 @@ func toTimeFromString(v string) (time.Time, bool) {
 	}
 
 	if err != nil {
-		// 从上往下来进行匹配
-		layout := "2006-1-2 3:04:05"
-		// 解析时间
-		parsedTime, err := time.Parse(layout, v)
-		if err == nil {
-			return parsedTime, true
+		{
+			layout := "2006-1-2 3:04:05"
+			// 解析时间
+			parsedTime, err := time.Parse(layout, v)
+			if err == nil {
+				return parsedTime, true
+			}
+		}
+		{
+			layout := "2006/1/2 15:04"
+			// 解析时间
+			parsedTime, err := time.Parse(layout, v)
+			if err == nil {
+				return parsedTime, true
+			}
 		}
 
 		{ //2023-04-14T10:09:00Z
