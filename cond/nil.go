@@ -25,6 +25,9 @@ func IsNil(i any) bool {
 
 // IsZero 判断变量是否为零值
 func IsZero(val any) bool {
+	if val == nil {
+		return true
+	}
 	//常用的类型，提高执行效率
 	switch val.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
@@ -34,6 +37,24 @@ func IsZero(val any) bool {
 		return val == false
 	case string:
 		return val == ""
+	default:
+	}
+
+	rValue := reflect.ValueOf(val)
+	switch rValue.Kind() {
+	case reflect.String:
+		return rValue.Len() == 0
+	case reflect.Bool:
+		return !rValue.Bool()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return rValue.Int() == 0
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return rValue.Uint() == 0
+	case reflect.Float32, reflect.Float64:
+		return rValue.Float() == 0
+	case reflect.Interface, reflect.Ptr:
+		return rValue.IsNil()
+	default:
 	}
 
 	return reflect.ValueOf(val).IsZero()
