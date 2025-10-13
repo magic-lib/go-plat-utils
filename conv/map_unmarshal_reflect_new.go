@@ -21,6 +21,19 @@ import (
 2、已有值了，填充没有的情况
 */
 func AssignTo(srcStruct any, dstPoint any) error {
+	srcVal := reflect.ValueOf(srcStruct)
+	dstVal := reflect.ValueOf(dstPoint)
+	// 检查 dst 是否为指针
+	if dstVal.Kind() != reflect.Ptr || dstVal.IsNil() {
+		return fmt.Errorf("dstPoint error nil or not point:%s, %v", reflect.TypeOf(dstPoint).String(), srcStruct)
+	}
+
+	dstVal = dstVal.Elem()
+	// 如果是切片
+	if srcVal.Kind() == reflect.Slice && dstVal.Kind() == reflect.Slice {
+		return assignConvertSlice(srcVal, dstVal)
+	}
+
 	//对 srcStruct 和 dstPoint 进行处理
 	fill := new(getNewService)
 	dstValue, err := fill.GetByDstAll(srcStruct, reflect.TypeOf(dstPoint))
@@ -57,6 +70,29 @@ func AssignTo(srcStruct any, dstPoint any) error {
 		return errTemp
 	}
 
+	return nil
+}
+
+func assignConvertSlice(src, dst reflect.Value) error {
+	if dst.Kind() != reflect.Slice {
+		return fmt.Errorf("dst must be a slice")
+	}
+
+	dst.Set(reflect.MakeSlice(dst.Type(), src.Len(), src.Cap()))
+	elemType := dst.Type().Elem()
+	for i := 0; i < src.Len(); i++ {
+		var newData reflect.Value
+		if elemType.Kind() == reflect.Ptr {
+			newData = reflect.New(elemType.Elem())
+		} else {
+			newData = reflect.New(elemType)
+		}
+
+		if err := AssignTo(src.Index(i).Interface(), newData.Interface()); err != nil {
+			return err
+		}
+		dst.Index(i).Set(newData)
+	}
 	return nil
 }
 
@@ -124,6 +160,7 @@ func (c *getNewService) GetByDstAll(srcInterface any, dstType reflect.Type) (new
 		found = true
 		newDstList, err = c.getByDstPtr(srcInterface, dstType)
 	} else if dstType.Kind() == reflect.Struct {
+		//fmt.Println("GetByDstAll struct:", String(srcInterface), dstType.String())
 		found = true
 		newDstList, err = c.getByDstStruct(srcInterface, dstType)
 	} else if dstType.Kind() == reflect.Map {
@@ -556,7 +593,7 @@ func (c *getNewService) changeValueToDstByDstType(srcValue reflect.Value, dstTyp
 		}
 	}
 
-	log.Println("changeValueToDstByDstType error:", dstType.String())
+	//log.Println("changeValueToDstByDstType error:", dstType.String())
 
 	return nil, false
 }
@@ -898,8 +935,14 @@ func (c *getNewService) changeValueToDstBySrcType(srcValue reflect.Value, dstTyp
 
 // GetSrcFromStructField 取下一级的数据
 func (c *getNewService) GetSrcFromStructField(srcInterface any, dstColumn reflect.StructField) any {
+	srcVal := reflect.ValueOf(srcInterface)
+	for srcVal.Kind() == reflect.Ptr || srcVal.Kind() == reflect.Interface {
+		srcVal = srcVal.Elem()
+	}
+
+	srcType := srcVal.Type()
+
 	//1、如果是struct，则首先从struct中进行匹配，名称完全一样的进行匹配
-	srcType := reflect.TypeOf(srcInterface)
 	if srcType.Kind() == reflect.Struct {
 		return c.getColumnValueFromStruct(srcInterface, dstColumn)
 	}

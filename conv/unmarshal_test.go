@@ -118,27 +118,33 @@ func TestConvert111(t *testing.T) {
 
 	fmt.Println(err, targetPtrValue)
 }
+
+type dbType struct {
+	Name sql.NullString `json:"name"`
+	Age  sql.NullBool   `json:"age"`
+}
+type jsonType struct {
+	Name string `json:"name"`
+	Age  bool   `json:"age"`
+}
+
 func TestConvertSql(t *testing.T) {
-	old := struct {
-		Name sql.NullString `json:"name"`
-		Age  sql.NullBool   `json:"age"`
-	}{
-		Name: sql.NullString{
-			String: "123",
-			Valid:  true,
-		},
-		Age: sql.NullBool{
-			Bool:  true,
-			Valid: true,
+	oldList := []*dbType{
+		{
+			Name: sql.NullString{
+				String: "123",
+				Valid:  true,
+			},
+			Age: sql.NullBool{
+				Bool:  true,
+				Valid: true,
+			},
 		},
 	}
 
-	newData := struct {
-		Name string `json:"name"`
-		Age  bool   `json:"age"`
-	}{}
+	newData := make([]*jsonType, 0)
 
-	err := conv.Unmarshal(old, &newData)
+	err := conv.Unmarshal(oldList, &newData)
 
 	fmt.Println(err, conv.String(newData))
 }
