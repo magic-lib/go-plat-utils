@@ -414,6 +414,13 @@ func (c *getNewService) getByDstDefault(srcDefault any, dstType reflect.Type) (n
 		return srcValue, nil
 	}
 
+	if dstType.Kind() == reflect.Bool {
+		retBool, ok := Bool(srcDefault)
+		if ok {
+			return reflect.ValueOf(retBool), nil
+		}
+	}
+
 	if retData, ok := c.changeValueToDstByDstType(srcValue, dstType); ok {
 		if retData != nil {
 			return reflect.ValueOf(retData), nil

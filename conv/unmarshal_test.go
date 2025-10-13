@@ -1,6 +1,7 @@
 package conv_test
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/conv"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -116,4 +117,28 @@ func TestConvert111(t *testing.T) {
 	err := conv.AssignTo(true, &targetPtrValue)
 
 	fmt.Println(err, targetPtrValue)
+}
+func TestConvertSql(t *testing.T) {
+	old := struct {
+		Name sql.NullString `json:"name"`
+		Age  sql.NullBool   `json:"age"`
+	}{
+		Name: sql.NullString{
+			String: "123",
+			Valid:  true,
+		},
+		Age: sql.NullBool{
+			Bool:  true,
+			Valid: true,
+		},
+	}
+
+	newData := struct {
+		Name string `json:"name"`
+		Age  bool   `json:"age"`
+	}{}
+
+	err := conv.Unmarshal(old, &newData)
+
+	fmt.Println(err, conv.String(newData))
 }

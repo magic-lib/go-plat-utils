@@ -1,6 +1,7 @@
 package conv
 
 import (
+	"database/sql"
 	"reflect"
 	"strconv"
 	"strings"
@@ -19,6 +20,10 @@ func Bool(i any) (bool, bool) {
 			return false, true
 		}
 		return true, true
+	}
+	vBool, ok := getBySqlNullBool(i)
+	if ok {
+		return vBool, true
 	}
 
 	v := reflect.ValueOf(i)
@@ -65,4 +70,14 @@ func Bool(i any) (bool, bool) {
 	default:
 		return Bool(String(i))
 	}
+}
+
+func getBySqlNullBool(src any) (bool, bool) {
+	if strNull, ok := src.(sql.NullBool); ok {
+		if strNull.Valid {
+			return strNull.Bool, true
+		}
+		return false, true
+	}
+	return false, false
 }

@@ -1,6 +1,7 @@
 package conv
 
 import (
+	"database/sql"
 	"encoding/binary"
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/cond"
@@ -38,6 +39,11 @@ func String(src any) string {
 	}
 
 	retStr, err = getByType(src)
+	if err == nil {
+		return retStr
+	}
+
+	retStr, err = getBySqlType(src)
 	if err == nil {
 		return retStr
 	}
@@ -324,6 +330,16 @@ func getByType(src any) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("type error")
+}
+func getBySqlType(src any) (string, error) {
+	if strNull, ok := src.(sql.NullString); ok {
+		if strNull.Valid {
+			return strNull.String, nil
+		}
+		return "", nil
+	}
+
+	return "", fmt.Errorf("sql type error")
 }
 
 func getByTypeString(src any) (string, error) {

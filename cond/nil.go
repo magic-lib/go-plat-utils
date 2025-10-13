@@ -2,6 +2,7 @@ package cond
 
 import (
 	"reflect"
+	"strings"
 )
 
 // IsNil 判断是否为空
@@ -36,6 +37,10 @@ func IsZero(val any) bool {
 	case bool:
 		return val == false
 	case string:
+		str, ok := val.(string)
+		if ok {
+			return strings.TrimSpace(str) == ""
+		}
 		return val == ""
 	default:
 	}
