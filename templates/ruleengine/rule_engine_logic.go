@@ -168,7 +168,7 @@ func (r *EngineLogic) Vars(ruleString string) ([]string, error) {
 
 	exp, err := r.getExpressionByRuleString(ruleString)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ruleEngine ruleString: %s, error: %v", ruleString, err)
 	}
 
 	var varList []string
