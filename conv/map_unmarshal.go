@@ -66,7 +66,13 @@ func Unmarshal(srcStruct any, dstPoint any) error {
 	t := new(toolsService)
 	srcStruct, dstPoint = t.GetNewSrcAndDst(srcStruct, dstPoint)
 
-	//2.2 Unmarshal
+	//先用对象进行替换，因为转换为json串以后，会丢失类型
+	err := AssignTo(srcStruct, dstPoint)
+	if err == nil {
+		return nil
+	}
+
+	//2.2 Unmarshal 会丢失类型
 	b, err := jsoniterForNil.Marshal(srcStruct)
 	if err != nil {
 		return err
@@ -103,4 +109,11 @@ func Unmarshal(srcStruct any, dstPoint any) error {
 		return errJson
 	}
 	return nil
+}
+
+func logDebug(str ...any) {
+	strArr := make([]any, 0)
+	strArr = append(strArr, "[logDebug]")
+	strArr = append(strArr, str...)
+	fmt.Println(strArr...)
 }

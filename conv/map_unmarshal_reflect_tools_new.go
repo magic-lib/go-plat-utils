@@ -83,8 +83,15 @@ func (c *toolsService) canSetStructColumn(columnName string, columnValue reflect
 func (c *toolsService) getAllStructColumn(srcType reflect.Type, srcValue reflect.Value) (
 	[]reflect.StructField, []reflect.Value) {
 
+	logDebug("getAllStructColumn", srcType.String(), srcValue.String())
+
 	allStructList := make([]reflect.StructField, 0)
 	allValueList := make([]reflect.Value, 0)
+
+	if srcType.Kind() == reflect.Ptr {
+		srcType = srcType.Elem()
+		srcValue = srcValue.Elem()
+	}
 
 	if srcType.Kind() != reflect.Struct {
 		return allStructList, allValueList

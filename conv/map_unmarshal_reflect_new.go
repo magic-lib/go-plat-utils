@@ -29,6 +29,8 @@ func AssignTo(srcStruct any, dstPoint any) error {
 	}
 
 	dstVal = dstVal.Elem()
+
+	logDebug("UnmarshalByReflect param:", srcVal.Kind().String(), dstVal.Kind().String())
 	// 如果是切片
 	if srcVal.Kind() == reflect.Slice && dstVal.Kind() == reflect.Slice {
 		return assignConvertSlice(srcVal, dstVal)
@@ -48,7 +50,8 @@ func AssignTo(srcStruct any, dstPoint any) error {
 		return fmt.Errorf("UnmarshalByReflect error: %s, %s", reflect.TypeOf(dstPoint).String(), err.Error())
 	}
 
-	//fmt.Println("UnmarshalByReflect getData:", String(dstValue.Interface()))
+	logDebug("UnmarshalByReflect getData:", String(dstValue.Interface()))
+
 	t := new(toolsService)
 	dstStruct, _ := t.GetNewSrcAndDst(dstValue.Interface(), dstPoint)
 
@@ -91,10 +94,13 @@ func assignConvertSlice(src, dst reflect.Value) error {
 		if err := AssignTo(src.Index(i).Interface(), newData.Interface()); err != nil {
 			return err
 		}
-		if dst.Type().Kind() == reflect.Ptr {
-			dst.Index(i).Set(newData)
-		} else {
-			dst.Index(i).Set(newData.Elem())
+
+		if dst.Index(i).CanSet() {
+			if elemType.Kind() == reflect.Ptr {
+				dst.Index(i).Set(newData)
+			} else {
+				dst.Index(i).Set(newData.Elem())
+			}
 		}
 	}
 	return nil
@@ -146,7 +152,7 @@ type getNewService struct {
 
 // GetByDstAll 根据Dst的类型，获取srcInterface的值
 func (c *getNewService) GetByDstAll(srcInterface any, dstType reflect.Type) (newDstValue reflect.Value, err error) {
-	//fmt.Println("GetByDstAll param:", String(srcInterface), dstType.String())
+	logDebug("GetByDstAll param:", String(srcInterface), dstType.String())
 
 	srcType := reflect.TypeOf(srcInterface)
 	if srcType == dstType {
@@ -164,7 +170,7 @@ func (c *getNewService) GetByDstAll(srcInterface any, dstType reflect.Type) (new
 		found = true
 		newDstList, err = c.getByDstPtr(srcInterface, dstType)
 	} else if dstType.Kind() == reflect.Struct {
-		//fmt.Println("GetByDstAll struct:", String(srcInterface), dstType.String())
+		logDebug("GetByDstAll struct:", String(srcInterface), dstType.String())
 		found = true
 		newDstList, err = c.getByDstStruct(srcInterface, dstType)
 	} else if dstType.Kind() == reflect.Map {
@@ -240,6 +246,8 @@ func (c *getNewService) getByDstPtr(srcInterface any, dstType reflect.Type) (new
 
 	dstDataType := t.getDirectTypeByPtr(dstType)
 
+	logDebug("getByDstPtr:", dstDataType.String())
+
 	if dstType == reflect.TypeOf(&timestamppb.Timestamp{}) {
 		if oneTime, ok := Time(srcInterface); ok {
 			dstData := timestamppb.New(oneTime)
@@ -247,19 +255,19 @@ func (c *getNewService) getByDstPtr(srcInterface any, dstType reflect.Type) (new
 		}
 	}
 
-	//fmt.Println(dstDataType.String())
+	logDebug(dstDataType.String())
 
 	dstDataInterface, err := c.GetByDstAll(srcInterface, dstDataType)
 	if err != nil || !dstDataInterface.IsValid() {
 		return reflect.Value{}, err
 	}
 
-	//fmt.Println("getByDstPtr data:", dstDataInterface.Interface(), dstDataInterface.Type())
+	logDebug("getByDstPtr data:", dstDataInterface.Interface(), dstDataInterface.Type())
 
 	newRetVal := t.getDirectValueByPtr(dstType, dstDataInterface)
 	if newRetVal.IsValid() {
-		//fmt.Println("getByDstPtr:", newRetVal.Interface())
-		//fmt.Println("getByDstPtr:", newRetVal.Type().String())
+		logDebug("getByDstPtr:", newRetVal.Interface())
+		logDebug("getByDstPtr:", newRetVal.Type().String())
 		return newRetVal, nil
 	}
 	return reflect.Value{}, nil
@@ -294,12 +302,11 @@ func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (new
 		dstColumnValue := dstStructValue.Field(i)
 
 		//继承
+		logDebug("getByDstStruct Type:", dstColumnField.Name, dstColumnField.Type.Name())
 		if dstColumnField.Name == dstColumnField.Type.Name() {
-			//fmt.Println("dstColumnField Type:", dstColumnField.Type.Name())
-
 			newDataValue, errTemp := c.GetByDstAll(srcStruct, dstColumnField.Type)
 
-			//fmt.Println(dstColumnField.Name, dstColumnField.Type.String(), newDataValue.Interface())
+			logDebug(dstColumnField.Name, dstColumnField.Type.String(), newDataValue.Interface())
 
 			if errTemp == nil && newDataValue.IsValid() {
 				//fmt.Println(dstColumnValue.Type().String(), newDataValue.Interface())
@@ -319,6 +326,7 @@ func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (new
 		}
 
 		// 当前字段是否能设置，放后面解决类为小写的情况
+		logDebug("canSetStructColumn:", dstColumnField.Name, dstColumnValue.String())
 		if canSet := t.canSetStructColumn(dstColumnField.Name, dstColumnValue); !canSet {
 			continue
 		}
@@ -326,7 +334,7 @@ func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (new
 		//从src获取每一个目标的值,src 是一个整体，需要一一读取
 		valueTemp := c.GetSrcFromStructField(srcStruct, dstColumnField)
 
-		//fmt.Println(String(srcStruct), dstColumnField, valueTemp)
+		logDebug(String(srcStruct), dstColumnField, valueTemp)
 
 		if cond.IsNil(valueTemp) {
 			//源数据为nil，则不用设置
@@ -343,11 +351,11 @@ func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (new
 
 	//正常设置
 	if isSetStruct {
-		//fmt.Println("getByDstStruct: ", dstStructValue.Interface(), dstStructValue.Type().String())
+		logDebug("getByDstStruct: ", dstStructValue.Interface(), dstStructValue.Type().String())
 		return dstStructValue, err
 	}
 
-	//fmt.Println("getByDstStruct error:", srcStruct)
+	logDebug("getByDstStruct error:", srcStruct)
 
 	return reflect.Value{}, err
 }
@@ -418,7 +426,7 @@ func (c *getNewService) getByDstOther(srcOther any, dstType reflect.Type) (newDs
 	if !hasSet {
 		if srcValue.CanConvert(dstType) {
 			newV := srcValue.Convert(dstType)
-			//fmt.Println("newV", String(String(newV.Interface())), String(srcValue.Interface()))
+			logDebug("newV", String(String(newV.Interface())), String(srcValue.Interface()))
 			//这里有可能将55数字转换为7字符的问题，不是想要的效果，所以需要对值进行判断
 			if newPtr.Elem().Type() == newV.Type() && String(newV.Interface()) == String(srcValue.Interface()) {
 				newPtr.Elem().Set(newV)
@@ -939,6 +947,9 @@ func (c *getNewService) changeValueToDstBySrcType(srcValue reflect.Value, dstTyp
 
 // GetSrcFromStructField 取下一级的数据
 func (c *getNewService) GetSrcFromStructField(srcInterface any, dstColumn reflect.StructField) any {
+
+	logDebug("GetSrcFromStructField", String(srcInterface), dstColumn.Name)
+
 	srcVal := reflect.ValueOf(srcInterface)
 	for srcVal.Kind() == reflect.Ptr || srcVal.Kind() == reflect.Interface {
 		srcVal = srcVal.Elem()
@@ -959,6 +970,8 @@ func (c *getNewService) GetSrcFromStructField(srcInterface any, dstColumn reflec
 }
 
 func (c *getNewService) getColumnValueFromStruct(srcStruct any, dstColumn reflect.StructField) any {
+	logDebug("getColumnValueFromStruct", String(srcStruct), dstColumn.Name)
+
 	//1、如果是struct，则首先从struct中进行匹配，名称完全一样的进行匹配
 	srcType := reflect.TypeOf(srcStruct)
 	srcValue := reflect.ValueOf(srcStruct)
@@ -973,7 +986,7 @@ func (c *getNewService) getColumnValueFromStruct(srcStruct any, dstColumn reflec
 
 	for j := 0; j < len(allSrcTypeList); j++ {
 		s := allSrcTypeList[j]
-		//fmt.Println(dstColumn.Name, s.Name)
+		logDebug(dstColumn.Name, s.Name)
 		if s.Name == dstColumn.Name {
 			srcColumnField = s
 			srcColumnValue = allSrcValueList[j]
