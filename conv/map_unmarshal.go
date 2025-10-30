@@ -112,8 +112,8 @@ func Unmarshal(srcStruct any, dstPoint any) error {
 }
 
 func logDebug(str ...any) {
-	strArr := make([]any, 0)
-	strArr = append(strArr, "[logDebug]")
-	strArr = append(strArr, str...)
-	fmt.Println(strArr...)
+	//strArr := make([]any, 0)
+	//strArr = append(strArr, "[logDebug]")
+	//strArr = append(strArr, str...)
+	//fmt.Println(strArr...)
 }
