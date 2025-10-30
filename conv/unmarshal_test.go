@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/utils"
+	"github.com/samber/lo"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	"testing"
 	"time"
@@ -120,31 +122,52 @@ func TestConvert111(t *testing.T) {
 }
 
 type dbType struct {
-	Name sql.NullString `json:"name"`
-	Age  sql.NullBool   `json:"age"`
+	//Name        sql.NullString `json:"name"`
+	//Age         sql.NullBool   `json:"age"`
+	CreatorTime sql.NullTime `db:"creator_time"`
 }
 type jsonType struct {
-	Name string `json:"name"`
-	Age  bool   `json:"age"`
+	//Name        string    `json:"name"`
+	//Age         bool      `json:"age"`
+	CreatorTime time.Time `json:"creator_time"`
 }
 
 func TestConvertSql(t *testing.T) {
 	oldList := []*dbType{
 		{
-			Name: sql.NullString{
-				String: "123",
-				Valid:  true,
-			},
-			Age: sql.NullBool{
-				Bool:  true,
+			//Name: sql.NullString{
+			//	String: "123",
+			//	Valid:  true,
+			//},
+			//Age: sql.NullBool{
+			//	Bool:  true,
+			//	Valid: true,
+			//},
+			CreatorTime: sql.NullTime{
+				Time:  time.Now(),
 				Valid: true,
 			},
 		},
 	}
 
+	aaa, _ := conv.Time(oldList[0].CreatorTime)
+	fmt.Println(aaa)
+
 	newData := make([]*jsonType, 0)
 
-	err := conv.Unmarshal(oldList, &newData)
+	lo.ForEach(oldList, func(item *dbType, _ int) {
+		newTemp := new(jsonType)
 
-	fmt.Println(err, conv.String(newData))
+		_ = conv.Unmarshal(item, newTemp)
+
+		newData = append(newData, newTemp)
+	})
+
+	fmt.Println(conv.String(newData))
+}
+func TestConvertList(t *testing.T) {
+	ruleIdList := make([]int64, 0)
+	_ = conv.Unmarshal(utils.Split("1,2,3", []string{","}), &ruleIdList)
+
+	fmt.Println(ruleIdList)
 }

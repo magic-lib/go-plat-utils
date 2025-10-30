@@ -91,7 +91,11 @@ func assignConvertSlice(src, dst reflect.Value) error {
 		if err := AssignTo(src.Index(i).Interface(), newData.Interface()); err != nil {
 			return err
 		}
-		dst.Index(i).Set(newData)
+		if dst.Type().Kind() == reflect.Ptr {
+			dst.Index(i).Set(newData)
+		} else {
+			dst.Index(i).Set(newData.Elem())
+		}
 	}
 	return nil
 }

@@ -1,6 +1,7 @@
 package conv
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/cond"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -47,6 +48,10 @@ func Time(val any) (time.Time, bool) {
 	}
 
 	if v, ok := val.(time.Time); ok {
+		return v, true
+	}
+
+	if v, ok := getBySqlNullTime(val); ok {
 		return v, true
 	}
 
@@ -198,4 +203,14 @@ func toTimeFromString(v string) (time.Time, bool) {
 		return t, false
 	}
 	return t, true
+}
+
+func getBySqlNullTime(src any) (time.Time, bool) {
+	if strNull, ok := src.(sql.NullTime); ok {
+		if strNull.Valid {
+			return strNull.Time, true
+		}
+		return time.Time{}, true
+	}
+	return time.Time{}, false
 }

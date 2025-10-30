@@ -1,7 +1,7 @@
 package templates
 
 import (
-	"errors"
+	"fmt"
 	"github.com/lqiz/expr"
 	"github.com/magic-lib/go-plat-utils/cond"
 	"github.com/magic-lib/go-plat-utils/conv"
@@ -38,9 +38,7 @@ func ruleExprStr(exprStr string, json string) (bool, error) {
 		return retBool, nil
 	}
 
-	errStr := exprStr + " error " + json
-
-	return false, errors.New(errStr)
+	return false, fmt.Errorf(exprStr + " error " + json)
 }
 
 // 执行表达式
