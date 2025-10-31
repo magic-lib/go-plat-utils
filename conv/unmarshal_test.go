@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/utils"
+	"github.com/magic-lib/go-plat-utils/utils/httputil"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	"log"
 	"testing"
@@ -138,8 +139,37 @@ func TestUnmarshal(t *testing.T) {
 			}
 			return false
 		}},
+		{"str to struct", []any{
+			`{"code":5,"data":{"id":255,"mobile":"0968635986","password":"","realname":"443 4434","gender":0,"birthday":{"Time":"1995-10-31T00:00:00+02:00","Valid":true},"nrc":"334343/43/4","empno":"","province":"Eastern","district":"Lundazi","register_time":{"Time":"2025-10-31T03:10:45+02:00","Valid":true},"register_ip":"172.18.0.1","last_login_time":{"Time":"2025-10-31T03:10:45+02:00","Valid":true},"last_login_ip":"172.18.0.1","status":0,"is_delete":false,"source":"","agent_id":0,"promotion_id":255,"secend_mobile":"","check_info":"0,0,1","check_result":false,"salary_day":0,"monthly_income_grade":1,"sector":5,"created_at":{"Time":"2025-10-31T03:10:45+02:00","Valid":true},"updated_at":{"Time":"2025-10-31T03:34:30+02:00","Valid":true},"commission_amount":"K25","member_group":"","member_identity":"","member_type":"OTHER","member_credit":{"id":0,"member_id":255,"credit_limit":0,"credit_source":"OTHER","afford_ability":0,"update_time":"2025-10-31 03:10:46","create_time":"2025-10-31 03:10:46"},"member_exception":null,"contacts":[{"id":512,"member_id":255,"contact_type":"family","relation":"Brother","realname":"fdsfdsfs","mobile":"0343243242","address":"","remark":"","nrc":"","extra_properties":{"String":"","Valid":false},"created_at":{"Time":"2025-10-31T03:56:00+02:00","Valid":true},"updated_at":{"Time":"2025-10-31T04:05:20+02:00","Valid":true}},{"id":513,"member_id":255,"contact_type":"colleague","relation":"Colleague","realname":"dddddd","mobile":"0324324324","address":"","remark":"","nrc":"","extra_properties":{"String":"","Valid":false},"created_at":{"Time":"2025-10-31T03:56:00+02:00","Valid":true},"updated_at":{"Time":"2025-10-31T03:56:00+02:00","Valid":true}}],"banks":[{"id":260,"member_id":255,"wallet_type":0,"bank_type":"Mtn","bank_key":"","bank_account":"0968635986","is_default":true,"extra_properties":{"String":"","Valid":false},"created_at":{"Time":"2025-10-31T03:56:03+02:00","Valid":true},"updated_at":{"Time":"2025-10-31T03:56:02+02:00","Valid":true}}],"member_tags":[{"id":2891,"source_id":255,"tag_type":"member","tag_name":"B30","tag_source":"Reg","created_at":{"Time":"2025-10-31T04:05:57+02:00","Valid":true},"updated_at":{"Time":"2025-10-31T04:05:57+02:00","Valid":true}}],"company_list":[{"company_no":"ZB8882","company_name":"4_new_dp","nrc":"099271/48/1","mobile":"0968635986","true_name":"zhang yong","mou_salary_day":2,"creator_time":"2025-10-29T11:32:38+02:00"}]},"message":"success"}`,
+		}, []any{true}, func(value any) bool {
+			respInfo := new(httputil.CommResponse)
+
+			_ = conv.Unmarshal(value, respInfo)
+
+			if respInfo.Code == 5 {
+				if respInfo.Data != nil {
+					dat, ok := respInfo.Data.(map[string]any)
+					if ok {
+						inta, _ := conv.Int(dat["id"])
+						if inta == 255 {
+							return true
+						}
+					}
+				}
+			}
+			return false
+		}},
 	}
 	utils.TestFunction(t, testCases, nil)
+}
+
+func TestStringConv(t *testing.T) {
+	var aaab = `{"code":5,"data":{"id":255,"mobile":"0968635986","password":"","realname":"443 4434","gender":0,"birthday":{"Time":"1995-10-31T00:00:00+02:00","Valid":true},"nrc":"334343/43/4","empno":"","province":"Eastern","district":"Lundazi","register_time":{"Time":"2025-10-31T03:10:45+02:00","Valid":true},"register_ip":"172.18.0.1","last_login_time":{"Time":"2025-10-31T03:10:45+02:00","Valid":true},"last_login_ip":"172.18.0.1","status":0,"is_delete":false,"source":"","agent_id":0,"promotion_id":255,"secend_mobile":"","check_info":"0,0,1","check_result":false,"salary_day":0,"monthly_income_grade":1,"sector":5,"created_at":{"Time":"2025-10-31T03:10:45+02:00","Valid":true},"updated_at":{"Time":"2025-10-31T03:34:30+02:00","Valid":true},"commission_amount":"K25","member_group":"","member_identity":"","member_type":"OTHER","member_credit":{"id":0,"member_id":255,"credit_limit":0,"credit_source":"OTHER","afford_ability":0,"update_time":"2025-10-31 03:10:46","create_time":"2025-10-31 03:10:46"},"member_exception":null,"contacts":[{"id":512,"member_id":255,"contact_type":"family","relation":"Brother","realname":"fdsfdsfs","mobile":"0343243242","address":"","remark":"","nrc":"","extra_properties":{"String":"","Valid":false},"created_at":{"Time":"2025-10-31T03:56:00+02:00","Valid":true},"updated_at":{"Time":"2025-10-31T04:05:20+02:00","Valid":true}},{"id":513,"member_id":255,"contact_type":"colleague","relation":"Colleague","realname":"dddddd","mobile":"0324324324","address":"","remark":"","nrc":"","extra_properties":{"String":"","Valid":false},"created_at":{"Time":"2025-10-31T03:56:00+02:00","Valid":true},"updated_at":{"Time":"2025-10-31T03:56:00+02:00","Valid":true}}],"banks":[{"id":260,"member_id":255,"wallet_type":0,"bank_type":"Mtn","bank_key":"","bank_account":"0968635986","is_default":true,"extra_properties":{"String":"","Valid":false},"created_at":{"Time":"2025-10-31T03:56:03+02:00","Valid":true},"updated_at":{"Time":"2025-10-31T03:56:02+02:00","Valid":true}}],"member_tags":[{"id":2891,"source_id":255,"tag_type":"member","tag_name":"B30","tag_source":"Reg","created_at":{"Time":"2025-10-31T04:05:57+02:00","Valid":true},"updated_at":{"Time":"2025-10-31T04:05:57+02:00","Valid":true}}],"company_list":[{"company_no":"ZB8882","company_name":"4_new_dp","nrc":"099271/48/1","mobile":"0968635986","true_name":"zhang yong","mou_salary_day":2,"creator_time":"2025-10-29T11:32:38+02:00"}]},"message":"success"}`
+	respInfo := new(httputil.CommResponse)
+
+	_ = conv.Unmarshal(aaab, respInfo)
+
+	fmt.Println(conv.String(respInfo))
 }
 
 func TestInt(t *testing.T) {

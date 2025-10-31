@@ -347,6 +347,10 @@ func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (new
 			dstColumnValue.Set(newDataValue)
 			isSetStruct = true
 		}
+
+		if errTemp != nil { //如果有错误，需要处理
+			err = errTemp
+		}
 	}
 
 	//正常设置
@@ -437,7 +441,13 @@ func (c *getNewService) getByDstOther(srcOther any, dstType reflect.Type) (newDs
 			//自定义转换
 			newDst, err := c.getByDstDefault(srcOther, dstType)
 			if err == nil {
+				logDebug("getByDstOther type:", newPtr.Elem().Type().String(), newDst.Type().String())
+
 				if newPtr.Elem().Type() == newDst.Type() {
+					newPtr.Elem().Set(newDst)
+					hasSet = true
+				} else if newPtr.Elem().Kind() == reflect.Interface {
+					// 目标为any，则可以设置任意值
 					newPtr.Elem().Set(newDst)
 					hasSet = true
 				}
@@ -447,7 +457,9 @@ func (c *getNewService) getByDstOther(srcOther any, dstType reflect.Type) (newDs
 	if hasSet {
 		return newPtr.Elem(), err
 	}
-
+	if err == nil {
+		err = fmt.Errorf(errStrGetByDstOther, "no set")
+	}
 	return reflect.Value{}, err
 }
 
@@ -577,6 +589,8 @@ func (c *getNewService) changeValueToDstByDstType(srcValue reflect.Value, dstTyp
 			}
 			return nil, true
 		}
+		//如果为any类型，则看是否可以直接进行赋值
+		return srcValue.Interface(), true
 	}
 	if dstType.Kind() == reflect.Struct {
 		if dstType == reflect.TypeOf(time.Time{}) {
