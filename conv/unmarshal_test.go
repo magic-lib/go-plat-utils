@@ -2,7 +2,6 @@ package conv_test
 
 import (
 	"database/sql"
-	"fmt"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/utils"
 	"github.com/magic-lib/go-plat-utils/utils/httputil"
@@ -135,6 +134,24 @@ func TestUnmarshal(t *testing.T) {
 					log.Println(conv.String(bb.CreateTime.AsTime()))
 					return true
 				}
+			}
+			return false
+		}},
+		{"timestamppb.Timestamp to Time", []any{
+			AA{
+				CreateTime: time.Now(),
+			}}, []any{true}, func(value any) bool {
+			now := time.Now()
+
+			bb := BB{
+				CreateTime: timestamppb.New(now),
+			}
+			aa := new(AA)
+
+			_ = conv.Unmarshal(bb, aa)
+
+			if aa.CreateTime.Equal(now) {
+				return true
 			}
 			return false
 		}},
@@ -272,44 +289,50 @@ func TestUnmarshal(t *testing.T) {
 	utils.TestFunction(t, testCases, nil)
 }
 
-func TestInt(t *testing.T) {
-	str := "\u0000"
-	num, ok := conv.Int(str)
-
-	fmt.Println(num, ok)
-}
-func TestToString(t *testing.T) {
-	str := []uint8{0}
-	num := conv.String(str)
-
-	fmt.Println(num)
-}
-
-func TestToTime(t *testing.T) {
-	//now := time.Now()
-
-	//bb := BB{
-	//	CreateTime: timestamppb.New(time.Now()),
-	//}
-	//aa := new(AA)
-	//
-	//_ = conv.Unmarshal(bb, aa)
-	//
-	//fmt.Println(conv.String(aa))
-
-	//createTime := timestamppb.New(time.Time{})
-	//aa := createTime.AsTime()
-	//fmt.Println(conv.String(aa))
-
-	//kk, _ := conv.Time(createTime)
-	//fmt.Println(conv.String(kk))
-
-}
 func TestConvert(t *testing.T) {
-	aa, ok := conv.Convert[int](55)
-	fmt.Println(aa, ok)
-	bb, ok := conv.Convert[string](55)
-	fmt.Println(bb, ok)
-	cc, ok := conv.Convert[int64](55)
-	fmt.Println(cc, ok)
+	testCases := []*utils.TestStruct{
+		{"convert", []any{}, []any{true}, func() bool {
+			aa, ok1 := conv.Convert[int](55)
+			bb, ok2 := conv.Convert[string](55)
+			cc, ok3 := conv.Convert[int64](55)
+
+			if ok1 && ok2 && ok3 {
+				if aa == 55 && bb == "55" && cc == 55 {
+					return true
+				}
+			}
+			return false
+		}},
+		{"toInt", []any{}, []any{true}, func() bool {
+			str := "\u0000"
+			num, ok := conv.Int(str)
+
+			if !ok && num == 0 {
+				return true
+			}
+			return false
+		}},
+		{"toString", []any{}, []any{true}, func() bool {
+			str := []uint8{0}
+			num := conv.String(str)
+
+			if num == string(str) {
+				return true
+			}
+			return false
+		}},
+		{"toTime", []any{}, []any{true}, func() bool {
+			now := time.Now()
+
+			createTime := timestamppb.New(now)
+			aaa := createTime.AsTime()
+
+			kk, _ := conv.Time(createTime)
+			if kk.Equal(aaa) {
+				return true
+			}
+			return false
+		}},
+	}
+	utils.TestFunction(t, testCases, nil)
 }
