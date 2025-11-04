@@ -3,7 +3,6 @@ package conv
 import (
 	"fmt"
 	"github.com/jinzhu/copier"
-	jsoniterForNil "github.com/magic-lib/go-plat-utils/internal/jsoniter/go"
 	"log"
 	"reflect"
 )
@@ -73,11 +72,7 @@ func Unmarshal(srcStruct any, dstPoint any) error {
 	}
 
 	//2.2 Unmarshal 会丢失类型
-	b, err := jsoniterForNil.Marshal(srcStruct)
-	if err != nil {
-		return err
-	}
-	errJson := jsoniterForNil.Unmarshal(b, dstPoint)
+	errJson := t.UnmarshalDataFromJson(srcStruct, dstPoint)
 	if errJson == nil {
 		return nil
 	}
@@ -111,9 +106,14 @@ func Unmarshal(srcStruct any, dstPoint any) error {
 	return nil
 }
 
+var OpenLog = false
+
 func logDebug(str ...any) {
-	//strArr := make([]any, 0)
-	//strArr = append(strArr, "[logDebug]")
-	//strArr = append(strArr, str...)
-	//fmt.Println(strArr...)
+	if !OpenLog {
+		return
+	}
+	strArr := make([]any, 0)
+	strArr = append(strArr, "[logDebug]")
+	strArr = append(strArr, str...)
+	fmt.Println(strArr...)
 }

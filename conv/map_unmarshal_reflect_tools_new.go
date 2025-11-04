@@ -2,6 +2,7 @@ package conv
 
 import (
 	"fmt"
+	"github.com/bytedance/sonic"
 	"github.com/magic-lib/go-plat-utils/cond"
 	jsoniterForNil "github.com/magic-lib/go-plat-utils/internal/jsoniter/go"
 	"reflect"
@@ -83,7 +84,7 @@ func (c *toolsService) canSetStructColumn(columnName string, columnValue reflect
 func (c *toolsService) getAllStructColumn(srcType reflect.Type, srcValue reflect.Value) (
 	[]reflect.StructField, []reflect.Value) {
 
-	logDebug("getAllStructColumn", srcType.String(), srcValue.String())
+	logDebug("getAllStructColumn:", srcType.String(), srcValue.String())
 
 	allStructList := make([]reflect.StructField, 0)
 	allValueList := make([]reflect.Value, 0)
@@ -328,35 +329,57 @@ func (c *toolsService) GetNewSrcAndDst(srcStruct any, dstPoint any) (
 	if srcStruct == nil {
 		return nil, dstPoint
 	}
-	srcStruct = c.getSrcStruct(srcStruct)
+	newSrcStruct = c.getSrcStruct(srcStruct)
 	newDstPoint, _ = c.getDstPointType(dstPoint)
 
-	return srcStruct, newDstPoint
+	return newSrcStruct, newDstPoint
+}
+func (c *toolsService) UnmarshalDataFromJson(srcStruct any, dstPoint any) error {
+	logDebug("UnmarshalDataFromJson param:", String(srcStruct), reflect.TypeOf(srcStruct).String())
+	srcType := reflect.TypeOf(srcStruct)
+	if srcType.Kind() == reflect.String || cond.IsBytes(srcStruct) {
+		errJson := jsoniterForNil.UnmarshalFromString(String(srcStruct), dstPoint)
+		if errJson != nil {
+			logDebug("UnmarshalDataFromJson err2:", String(srcStruct), errJson.Error())
+			return sonic.UnmarshalString(String(srcStruct), dstPoint)
+		}
+		return nil
+	}
+
+	b, err := jsoniterForNil.Marshal(srcStruct)
+	if err != nil {
+		logDebug("UnmarshalDataFromJson err1:", err.Error())
+		return err
+	}
+	errJson := jsoniterForNil.Unmarshal(b, dstPoint)
+	if errJson != nil {
+		logDebug("UnmarshalDataFromJson err2:", String(srcStruct), errJson.Error())
+		return sonic.UnmarshalString(string(b), dstPoint)
+	}
+	return nil
 }
 
 func (c *toolsService) extendPartDst(srcByte []byte, srcType reflect.Type, dstPoint any) (any, error) {
 	if srcType.Kind() == reflect.Slice {
 		toPointList := make([]any, 0)
-		err2 := jsoniterForNil.Unmarshal(srcByte, &toPointList)
+
+		t := new(toolsService)
+		err2 := t.UnmarshalDataFromJson(srcByte, &toPointList)
 		if err2 == nil {
-			srcByte, err2 = jsoniterForNil.Marshal(toPointList)
+			err2 = t.UnmarshalDataFromJson(toPointList, dstPoint)
 			if err2 == nil {
-				err := jsoniterForNil.Unmarshal(srcByte, dstPoint)
-				return dstPoint, err
+				return dstPoint, nil
 			}
 		}
 	} else {
 		toPointMap := make(map[string]any)
-		err2 := jsoniterForNil.Unmarshal(srcByte, &toPointMap)
+
+		t := new(toolsService)
+		err2 := t.UnmarshalDataFromJson(srcByte, &toPointMap)
 		if err2 == nil {
-			toPointMap2 := make(map[string]string)
-			for key, val := range toPointMap {
-				toPointMap2[key] = String(val)
-			}
-			srcByte, err2 = jsoniterForNil.Marshal(toPointMap2)
+			err2 = t.UnmarshalDataFromJson(toPointMap, dstPoint)
 			if err2 == nil {
-				err := jsoniterForNil.Unmarshal(srcByte, dstPoint)
-				return dstPoint, err
+				return dstPoint, nil
 			}
 		}
 	}

@@ -30,7 +30,6 @@ func FuncExecute(function any, args ...any) (result []any, err error) {
 		return nil, fmt.Errorf("[FuncExecute] not function")
 	}
 
-	// 将参数列表转换为reflect.Value切片
 	var retValues []reflect.Value
 	if len(args) > 0 {
 		argSlice := make([]reflect.Value, len(args))
@@ -114,6 +113,10 @@ func FuncExecute(function any, args ...any) (result []any, err error) {
 		// 调用函数并返回结果
 		retValues = fnValue.Call(argSlice)
 	} else {
+		if fnType.NumIn() > len(args) {
+			return []any{}, fmt.Errorf("[FuncExecute] param error: %d, func param length: %d",
+				len(args), fnType.NumIn())
+		}
 		retValues = fnValue.Call(nil)
 	}
 

@@ -50,16 +50,12 @@ func AssignTo(srcStruct any, dstPoint any) error {
 		return fmt.Errorf("UnmarshalByReflect error: %s, %s", reflect.TypeOf(dstPoint).String(), err.Error())
 	}
 
-	logDebug("UnmarshalByReflect getData:", String(dstValue.Interface()))
+	logDebug("fill.GetByDstAll:", String(dstValue.Interface()))
 
 	t := new(toolsService)
 	dstStruct, _ := t.GetNewSrcAndDst(dstValue.Interface(), dstPoint)
 
-	b, err := jsoniterForNil.Marshal(dstStruct)
-	if err != nil {
-		return err
-	}
-	errJson := jsoniterForNil.Unmarshal(b, dstPoint)
+	errJson := t.UnmarshalDataFromJson(dstStruct, dstPoint)
 	if errJson == nil {
 		return nil
 	}
@@ -152,7 +148,7 @@ type getNewService struct {
 
 // GetByDstAll 根据Dst的类型，获取srcInterface的值
 func (c *getNewService) GetByDstAll(srcInterface any, dstType reflect.Type) (newDstValue reflect.Value, err error) {
-	logDebug("GetByDstAll param:", String(srcInterface), dstType.String())
+	logDebug("GetByDstAll param:", String(srcInterface), dstType.String(), dstType.Kind().String())
 
 	srcType := reflect.TypeOf(srcInterface)
 	if srcType == dstType {
@@ -171,8 +167,22 @@ func (c *getNewService) GetByDstAll(srcInterface any, dstType reflect.Type) (new
 		newDstList, err = c.getByDstPtr(srcInterface, dstType)
 	} else if dstType.Kind() == reflect.Struct {
 		logDebug("GetByDstAll struct:", String(srcInterface), dstType.String())
-		found = true
-		newDstList, err = c.getByDstStruct(srcInterface, dstType)
+		dstIns := reflect.New(dstType)
+		if srcType.Kind() == reflect.Map {
+			found = true
+			t := new(toolsService)
+			err = t.UnmarshalDataFromJson(srcInterface, dstIns.Interface())
+			if err == nil {
+				logDebug("GetByDstAll mapToStruct result:", String(dstIns.Interface()))
+				newDstList = dstIns.Elem()
+			}
+		}
+
+		if !found || err != nil {
+			found = true
+			newDstList, err = c.getByDstStruct(srcInterface, dstType)
+			logDebug("GetByDstAll struct result:", newDstList, dstType.String())
+		}
 	} else if dstType.Kind() == reflect.Map {
 		found = true
 		newDstList, err = c.getByDstMap(srcInterface, dstType)
@@ -181,6 +191,7 @@ func (c *getNewService) GetByDstAll(srcInterface any, dstType reflect.Type) (new
 	// 完成
 	if found {
 		if err == nil && newDstList.IsValid() {
+			logDebug("GetByDstAll found:", String(newDstList.Interface()))
 			return newDstList, nil
 		}
 		newDstList2, err2 := c.getByDstOther(srcInterface, dstType)
@@ -208,11 +219,8 @@ func (c *getNewService) getByDstSlice(srcSlice any, dstType reflect.Type) (newDs
 
 	toPointList := make([]any, 0)
 
-	srcByte, err2 := jsoniterForNil.Marshal(srcSlice)
-	if err2 != nil {
-		return reflect.Value{}, err2
-	}
-	err2 = jsoniterForNil.Unmarshal(srcByte, &toPointList)
+	t := new(toolsService)
+	err2 := t.UnmarshalDataFromJson(srcSlice, &toPointList)
 	if err2 != nil {
 		return reflect.Value{}, err2
 	}
@@ -220,7 +228,6 @@ func (c *getNewService) getByDstSlice(srcSlice any, dstType reflect.Type) (newDs
 	dstSliceValue := reflect.MakeSlice(dstType, 0, 0)
 	elemType := dstSliceValue.Type().Elem()
 
-	t := new(toolsService)
 	for m := 0; m < len(toPointList); m++ {
 		oneElem := toPointList[m]
 		newDataValue, errTemp := c.GetByDstAll(oneElem, elemType)
@@ -255,7 +262,7 @@ func (c *getNewService) getByDstPtr(srcInterface any, dstType reflect.Type) (new
 		}
 	}
 
-	logDebug(dstDataType.String())
+	logDebug("getByDstPtr2:", dstDataType.String())
 
 	dstDataInterface, err := c.GetByDstAll(srcInterface, dstDataType)
 	if err != nil || !dstDataInterface.IsValid() {
@@ -306,10 +313,10 @@ func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (new
 		if dstColumnField.Name == dstColumnField.Type.Name() {
 			newDataValue, errTemp := c.GetByDstAll(srcStruct, dstColumnField.Type)
 
-			logDebug(dstColumnField.Name, dstColumnField.Type.String(), newDataValue.Interface())
+			logDebug("getByDstStruct:", dstColumnField.Name, dstColumnField.Type.String(), newDataValue.Interface())
 
 			if errTemp == nil && newDataValue.IsValid() {
-				//fmt.Println(dstColumnValue.Type().String(), newDataValue.Interface())
+				logDebug("getByDstStruct 312:", dstColumnValue.Type().String(), newDataValue.Interface())
 				if dstColumnValue.CanSet() {
 					dstColumnValue.Set(newDataValue)
 					isSetStruct = true
@@ -334,7 +341,7 @@ func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (new
 		//从src获取每一个目标的值,src 是一个整体，需要一一读取
 		valueTemp := c.GetSrcFromStructField(srcStruct, dstColumnField)
 
-		logDebug(String(srcStruct), dstColumnField, valueTemp)
+		logDebug("getByDstStruct 344:", String(srcStruct), dstColumnField, valueTemp)
 
 		if cond.IsNil(valueTemp) {
 			//源数据为nil，则不用设置
@@ -343,7 +350,7 @@ func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (new
 
 		newDataValue, errTemp := c.GetByDstAll(valueTemp, dstColumnField.Type)
 		if errTemp == nil && newDataValue.IsValid() {
-			//fmt.Println(dstColumnField.Name, dstColumnValue.Type().String(), newDataValue.Interface())
+			logDebug("getByDstStruct 346:", dstColumnField.Name, dstColumnValue.Type().String(), newDataValue.Interface())
 			dstColumnValue.Set(newDataValue)
 			isSetStruct = true
 		}
@@ -359,7 +366,7 @@ func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (new
 		return dstStructValue, err
 	}
 
-	logDebug("getByDstStruct error:", srcStruct)
+	logDebug("getByDstStruct error:", String(srcStruct), err, dstType.String())
 
 	return reflect.Value{}, err
 }
@@ -374,10 +381,14 @@ func (c *getNewService) getByDstMap(srcStruct any, dstType reflect.Type) (newDst
 		return reflect.Value{}, fmt.Errorf(errStrGetByDstMap, keyType.String())
 	}
 
+	logDebug("getByDstMap param:", String(srcStruct), dstType.String())
+
 	toMap := make(map[string]any)
-	srcString := String(srcStruct)
-	err2 := jsoniterForNil.Unmarshal([]byte(srcString), &toMap)
+
+	t := new(toolsService)
+	err2 := t.UnmarshalDataFromJson(srcStruct, &toMap)
 	if err2 != nil {
+		logDebug("getByDstMap err:", err2.Error())
 		return reflect.Value{}, err2
 	}
 
@@ -400,6 +411,7 @@ func (c *getNewService) getByDstMap(srcStruct any, dstType reflect.Type) (newDst
 		return datMapValue, nil
 	}
 
+	logDebug("getByDstMap err2:", err)
 	return reflect.Value{}, err
 }
 
@@ -984,7 +996,7 @@ func (c *getNewService) GetSrcFromStructField(srcInterface any, dstColumn reflec
 }
 
 func (c *getNewService) getColumnValueFromStruct(srcStruct any, dstColumn reflect.StructField) any {
-	logDebug("getColumnValueFromStruct", String(srcStruct), dstColumn.Name)
+	logDebug("getColumnValueFromStruct:", String(srcStruct), dstColumn.Name)
 
 	//1、如果是struct，则首先从struct中进行匹配，名称完全一样的进行匹配
 	srcType := reflect.TypeOf(srcStruct)
@@ -1000,7 +1012,7 @@ func (c *getNewService) getColumnValueFromStruct(srcStruct any, dstColumn reflec
 
 	for j := 0; j < len(allSrcTypeList); j++ {
 		s := allSrcTypeList[j]
-		logDebug(dstColumn.Name, s.Name)
+		logDebug("getColumnValueFromStruct:", dstColumn.Name, s.Name)
 		if s.Name == dstColumn.Name {
 			srcColumnField = s
 			srcColumnValue = allSrcValueList[j]
@@ -1080,13 +1092,9 @@ func (c *getNewService) getColumnValueFromMap(srcMap any, dstColumn reflect.Stru
 
 // getColumnValueFromType 从里面拿一个值，而不是取本身
 func (c *getNewService) getColumnValueFromType(srcInterface any, dstColumn reflect.StructField) any {
-	srcByte, err2 := jsoniterForNil.Marshal(srcInterface)
-	if err2 != nil {
-		return nil
-	}
-
+	t := new(toolsService)
 	toMap := make(map[string]any)
-	err2 = jsoniterForNil.Unmarshal(srcByte, &toMap)
+	err2 := t.UnmarshalDataFromJson(srcInterface, &toMap)
 	if err2 != nil {
 		return nil
 	}
