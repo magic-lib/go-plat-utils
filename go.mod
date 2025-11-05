@@ -10,7 +10,6 @@ require (
 	github.com/andybalholm/brotli v1.1.1
 	github.com/antonfisher/nested-logrus-formatter v1.3.1
 	github.com/bytedance/go-tagexpr/v2 v2.9.11
-	github.com/bytedance/sonic v1.8.8
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dominikbraun/graph v0.23.0
 	github.com/fatih/color v1.18.0
@@ -86,6 +85,7 @@ require (
 	github.com/andeya/goutil v1.0.1 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/bsm/redislock v0.9.4 // indirect
+	github.com/bytedance/sonic v1.8.8 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
