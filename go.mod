@@ -10,6 +10,7 @@ require (
 	github.com/andybalholm/brotli v1.1.1
 	github.com/antonfisher/nested-logrus-formatter v1.3.1
 	github.com/bytedance/go-tagexpr/v2 v2.9.11
+	github.com/bytedance/sonic v1.8.8
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dominikbraun/graph v0.23.0
 	github.com/fatih/color v1.18.0
@@ -71,6 +72,7 @@ require (
 	google.golang.org/grpc v1.71.1
 	google.golang.org/protobuf v1.36.5
 	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -84,7 +86,6 @@ require (
 	github.com/andeya/goutil v1.0.1 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/bsm/redislock v0.9.4 // indirect
-	github.com/bytedance/sonic v1.8.8 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
@@ -156,5 +157,4 @@ require (
 	golang.org/x/text v0.23.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250303144028-a0af3efb3deb // indirect
 	gopkg.in/redis.v5 v5.2.9 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
