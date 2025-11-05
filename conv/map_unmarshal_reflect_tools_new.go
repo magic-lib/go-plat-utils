@@ -3,6 +3,7 @@ package conv
 import (
 	"fmt"
 	"github.com/bytedance/sonic"
+
 	"github.com/magic-lib/go-plat-utils/cond"
 	jsoniterForNil "github.com/magic-lib/go-plat-utils/internal/jsoniter/go"
 	"reflect"
@@ -354,7 +355,9 @@ func (c *toolsService) UnmarshalDataFromJson(srcStruct any, dstPoint any) error 
 	errJson := jsoniterForNil.Unmarshal(b, dstPoint)
 	if errJson != nil {
 		logDebug("UnmarshalDataFromJson err2:", String(srcStruct), errJson.Error())
-		return sonic.UnmarshalString(string(b), dstPoint)
+		//"github.com/bytedance/sonic"
+		//return sonic.UnmarshalString(string(b), dstPoint)
+		return errJson
 	}
 	return nil
 }
