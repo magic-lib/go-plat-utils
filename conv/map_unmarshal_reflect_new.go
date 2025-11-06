@@ -614,6 +614,8 @@ func (c *getNewService) changeValueToDstByDstType(srcValue reflect.Value, dstTyp
 		}
 		if dstType == reflect.TypeOf(decimal.Decimal{}) {
 			sStr := fmt.Sprintf("%v", srcValue.Interface())
+			//如果数字里含有","，西方数字分段字符，则会报错，所以需要替换为空
+			sStr = strings.ReplaceAll(sStr, ",", "")
 			decimalData, err := decimal.NewFromString(sStr)
 			if err == nil {
 				return decimalData, true

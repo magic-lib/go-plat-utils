@@ -5,6 +5,7 @@ import (
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/utils"
 	"github.com/magic-lib/go-plat-utils/utils/httputil"
+	"github.com/shopspring/decimal"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	yaml "gopkg.in/yaml.v3"
 	"log"
@@ -280,6 +281,24 @@ func TestUnmarshal(t *testing.T) {
 
 			if v.Log != nil && v.Log.ServiceName == "zamloanv1-proxy-server" &&
 				v.RestConf.Name == "ussd-server-http" && v.RestConf.Host == "0.0.0.0" && v.RestConf.Port == 10201 {
+				return true
+			}
+
+			return false
+		}},
+		{"any to decimal.Decimal", []any{}, []any{true}, func() bool {
+			temp1 := new(decimal.Decimal)
+			_ = conv.Unmarshal("100.05", temp1)
+			temp2 := new(decimal.Decimal)
+			_ = conv.Unmarshal("100", temp2)
+			temp3 := new(decimal.Decimal)
+			_ = conv.Unmarshal(100, temp3)
+			temp4 := new(decimal.Decimal)
+			_ = conv.Unmarshal(100.05, temp4)
+			temp5 := new(decimal.Decimal)
+			_ = conv.Unmarshal("1,000.05", temp5)
+
+			if temp1.String() == "100.05" && temp2.String() == "100" && temp3.String() == "100" && temp4.String() == "100.05" && temp5.String() == "1000.05" {
 				return true
 			}
 
