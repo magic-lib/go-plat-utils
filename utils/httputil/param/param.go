@@ -381,13 +381,13 @@ func (p *Param) Parse(r *http.Request, dst any, openValidate ...bool) error {
 				if p.errorMessagesTranslator != nil {
 					return p.errorMessagesTranslator(r.Context(), errKey2, customMsg)
 				}
-				return fmt.Errorf(customMsg)
+				return errors.New(customMsg)
 			}
 			if customMsg, exists := p.customErrorMessages[errKey]; exists {
 				if p.errorMessagesTranslator != nil {
 					return p.errorMessagesTranslator(r.Context(), errKey, customMsg)
 				}
-				return fmt.Errorf(customMsg)
+				return errors.New(customMsg)
 			}
 			log.Default().Println("customErrorMessages map key has package: ", errKey2)
 			log.Default().Println("customErrorMessages map key: ", errKey)

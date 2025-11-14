@@ -53,6 +53,49 @@ func (bf *BaseFsm[S, A]) CanTransition(currState S, action A, toState S) bool {
 	return false
 }
 
+// IsReachableFrom 检查从当前状态通过某个状态是否可以转换到目标状态
+func (bf *BaseFsm[S, A]) IsReachableFrom(currState S, toState S) bool {
+	if currState == toState {
+		return true
+	}
+
+	if !bf.checkState(currState) || !bf.checkState(toState) {
+		return false
+	}
+
+	// 避免循环递归，如 A→B→A→B...）
+	visited := make(map[S]bool)
+
+	var dfs func(current S) bool //递归引用
+	dfs = func(current S) bool {
+		visited[current] = true
+
+		actions := bf.NextActionList(current)
+		for _, action := range actions {
+			// 通过动作获取下一个状态
+			nextState, err := bf.NextState(current, action)
+			if err != nil {
+				continue
+			}
+
+			if nextState == toState {
+				return true
+			}
+
+			if !visited[nextState] {
+				if dfs(nextState) {
+					return true
+				}
+			}
+		}
+
+		// 所有动作遍历完毕仍未找到目标状态，返回false
+		return false
+	}
+
+	return dfs(currState)
+}
+
 func (bf *BaseFsm[S, A]) checkState(state S) bool {
 	if bf.allStates == nil || len(bf.allStates) == 0 {
 		return true

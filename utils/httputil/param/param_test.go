@@ -15,6 +15,10 @@ func TestToString(t *testing.T) {
 
 	fmt.Println(conv.String(q), err)
 }
+func TestToParam(t *testing.T) {
+	q, err := url.QueryUnescape("%2B260967714983")
+	fmt.Println(conv.String(q), err)
+}
 func TestConvString(t *testing.T) {
 	II := getIns()
 	if oneParamMapTemp, ok := II.(map[string]any); ok {
