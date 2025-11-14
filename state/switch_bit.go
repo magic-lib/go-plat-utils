@@ -1,13 +1,21 @@
 package state
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
 // BitSwitch 二进制开关
-type BitSwitch uint64
+type BitSwitch struct {
+	switchUint64 uint64
+	muxLock      sync.Mutex
+}
 
 // NewBitSwitch 初始化二进制开关
-func NewBitSwitch() BitSwitch {
-	return 0
+func NewBitSwitch() *BitSwitch {
+	return &BitSwitch{
+		switchUint64: 0,
+	}
 }
 
 func (bs *BitSwitch) checkPos(pos int) error {
@@ -22,8 +30,10 @@ func (bs *BitSwitch) TurnOn(pos int) error {
 	if err := bs.checkPos(pos); err != nil {
 		return err
 	}
+	bs.muxLock.Lock()
+	defer bs.muxLock.Unlock()
 
-	*bs |= 1 << pos // 对应位设为 1
+	bs.switchUint64 |= 1 << pos // 对应位设为 1
 	return nil
 }
 
@@ -32,7 +42,10 @@ func (bs *BitSwitch) TurnOff(pos int) error {
 	if err := bs.checkPos(pos); err != nil {
 		return err
 	}
-	*bs &= ^(1 << pos) // 对应位设为 0
+	bs.muxLock.Lock()
+	defer bs.muxLock.Unlock()
+
+	bs.switchUint64 &= ^(1 << pos) // 对应位设为 0
 	return nil
 }
 
@@ -41,7 +54,10 @@ func (bs *BitSwitch) Toggle(pos int) error {
 	if err := bs.checkPos(pos); err != nil {
 		return err
 	}
-	*bs ^= 1 << pos // 对应位翻转
+	bs.muxLock.Lock()
+	defer bs.muxLock.Unlock()
+
+	bs.switchUint64 ^= 1 << pos
 	return nil
 }
 
@@ -50,7 +66,7 @@ func (bs *BitSwitch) IsOn(pos int) (bool, error) {
 	if err := bs.checkPos(pos); err != nil {
 		return false, err
 	}
-	return (*bs & (1 << pos)) != 0, nil
+	return (bs.switchUint64 & (1 << pos)) != 0, nil
 }
 
 // GetAllStates 获取所有开关状态（返回 map：开关编号→是否打开）
@@ -65,7 +81,10 @@ func (bs *BitSwitch) GetAllStates() map[int]bool {
 // SetAllStates 批量设置所有开关状态（通过 map：开关编号→是否打开）
 func (bs *BitSwitch) SetAllStates(states map[int]bool) error {
 	// 先重置所有开关为关闭
-	*bs = 0
+	bs.muxLock.Lock()
+	defer bs.muxLock.Unlock()
+
+	bs.switchUint64 = 0
 	for pos, isOn := range states {
 		if isOn {
 			if err := bs.TurnOn(pos); err != nil {
@@ -80,17 +99,20 @@ func (bs *BitSwitch) SetAllStates(states map[int]bool) error {
 	return nil
 }
 
-// ToUint64 转换为 uint64（用于存储/传输）
-func (bs *BitSwitch) ToUint64() uint64 {
-	return uint64(*bs)
+// Uint64 转换为 uint64（用于存储/传输）
+func (bs *BitSwitch) Uint64() uint64 {
+	return bs.switchUint64
 }
 
 // FromUint64 从 uint64 恢复开关状态
 func (bs *BitSwitch) FromUint64(val uint64) {
-	*bs = BitSwitch(val)
+	bs.muxLock.Lock()
+	defer bs.muxLock.Unlock()
+
+	bs.switchUint64 = val
 }
 
 // String 格式化输出（二进制字符串，便于调试）
 func (bs *BitSwitch) String() string {
-	return fmt.Sprintf("0b%064b", *bs)
+	return fmt.Sprintf("0b%064b", bs.switchUint64)
 }
