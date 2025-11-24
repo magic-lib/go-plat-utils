@@ -3,6 +3,7 @@ package cond
 import (
 	"reflect"
 	"strings"
+	"time"
 )
 
 // IsNil 判断是否为空
@@ -42,6 +43,10 @@ func IsZero(val any) bool {
 			return strings.TrimSpace(str) == ""
 		}
 		return val == ""
+	case time.Time:
+		if valTime, ok := val.(time.Time); ok {
+			return IsTimeEmpty(valTime)
+		}
 	default:
 	}
 

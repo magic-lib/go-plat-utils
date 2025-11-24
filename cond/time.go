@@ -20,6 +20,16 @@ func IsTime(dateTime string) bool {
 
 // IsTimeEmpty 是否为空时间
 func IsTimeEmpty(timeParam time.Time) bool {
-	nilTime := time.Time{}      //赋零值
-	return timeParam == nilTime //此处即为零值
+	nilTime := time.Time{} //赋零值
+	if timeParam == nilTime {
+		return true
+	}
+	//因为有时区会影响到判断，这里会忽略时区的影响：0001-01-01 00:00:00 这样的格式，都为零值时间
+	return timeParam.Year() == 1 &&
+		timeParam.Month() == 1 &&
+		timeParam.Day() == 1 &&
+		timeParam.Hour() == 0 &&
+		timeParam.Minute() == 0 &&
+		timeParam.Second() == 0 &&
+		timeParam.Nanosecond() == 0
 }
