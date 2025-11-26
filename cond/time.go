@@ -25,9 +25,13 @@ func IsTimeEmpty(timeParam time.Time) bool {
 		return true
 	}
 	//因为有时区会影响到判断，这里会忽略时区的影响：0001-01-01 00:00:00 这样的格式，都为零值时间
-	return timeParam.Year() == 1 &&
+	// 0001-01-01 00:00:00  0000-00-00 00:00:00  这两种情况
+	return ((timeParam.Year() == 1 &&
 		timeParam.Month() == 1 &&
-		timeParam.Day() == 1 &&
+		timeParam.Day() == 1) ||
+		(timeParam.Year() == 0 &&
+			timeParam.Month() == 0 &&
+			timeParam.Day() == 0)) &&
 		timeParam.Hour() == 0 &&
 		timeParam.Minute() == 0 &&
 		timeParam.Second() == 0 &&
