@@ -91,9 +91,27 @@ func WriteCommResponse(respWriter http.ResponseWriter, comm *CommResponse, statu
 	return err
 }
 
+// WriteCommFailure 系统默认错误返回
+func WriteCommFailure(respWriter http.ResponseWriter, code int64, err error, statusCode ...int) error {
+	return WriteCommResponse(respWriter, GetErrorResponse(nil, code, err), statusCode...)
+}
+
+// WriteCommSuccess 系统默认正确返回
+func WriteCommSuccess(respWriter http.ResponseWriter, data any) error {
+	return WriteCommResponse(respWriter, &CommResponse{
+		Code:    0,
+		Message: http.StatusText(http.StatusOK),
+		Data:    data,
+	}, http.StatusOK)
+}
+
 // GetErrorResponse 系统获取错误码和错误信息
 func GetErrorResponse(allErrorMap map[int64]string, errorCode int64, err ...error) *CommResponse {
 	respError := &CommResponse{}
+
+	if errorCode == 0 {
+		errorCode = http.StatusInternalServerError
+	}
 
 	respError.Code = errorCode
 
@@ -110,8 +128,13 @@ func GetErrorResponse(allErrorMap map[int64]string, errorCode int64, err ...erro
 		}
 	}
 
+	//根据errorCode 获取错误信息
 	if respError.Message == "" {
-		respError.Message = "系统错误"
+		respError.Message = http.StatusText(int(errorCode))
+	}
+
+	if respError.Message == "" {
+		respError.Message = http.StatusText(http.StatusInternalServerError)
 	}
 
 	return respError
