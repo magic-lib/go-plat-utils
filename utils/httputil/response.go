@@ -92,13 +92,13 @@ func WriteCommResponse(respWriter http.ResponseWriter, comm *CommResponse, statu
 }
 
 // WriteCommFailure 系统默认错误返回
-func WriteCommFailure(respWriter http.ResponseWriter, code int64, err error, statusCode ...int) error {
-	return WriteCommResponse(respWriter, GetErrorResponse(nil, code, err), statusCode...)
+func WriteCommFailure(respWriter http.ResponseWriter, err error, code int64, statusCode ...int) {
+	_ = WriteCommResponse(respWriter, GetErrorResponse(nil, code, err), statusCode...)
 }
 
 // WriteCommSuccess 系统默认正确返回
-func WriteCommSuccess(respWriter http.ResponseWriter, data any) error {
-	return WriteCommResponse(respWriter, &CommResponse{
+func WriteCommSuccess(respWriter http.ResponseWriter, data any) {
+	_ = WriteCommResponse(respWriter, &CommResponse{
 		Code:    0,
 		Message: http.StatusText(http.StatusOK),
 		Data:    data,
