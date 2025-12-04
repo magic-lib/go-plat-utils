@@ -147,6 +147,12 @@ func toTimeFromString(v string) (time.Time, bool) {
 				t, err = time.Parse(time.RFC822, v)
 			}
 		}
+	} else if tLen == len(time.RFC3339) {
+		t, err = time.Parse(time.RFC3339, v)
+		if err != nil {
+			v2 := strings.Replace(v, "Z", "+", 1)
+			t, err = time.Parse(time.RFC3339, v2)
+		}
 	} else {
 		if tLen > 19 {
 			tempArr := strings.Split(v, ".")
@@ -163,21 +169,9 @@ func toTimeFromString(v string) (time.Time, bool) {
 	}
 
 	if err != nil {
-		{
-			layout := "2006-1-2 3:04:05"
-			// 解析时间
-			parsedTime, err := time.Parse(layout, v)
-			if err == nil {
-				return parsedTime, true
-			}
-		}
-		{
-			layout := "2006/1/2 15:04"
-			// 解析时间
-			parsedTime, err := time.Parse(layout, v)
-			if err == nil {
-				return parsedTime, true
-			}
+		parsedTime, err := parseTime(v)
+		if err == nil {
+			return parsedTime, true
 		}
 
 		{ //2023-04-14T10:09:00Z
@@ -203,6 +197,41 @@ func toTimeFromString(v string) (time.Time, bool) {
 		return t, false
 	}
 	return t, true
+}
+
+func parseTime(v string) (time.Time, error) {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return time.Time{}, fmt.Errorf("time string is empty")
+	}
+
+	layoutList := []string{
+		"2006-1-2 3:04:05",
+		"2006/1/2 15:04",
+		"02/01/2006",
+		"02/1/2006",
+		"2006/1/2",
+		"02/1/2006 15:04:05",
+		"2006/1/02 15:04:05",
+		"2006.01",
+		"2006/1/02",
+		"02-Jan-2006",
+		"2-Jan-2006",
+		"2006/1/02 15:04:05:00",
+		"Jan 02, 2006",
+	}
+
+	var lastErr error
+	for _, layout := range layoutList {
+		t, err := time.Parse(layout, v) // 显式指定本地时区
+		if err == nil {
+			return t, nil
+		}
+		// 记录最后一次错误（便于排查）
+		lastErr = fmt.Errorf("layout [%s] parse failed: %w", layout, err)
+	}
+
+	return time.Time{}, fmt.Errorf("can not convert to time: %s, last error: %v", v, lastErr)
 }
 
 func getBySqlNullTime(src any) (time.Time, bool) {
