@@ -45,6 +45,7 @@ func TestAnyToTime(t *testing.T) {
 		{"2025/09/05 11:28", []any{"2025/09/05 11:28"}, []any{true}, timeFunc},
 		{"2025/9/5 9:13", []any{"2025/9/5 9:13"}, []any{true}, timeFunc},
 		{"2025-9-12 12:04:07", []any{"2025-9-12 12:04:07"}, []any{true}, timeFunc},
+		{"2025/12/5", []any{"2025/12/5"}, []any{true}, timeFunc},
 	}
 	utils.TestFunction(t, testCases, timeFunc)
 
