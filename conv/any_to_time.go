@@ -206,7 +206,7 @@ func parseTime(v string) (time.Time, error) {
 	}
 
 	layoutList := []string{
-		"2006-1-2 3:04:05",
+		"2006-1-2 15:04:05",
 		"2006/1/2 15:04",
 		"02/01/2006",
 		"02/1/2006",
