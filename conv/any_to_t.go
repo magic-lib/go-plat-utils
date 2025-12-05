@@ -1,57 +1,132 @@
 package conv
 
-import "reflect"
+import (
+	"fmt"
+	"log"
+	"reflect"
+	"time"
+)
 
 // Convert 转换泛型
-func Convert[T any](v any) (T, bool) {
+func Convert[T any](v any) (T, error) {
 	// 类型断言：尝试将v转换为T
 	if result, ok := v.(T); ok {
-		return result, true
+		return result, nil
 	}
-
 	var target T
 	targetType := reflect.TypeOf(target)
-	valueType := reflect.TypeOf(v)
 
-	// 检查类型是否匹配
-	if valueType == targetType {
-		if targetT, ok := reflect.ValueOf(v).Interface().(T); ok {
-			return targetT, true
-		}
-	}
-
-	elemType := targetType
-	// 判断T是否为指针类型
-	if targetType.Kind() == reflect.Ptr {
-		elemType = targetType.Elem()
-	}
-
-	targetPtrValue := reflect.New(elemType).Interface()
-	err := Unmarshal(v, targetPtrValue)
+	targetValue, err := ConvertForType(targetType, v)
 	if err != nil {
-		err = AssignTo(v, targetPtrValue)
-		if err != nil {
-			return target, false
-		}
-		return reflect.ValueOf(targetPtrValue).Elem().Interface().(T), true
+		return target, err
 	}
-
-	if targetType.Kind() == reflect.Ptr {
-		if targetValue, ok := targetPtrValue.(T); ok {
-			return targetValue, true
-		}
-		return target, false
+	if targetT, ok := targetValue.(T); ok {
+		return targetT, nil
 	}
-
-	return reflect.ValueOf(targetPtrValue).Elem().Interface().(T), true
+	return target, fmt.Errorf("convert not match T")
 }
 
 // ConvertForType 泛型转换
-func ConvertForType(targetType reflect.Type, v any) (any, bool) {
+func ConvertForType(targetType reflect.Type, v any) (any, error) {
 	valueType := reflect.TypeOf(v)
 	// 检查类型是否匹配
 	if valueType == targetType {
-		return v, true
+		return v, nil
+	}
+
+	convErr := fmt.Errorf("unsupported targetType:", targetType.String())
+
+	switch targetType {
+	case reflect.TypeOf(true):
+		{
+			if convRet, ok := Bool(v); ok {
+				return convRet, nil
+			}
+		}
+	case reflect.TypeOf(0):
+		{
+			if convRet, ok := toInt(v); ok {
+				return convRet, nil
+			}
+		}
+	case reflect.TypeOf(int8(0)):
+		{
+			if convRet, ok := toInt8(v); ok {
+				return convRet, nil
+			}
+		}
+	case reflect.TypeOf(int16(0)):
+		{
+			if convRet, ok := toInt16(v); ok {
+				return convRet, nil
+			}
+		}
+	case reflect.TypeOf(int32(0)):
+		{
+			if convRet, ok := toInt32(v); ok {
+				return convRet, nil
+			}
+		}
+	case reflect.TypeOf(int64(0)):
+		{
+			if convRet, ok := Int64(v); ok {
+				return convRet, nil
+			}
+		}
+	case reflect.TypeOf(uint(0)):
+		{
+			if convRet, ok := toUint(v); ok {
+				return convRet, nil
+			}
+		}
+	case reflect.TypeOf(uint8(0)):
+		{
+			if convRet, ok := toUint8(v); ok {
+				return convRet, nil
+			}
+		}
+	case reflect.TypeOf(uint16(0)):
+		{
+			if convRet, ok := toUint16(v); ok {
+				return convRet, nil
+			}
+		}
+	case reflect.TypeOf(uint32(0)):
+		{
+			if convRet, ok := toUint32(v); ok {
+				return convRet, nil
+			}
+		}
+	case reflect.TypeOf(uint64(0)):
+		{
+			if convRet, ok := toUint64(v); ok {
+				return convRet, nil
+			}
+		}
+	case reflect.TypeOf(float32(0)):
+		{
+			if convRet, ok := toFloat32(v); ok {
+				return convRet, nil
+			}
+		}
+	case reflect.TypeOf(float64(0)):
+		{
+			if convRet, ok := toFloat64(v); ok {
+				return convRet, nil
+			}
+		}
+	case reflect.TypeOf(""):
+		{
+			return String(v), nil
+		}
+	case reflect.TypeOf(time.Time{}):
+		{
+			if convRet, ok := Time(v); ok {
+				return convRet, nil
+			}
+		}
+	default:
+		log.Println("ConvertForType: ", convErr.Error())
 	}
 
 	target := reflect.Zero(targetType)
@@ -67,17 +142,17 @@ func ConvertForType(targetType reflect.Type, v any) (any, bool) {
 	if err != nil {
 		err = AssignTo(v, targetPtrValue)
 		if err != nil {
-			return target, false
+			return target, convErr
 		}
-		return reflect.ValueOf(targetPtrValue).Elem().Interface(), true
+		return reflect.ValueOf(targetPtrValue).Elem().Interface(), nil
 	}
 
 	if targetType.Kind() == reflect.Ptr {
 		if reflect.TypeOf(targetPtrValue) == targetType {
-			return targetPtrValue, true
+			return targetPtrValue, nil
 		}
-		return target, false
+		return target, convErr
 	}
 
-	return reflect.ValueOf(targetPtrValue).Elem().Interface(), true
+	return reflect.ValueOf(targetPtrValue).Elem().Interface(), nil
 }

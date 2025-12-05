@@ -2,7 +2,6 @@ package conv
 
 import (
 	"database/sql"
-	"encoding/binary"
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/cond"
 	"github.com/magic-lib/go-plat-utils/conf"
@@ -10,14 +9,12 @@ import (
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	"math"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
-	"unicode/utf8"
 )
 
 // String 转换为string
@@ -132,7 +129,7 @@ func getBySpecialType(src any) (any, string, bool) {
 func getBySyncMap(synMap *sync.Map) map[any]any {
 	newMap := make(map[any]any)
 	defer func() {
-		if err := recover(); any(err) != nil {
+		if err := recover(); err != nil {
 			fmt.Println("getBySyncMap error:", err)
 			return
 		}
@@ -193,75 +190,75 @@ func getBySlice(src any) (string, []any, error) {
 	return "", newMap, err
 }
 
-func isNumeric(data []uint8) bool {
-	if len(data) == 0 {
-		return false
-	}
-	for _, b := range data {
-		if b < '0' || b > '9' {
-			return false
-		}
-	}
-	return true
-}
+//func isNumeric(data []uint8) bool {
+//	if len(data) == 0 {
+//		return false
+//	}
+//	for _, b := range data {
+//		if b < '0' || b > '9' {
+//			return false
+//		}
+//	}
+//	return true
+//}
 
-func isPrintableASCII(data []uint8) bool {
-	for _, b := range data {
-		if b < 32 || b > 126 {
-			return false
-		}
-	}
-	return true
-}
+//func isPrintableASCII(data []uint8) bool {
+//	for _, b := range data {
+//		if b < 32 || b > 126 {
+//			return false
+//		}
+//	}
+//	return true
+//}
 
-func isUTF8String(data []uint8) bool {
-	return utf8.Valid(data)
-}
-
-// 尝试解析为 uint32（大端序）
-func tryParseUint32(data []uint8) (bool, uint32) {
-	if len(data) != 4 {
-		return false, 0
-	}
-	return true, binary.BigEndian.Uint32(data)
-}
-
-// 尝试解析为 float64（大端序）
-func tryParseFloat64(data []uint8) (bool, float64) {
-	if len(data) != 8 {
-		return false, 0
-	}
-	bits := binary.BigEndian.Uint64(data)
-	f := math.Float64frombits(bits)
-	return true, f
-}
-func detectDataType(data []uint8) any {
-	// 优先判断是否为合法的 UTF-8 字符串
-	if isUTF8String(data) {
-		// 检查是否为纯数字字符串
-		if isNumeric(data) {
-			return "number"
-		}
-		return "string"
-	}
-
-	// 尝试解析为二进制数字
-	if len(data) == 4 {
-		if ok, _ := tryParseUint32(data); ok {
-			return "binary uint32"
-		}
-	} else if len(data) == 8 {
-		if ok, f := tryParseFloat64(data); ok {
-			// 检查是否为非 NaN 和非无穷大的有效浮点数
-			if !math.IsNaN(f) && !math.IsInf(f, 0) {
-				return "binary float64"
-			}
-		}
-	}
-
-	// 默认视为二进制数据
-	return "binary data"
-}
+//func isUTF8String(data []uint8) bool {
+//	return utf8.Valid(data)
+//}
+//
+//// 尝试解析为 uint32（大端序）
+//func tryParseUint32(data []uint8) (bool, uint32) {
+//	if len(data) != 4 {
+//		return false, 0
+//	}
+//	return true, binary.BigEndian.Uint32(data)
+//}
+//
+//// 尝试解析为 float64（大端序）
+//func tryParseFloat64(data []uint8) (bool, float64) {
+//	if len(data) != 8 {
+//		return false, 0
+//	}
+//	bits := binary.BigEndian.Uint64(data)
+//	f := math.Float64frombits(bits)
+//	return true, f
+//}
+//func detectDataType(data []uint8) any {
+//	// 优先判断是否为合法的 UTF-8 字符串
+//	if isUTF8String(data) {
+//		// 检查是否为纯数字字符串
+//		if isNumeric(data) {
+//			return "number"
+//		}
+//		return "string"
+//	}
+//
+//	// 尝试解析为二进制数字
+//	if len(data) == 4 {
+//		if ok, _ := tryParseUint32(data); ok {
+//			return "binary uint32"
+//		}
+//	} else if len(data) == 8 {
+//		if ok, f := tryParseFloat64(data); ok {
+//			// 检查是否为非 NaN 和非无穷大的有效浮点数
+//			if !math.IsNaN(f) && !math.IsInf(f, 0) {
+//				return "binary float64"
+//			}
+//		}
+//	}
+//
+//	// 默认视为二进制数据
+//	return "binary data"
+//}
 
 func getByKind(i any) (string, error) {
 	if i == nil {
@@ -393,7 +390,6 @@ func getStringFromJson(src any) (string, error) {
 		//解决 & 会转换成 \u0026 的问题
 		return strFix(json), nil
 	}
-	//nolint:goerr113
 	return "", fmt.Errorf(errStrGetStringFromJson, err)
 }
 

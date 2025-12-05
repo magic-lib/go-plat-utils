@@ -256,7 +256,7 @@ func (c *getNewService) getByDstPtr(srcInterface any, dstType reflect.Type) (new
 	logDebug("getByDstPtr:", dstDataType.String())
 
 	if dstType == reflect.TypeOf(&timestamppb.Timestamp{}) {
-		if oneTime, ok := Time(srcInterface); ok {
+		if oneTime, err1 := Convert[time.Time](srcInterface); err1 == nil {
 			dstData := timestamppb.New(oneTime)
 			return reflect.ValueOf(dstData), nil
 		}
@@ -488,8 +488,8 @@ func (c *getNewService) getByDstDefault(srcDefault any, dstType reflect.Type) (n
 	}
 
 	if dstType.Kind() == reflect.Bool {
-		retBool, ok := Bool(srcDefault)
-		if ok {
+		retBool, err1 := Convert[bool](srcDefault)
+		if err1 == nil {
 			return reflect.ValueOf(retBool), nil
 		}
 	}
@@ -687,8 +687,8 @@ func (c *getNewService) changeValueToString(srcValue reflect.Value) (string, boo
 	return sStr, false
 }
 func (c *getNewService) changeValueToTime(srcValue reflect.Value) (time.Time, bool) {
-	tempTime, ok := Time(srcValue.Interface())
-	if ok {
+	tempTime, err1 := Convert[time.Time](srcValue.Interface())
+	if err1 == nil {
 		return tempTime, true
 	}
 	return time.Time{}, false
@@ -808,8 +808,8 @@ func (c *getNewService) changeFromString(srcValue reflect.Value, dstTypeName str
 		return nil, true
 	}
 	if dstTypeName == "Time" {
-		sTime, ok := Time(srcColumnValueString)
-		if ok {
+		sTime, err1 := Convert[time.Time](srcColumnValueString)
+		if err1 == nil {
 			return sTime, true
 		}
 		return nil, true
@@ -860,8 +860,8 @@ func (c *getNewService) changeFromByte(srcValue reflect.Value, dstTypeName strin
 				return sFloat, true
 			}
 		} else if dstTypeName == "Time" {
-			STime, ok := Time(srcColumnValueString)
-			if ok {
+			STime, err1 := Convert[time.Time](srcColumnValueString)
+			if err1 == nil {
 				return STime, true
 			}
 		}
@@ -879,8 +879,8 @@ func (c *getNewService) changeFromUint8(srcValue reflect.Value, dstTypeName stri
 		return Int64(srcString)
 	}
 	if dstTypeName == "Time" {
-		timeTemp, ok := Time(srcString)
-		if ok {
+		timeTemp, err1 := Convert[time.Time](srcString)
+		if err1 == nil {
 			return timeTemp, true
 		}
 	}

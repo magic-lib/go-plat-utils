@@ -6,18 +6,18 @@ import (
 	"strconv"
 )
 
-// Uint 将给定的值转换为 uint
-func Uint(i any) (uint, bool) {
-	v, ok := Uint64(i)
+// toUint 将给定的值转换为 uint
+func toUint(i any) (uint, bool) {
+	v, ok := toUint64(i)
 	if !ok {
 		return 0, false
 	}
 	return uint(v), true
 }
 
-// Uint8 将给定的值转换为 uint8
-func Uint8(i any) (uint8, bool) {
-	value, ok := Uint64(i)
+// toUint8 将给定的值转换为 uint8
+func toUint8(i any) (uint8, bool) {
+	value, ok := toUint64(i)
 	if !ok {
 		return 0, false
 	}
@@ -27,9 +27,9 @@ func Uint8(i any) (uint8, bool) {
 	return uint8(value), true
 }
 
-// Uint16 将给定的值转换为 uint16
-func Uint16(i any) (uint16, bool) {
-	value, ok := Uint64(i)
+// toUint16 将给定的值转换为 uint16
+func toUint16(i any) (uint16, bool) {
+	value, ok := toUint64(i)
 	if !ok {
 		return 0, false
 	}
@@ -39,9 +39,9 @@ func Uint16(i any) (uint16, bool) {
 	return uint16(value), true
 }
 
-// Uint32 将给定的值转换为 uint32
-func Uint32(i any) (uint32, bool) {
-	value, ok := Uint64(i)
+// toUint32 将给定的值转换为 uint32
+func toUint32(i any) (uint32, bool) {
+	value, ok := toUint64(i)
 	if !ok {
 		return 0, false
 	}
@@ -51,8 +51,8 @@ func Uint32(i any) (uint32, bool) {
 	return uint32(value), true
 }
 
-// Uint64 将给定的值转换为 uint64
-func Uint64(i any) (uint64, bool) {
+// toUint64 将给定的值转换为 uint64
+func toUint64(i any) (uint64, bool) {
 	if i == nil {
 		return 0, false
 	}

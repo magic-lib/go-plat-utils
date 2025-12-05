@@ -105,7 +105,7 @@ func (r *customerFunc) Has(args ...any) (any, error) {
 		return false, fmt.Errorf("参数数量不对：%v", args)
 	}
 	listInterface := args[0]
-	item := conv.String(args[1])
+	item, _ := conv.Convert[string](args[1])
 	listType := reflect.TypeOf(listInterface)
 	listValue := reflect.ValueOf(listInterface)
 	if listType.Kind() == reflect.Slice {
@@ -169,7 +169,7 @@ func (r *customerFunc) As(args ...any) (any, error) {
 		return conv.String(args[1]), nil
 	}
 	if typeName == "int" {
-		if intTemp, ok := conv.Int(args[1]); ok {
+		if intTemp, err1 := conv.Convert[int](args[1]); err1 == nil {
 			return intTemp, nil
 		}
 		return 0, fmt.Errorf("参数不是int类型：%v", args[1])
@@ -181,13 +181,13 @@ func (r *customerFunc) As(args ...any) (any, error) {
 		return 0, fmt.Errorf("参数不是int64类型：%v", args[1])
 	}
 	if typeName == "bool" {
-		if boolTemp, ok := conv.Bool(args[1]); ok {
+		if boolTemp, err1 := conv.Convert[bool](args[1]); err1 == nil {
 			return boolTemp, nil
 		}
 		return false, fmt.Errorf("参数不是bool类型：%v", args[1])
 	}
 	if typeName == "time" {
-		if timeTemp, ok := conv.Time(args[1]); ok {
+		if timeTemp, err1 := conv.Convert[time.Time](args[1]); err1 == nil {
 			return timeTemp, nil
 		}
 		return time.Time{}, fmt.Errorf("参数不是time类型：%v", args[1])
@@ -202,7 +202,7 @@ func (r *customerFunc) Replace(args ...any) (any, error) {
 	newStr := conv.String(args[2])
 	num := -1
 	if len(args) >= 4 {
-		if numTemp, ok := conv.Int(args[3]); ok {
+		if numTemp, err1 := conv.Convert[int](args[3]); err1 == nil {
 			num = numTemp
 		}
 	}

@@ -52,9 +52,9 @@ func NowUnix() int {
 
 // DateSub 日期之间进行比较
 func DateSub(oneTime time.Time, towTime time.Time) (time.Duration, bool) {
-	newOneTime, ok1 := conv.Time(oneTime.Format("2006-01-02") + " 00:00:00")
-	newTwoTime, ok2 := conv.Time(towTime.Format("2006-01-02") + " 00:00:00")
-	if ok1 && ok2 {
+	newOneTime, err1 := conv.Convert[time.Time](oneTime.Format("2006-01-02") + " 00:00:00")
+	newTwoTime, err2 := conv.Convert[time.Time](towTime.Format("2006-01-02") + " 00:00:00")
+	if err1 == nil && err2 == nil {
 		return newOneTime.Sub(newTwoTime), true
 	}
 	return 0, false

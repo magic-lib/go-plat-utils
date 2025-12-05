@@ -166,8 +166,8 @@ func setBasicValue(fieldVal reflect.Value, value interface{}) error {
 }
 
 func setIntValue(fieldVal reflect.Value, value interface{}) error {
-	intVal, ok := Int64(value)
-	if ok {
+	intVal, err := Convert[int64](value)
+	if err == nil {
 		fieldVal.SetInt(intVal)
 		return nil
 	}
@@ -175,17 +175,17 @@ func setIntValue(fieldVal reflect.Value, value interface{}) error {
 }
 
 func setUintValue(fieldVal reflect.Value, value interface{}) error {
-	intVal, ok := Int64(value)
-	if ok {
-		fieldVal.SetUint(uint64(intVal))
+	intVal, err := Convert[uint64](value)
+	if err == nil {
+		fieldVal.SetUint(intVal)
 		return nil
 	}
 	return fmt.Errorf("无法将 %T 转换为 uint", value)
 }
 
 func setFloatValue(fieldVal reflect.Value, value interface{}) error {
-	floatVal, ok := Float64(value)
-	if ok {
+	floatVal, err := Convert[float64](value)
+	if err == nil {
 		fieldVal.SetFloat(floatVal)
 		return nil
 	}
@@ -193,8 +193,8 @@ func setFloatValue(fieldVal reflect.Value, value interface{}) error {
 }
 
 func setBoolValue(fieldVal reflect.Value, value interface{}) error {
-	parsed, ok := Bool(value)
-	if ok {
+	parsed, err := Convert[bool](value)
+	if err == nil {
 		fieldVal.SetBool(parsed)
 		return nil
 	}

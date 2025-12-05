@@ -8,9 +8,9 @@ import (
 	"strconv"
 )
 
-// Float32 将给定的值转换为float32
-func Float32(i any) (float32, bool) {
-	f64, ok := Float64(i)
+// toFloat32 将给定的值转换为float32
+func toFloat32(i any) (float32, bool) {
+	f64, ok := toFloat64(i)
 	if !ok {
 		return 0, false
 	}
@@ -20,8 +20,8 @@ func Float32(i any) (float32, bool) {
 	return float32(f64), true
 }
 
-// Float64 将给定的值转换为float64
-func Float64(i any) (float64, bool) {
+// toFloat64 将给定的值转换为float64
+func toFloat64(i any) (float64, bool) {
 	if i == nil {
 		return 0, false
 	}

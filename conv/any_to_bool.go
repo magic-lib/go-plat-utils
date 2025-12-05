@@ -8,6 +8,7 @@ import (
 )
 
 // Bool 将给定的值转换为bool
+// Deprecated: 该方法已废弃，请使用 conv.Convert[bool](v)
 func Bool(i any) (bool, bool) {
 	if i == nil {
 		return false, true
@@ -15,7 +16,7 @@ func Bool(i any) (bool, bool) {
 	if b, ok := i.(bool); ok {
 		return b, true
 	}
-	if b, ok := Int64(i); ok {
+	if b, err := Convert[int64](i); err == nil {
 		if b == 0 {
 			return false, true
 		}

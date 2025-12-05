@@ -22,6 +22,7 @@ const (
 )
 
 // Time 转换为Time
+// Deprecated: 该方法已废弃，请使用 conv.Convert[time.Time](v)
 func Time(val any) (time.Time, bool) {
 	timeRet := time.Time{}
 	if val == nil {

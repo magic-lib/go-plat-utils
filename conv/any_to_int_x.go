@@ -9,7 +9,7 @@ import (
 )
 
 // Int 将给定的值转换为 int
-func Int(i any) (int, bool) {
+func toInt(i any) (int, bool) {
 	v, ok := Int64(i)
 	if !ok {
 		return 0, false
@@ -18,7 +18,7 @@ func Int(i any) (int, bool) {
 }
 
 // Int8 将给定的值转换为 int8
-func Int8(i any) (int8, bool) {
+func toInt8(i any) (int8, bool) {
 	value, ok := Int64(i)
 	if !ok {
 		return 0, false
@@ -30,7 +30,7 @@ func Int8(i any) (int8, bool) {
 }
 
 // Int16 将给定的值转换为 int16
-func Int16(i any) (int16, bool) {
+func toInt16(i any) (int16, bool) {
 	value, ok := Int64(i)
 	if !ok {
 		return 0, false
@@ -42,7 +42,7 @@ func Int16(i any) (int16, bool) {
 }
 
 // Int32 将给定的值转换为 int32
-func Int32(i any) (int32, bool) {
+func toInt32(i any) (int32, bool) {
 	value, ok := Int64(i)
 	if !ok {
 		return 0, false
@@ -54,6 +54,7 @@ func Int32(i any) (int32, bool) {
 }
 
 // Int64 将给定的值转换为 int64
+// Deprecated: 该方法已废弃，请使用 conv.Convert[int64](v)
 func Int64(i any) (int64, bool) {
 	if i == nil {
 		return 0, false

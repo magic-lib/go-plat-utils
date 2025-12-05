@@ -19,10 +19,10 @@ type timeCodec struct {
 
 // Decode 转码
 func (codec *timeCodec) Decode(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
-	var ok bool
+	var err1 error
 	s := iter.ReadString()
-	*((*time.Time)(ptr)), ok = conv.Time(s)
-	if !ok {
+	*((*time.Time)(ptr)), err1 = conv.Convert[time.Time](s)
+	if err1 != nil {
 		iter.ReportError("decode time.Time", fmt.Sprint(s, " is not valid time format"))
 	}
 }

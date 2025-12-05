@@ -215,7 +215,7 @@ func TestUnmarshal(t *testing.T) {
 				if respInfo.Data != nil {
 					dat, ok := respInfo.Data.(map[string]any)
 					if ok {
-						inta, _ := conv.Int(dat["id"])
+						inta, _ := conv.Convert[int](dat["id"])
 						if inta == 255 {
 							return true
 						}
@@ -315,7 +315,7 @@ func TestConvert(t *testing.T) {
 			bb, ok2 := conv.Convert[string](55)
 			cc, ok3 := conv.Convert[int64](55)
 
-			if ok1 && ok2 && ok3 {
+			if ok1 == nil && ok2 == nil && ok3 == nil {
 				if aa == 55 && bb == "55" && cc == 55 {
 					return true
 				}
@@ -324,9 +324,9 @@ func TestConvert(t *testing.T) {
 		}},
 		{"toInt", []any{}, []any{true}, func() bool {
 			str := "\u0000"
-			num, ok := conv.Int(str)
+			num, err := conv.Convert[int](str)
 
-			if !ok && num == 0 {
+			if err != nil && num == 0 {
 				return true
 			}
 			return false
@@ -346,7 +346,7 @@ func TestConvert(t *testing.T) {
 			createTime := timestamppb.New(now)
 			aaa := createTime.AsTime()
 
-			kk, _ := conv.Time(createTime)
+			kk, _ := conv.Convert[time.Time](createTime)
 			if kk.Equal(aaa) {
 				return true
 			}
