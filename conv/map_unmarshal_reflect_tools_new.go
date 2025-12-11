@@ -323,7 +323,7 @@ func (c *toolsService) getNewValueByType(dstType reflect.Type) (newDstPoint refl
 	return reflect.ValueOf(dstPoint)
 }
 
-func (c *toolsService) GetNewSrcAndDst(srcStruct any, dstPoint any) (
+func (c *toolsService) getNewSrcAndDst(srcStruct any, dstPoint any) (
 	newSrcStruct any, newDstPoint any) {
 	if srcStruct == nil {
 		return nil, dstPoint

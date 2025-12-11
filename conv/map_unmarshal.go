@@ -63,10 +63,10 @@ func Unmarshal(srcStruct any, dstPoint any) error {
 
 	// 2、不行则用json方法
 	t := new(toolsService)
-	srcStruct, dstPoint = t.GetNewSrcAndDst(srcStruct, dstPoint)
+	srcStruct, dstPoint = t.getNewSrcAndDst(srcStruct, dstPoint)
 
 	//先用对象进行替换，因为转换为json串以后，会丢失类型
-	err := AssignTo(srcStruct, dstPoint)
+	err := toAssignTo(srcStruct, dstPoint)
 	if err == nil {
 		return nil
 	}
@@ -85,7 +85,7 @@ func Unmarshal(srcStruct any, dstPoint any) error {
 		srcType.Kind() != reflect.Slice &&
 		srcType.Kind() != reflect.Array {
 		//普通类型能否相互转换，由 string 转换为 *int64
-		err = AssignTo(srcStruct, dstPoint)
+		err = toAssignTo(srcStruct, dstPoint)
 		if err == nil {
 			return nil
 		}
@@ -98,7 +98,7 @@ func Unmarshal(srcStruct any, dstPoint any) error {
 		return errJson
 	}
 
-	err = AssignTo(srcStruct, dstPoint)
+	err = toAssignTo(srcStruct, dstPoint)
 	if err != nil {
 		log.Println("Unmarshal error:", err)
 		return errJson

@@ -16,11 +16,14 @@ import (
 )
 
 /*
-*
+* Deprecated: 该方法已废弃，请使用 conv.Unmarshal
 1、目前不能解决继承为小写的情况
 2、已有值了，填充没有的情况
 */
 func AssignTo(srcStruct any, dstPoint any) error {
+	return toAssignTo(srcStruct, dstPoint)
+}
+func toAssignTo(srcStruct any, dstPoint any) error {
 	srcVal := reflect.ValueOf(srcStruct)
 	dstVal := reflect.ValueOf(dstPoint)
 	// 检查 dst 是否为指针
@@ -53,7 +56,7 @@ func AssignTo(srcStruct any, dstPoint any) error {
 	logDebug("fill.GetByDstAll:", String(dstValue.Interface()))
 
 	t := new(toolsService)
-	dstStruct, _ := t.GetNewSrcAndDst(dstValue.Interface(), dstPoint)
+	dstStruct, _ := t.getNewSrcAndDst(dstValue.Interface(), dstPoint)
 
 	errJson := t.UnmarshalDataFromJson(dstStruct, dstPoint)
 	if errJson == nil {
@@ -87,7 +90,7 @@ func assignConvertSlice(src, dst reflect.Value) error {
 			newData = reflect.New(elemType)
 		}
 
-		if err := AssignTo(src.Index(i).Interface(), newData.Interface()); err != nil {
+		if err := toAssignTo(src.Index(i).Interface(), newData.Interface()); err != nil {
 			return err
 		}
 
@@ -256,7 +259,7 @@ func (c *getNewService) getByDstPtr(srcInterface any, dstType reflect.Type) (new
 	logDebug("getByDstPtr:", dstDataType.String())
 
 	if dstType == reflect.TypeOf(&timestamppb.Timestamp{}) {
-		if oneTime, err1 := Convert[time.Time](srcInterface); err1 == nil {
+		if oneTime, err1 := toConvert[time.Time](srcInterface); err1 == nil {
 			dstData := timestamppb.New(oneTime)
 			return reflect.ValueOf(dstData), nil
 		}
@@ -488,7 +491,7 @@ func (c *getNewService) getByDstDefault(srcDefault any, dstType reflect.Type) (n
 	}
 
 	if dstType.Kind() == reflect.Bool {
-		retBool, err1 := Convert[bool](srcDefault)
+		retBool, err1 := toConvert[bool](srcDefault)
 		if err1 == nil {
 			return reflect.ValueOf(retBool), nil
 		}
@@ -687,7 +690,7 @@ func (c *getNewService) changeValueToString(srcValue reflect.Value) (string, boo
 	return sStr, false
 }
 func (c *getNewService) changeValueToTime(srcValue reflect.Value) (time.Time, bool) {
-	tempTime, err1 := Convert[time.Time](srcValue.Interface())
+	tempTime, err1 := toConvert[time.Time](srcValue.Interface())
 	if err1 == nil {
 		return tempTime, true
 	}
@@ -808,7 +811,7 @@ func (c *getNewService) changeFromString(srcValue reflect.Value, dstTypeName str
 		return nil, true
 	}
 	if dstTypeName == "Time" {
-		sTime, err1 := Convert[time.Time](srcColumnValueString)
+		sTime, err1 := toConvert[time.Time](srcColumnValueString)
 		if err1 == nil {
 			return sTime, true
 		}
@@ -860,7 +863,7 @@ func (c *getNewService) changeFromByte(srcValue reflect.Value, dstTypeName strin
 				return sFloat, true
 			}
 		} else if dstTypeName == "Time" {
-			STime, err1 := Convert[time.Time](srcColumnValueString)
+			STime, err1 := toConvert[time.Time](srcColumnValueString)
 			if err1 == nil {
 				return STime, true
 			}
@@ -879,7 +882,7 @@ func (c *getNewService) changeFromUint8(srcValue reflect.Value, dstTypeName stri
 		return Int64(srcString)
 	}
 	if dstTypeName == "Time" {
-		timeTemp, err1 := Convert[time.Time](srcString)
+		timeTemp, err1 := toConvert[time.Time](srcString)
 		if err1 == nil {
 			return timeTemp, true
 		}

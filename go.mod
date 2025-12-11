@@ -29,7 +29,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lqiz/expr v1.1.4
-	github.com/magic-lib/go-plat-cache v1.20250722.3-0.20250910070500-8f73701ad481
+	github.com/magic-lib/go-plat-cache v1.20250722.3-0.20251206132909-738f1415c8d5
 	github.com/magic-lib/go-plat-locker v0.0.0-20250910065906-288323bf2a43
 	github.com/marspere/goencrypt v1.0.7
 	github.com/mattn/go-sqlite3 v1.14.24

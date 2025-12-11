@@ -16,7 +16,7 @@ func Bool(i any) (bool, bool) {
 	if b, ok := i.(bool); ok {
 		return b, true
 	}
-	if b, err := Convert[int64](i); err == nil {
+	if b, err := toConvert[int64](i); err == nil {
 		if b == 0 {
 			return false, true
 		}

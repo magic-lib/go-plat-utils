@@ -166,7 +166,7 @@ func setBasicValue(fieldVal reflect.Value, value interface{}) error {
 }
 
 func setIntValue(fieldVal reflect.Value, value interface{}) error {
-	intVal, err := Convert[int64](value)
+	intVal, err := toConvert[int64](value)
 	if err == nil {
 		fieldVal.SetInt(intVal)
 		return nil
@@ -175,7 +175,7 @@ func setIntValue(fieldVal reflect.Value, value interface{}) error {
 }
 
 func setUintValue(fieldVal reflect.Value, value interface{}) error {
-	intVal, err := Convert[uint64](value)
+	intVal, err := toConvert[uint64](value)
 	if err == nil {
 		fieldVal.SetUint(intVal)
 		return nil
@@ -184,7 +184,7 @@ func setUintValue(fieldVal reflect.Value, value interface{}) error {
 }
 
 func setFloatValue(fieldVal reflect.Value, value interface{}) error {
-	floatVal, err := Convert[float64](value)
+	floatVal, err := toConvert[float64](value)
 	if err == nil {
 		fieldVal.SetFloat(floatVal)
 		return nil
@@ -193,7 +193,7 @@ func setFloatValue(fieldVal reflect.Value, value interface{}) error {
 }
 
 func setBoolValue(fieldVal reflect.Value, value interface{}) error {
-	parsed, err := Convert[bool](value)
+	parsed, err := toConvert[bool](value)
 	if err == nil {
 		fieldVal.SetBool(parsed)
 		return nil

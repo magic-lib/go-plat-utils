@@ -59,15 +59,6 @@ func setLocker[T constraints.Integer](idGen *IDGenerator[T]) {
 		return
 	}
 
-	//如果存储的是mysql-Cache，则用mysqlLocker进行全局锁
-	if _, ok := idGen.IdStore.(*cache.MySQLCache[T]); ok {
-		//idGen.LockFunc = func(ns, key string) lock.Locker {
-		//	locker := lock.NewLocker(fmt.Sprintf("%s/%s", ns, key), lock.WithMysqlClient(cfg.LockerConfig))
-		//	return locker
-		//}
-		//return
-	}
-
 	idGen.LockFunc = func(ns, key string) lock.Locker {
 		return lock.NewLocker(fmt.Sprintf("%s/%s", ns, key))
 	}

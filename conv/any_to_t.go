@@ -9,6 +9,9 @@ import (
 
 // Convert 转换泛型
 func Convert[T any](v any) (T, error) {
+	return toConvert[T](v)
+}
+func toConvert[T any](v any) (T, error) {
 	// 类型断言：尝试将v转换为T
 	if result, ok := v.(T); ok {
 		return result, nil
@@ -35,7 +38,7 @@ func ConvertForType(targetType reflect.Type, v any) (any, error) {
 	}
 
 	convErr := fmt.Errorf("unsupported targetType:", targetType.String(), "value:", String(v))
-	conotConv := false
+	contConv := false
 
 	switch targetType {
 	case reflect.TypeOf(true):
@@ -128,13 +131,12 @@ func ConvertForType(targetType reflect.Type, v any) (any, error) {
 		}
 	default:
 		log.Println("ConvertForType: ", convErr.Error())
-		conotConv = true
+		contConv = true
 	}
 
-	if !conotConv {
+	if !contConv {
 		return v, convErr
 	}
-
 
 	target := reflect.Zero(targetType)
 
@@ -147,7 +149,7 @@ func ConvertForType(targetType reflect.Type, v any) (any, error) {
 	targetPtrValue := reflect.New(elemType).Interface()
 	err := Unmarshal(v, targetPtrValue)
 	if err != nil {
-		err = AssignTo(v, targetPtrValue)
+		err = toAssignTo(v, targetPtrValue)
 		if err != nil {
 			return target, convErr
 		}
