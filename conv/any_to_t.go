@@ -37,7 +37,7 @@ func ConvertForType(targetType reflect.Type, v any) (any, error) {
 		return v, nil
 	}
 
-	convErr := fmt.Errorf("unsupported targetType:", targetType.String(), "value:", String(v))
+	convErr := fmt.Errorf("unsupported targetType: %s, value: %s", targetType.String(), String(v))
 	contConv := false
 
 	switch targetType {
