@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-// RunWithTimeout 执行一个方法带过期时间
-func RunWithTimeout[T any](timeout time.Duration, fun func() (T, error)) (t T, e error) {
+// GoAsyncWithTimeout 执行一个方法带过期时间
+func GoAsyncWithTimeout[T any](timeout time.Duration, fun func() (T, error)) (t T, e error) {
 	result := make(chan T)
 	err := make(chan error)
 
