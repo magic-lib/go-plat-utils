@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 )
 
 type asyncObj struct {
@@ -119,5 +120,26 @@ func GoAsync(task func(params ...any), params ...any) {
 	err := defaultAsyncObj.antsPool.Submit(taskFun.Run)
 	if err != nil {
 		return
+	}
+}
+
+// GoAsyncTimeout 执行一个方法带过期时间
+func GoAsyncTimeout[T any](timeout time.Duration, fun func(paramsIn ...any) (T, error), paramsOut ...any) (t T, e error) {
+	result := make(chan T)
+	err := make(chan error)
+
+	// 启动一个 goroutine 来执行耗时操作
+	GoAsync(func(paramsInIn ...any) {
+		oneRet, oneErr := fun(paramsInIn...)
+		result <- oneRet
+		err <- oneErr
+	}, paramsOut...)
+
+	// 使用 select 语句来等待结果或超时
+	select {
+	case res := <-result:
+		return res, <-err
+	case <-time.After(timeout):
+		return t, fmt.Errorf("timeout")
 	}
 }
