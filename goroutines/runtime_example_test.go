@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/goroutines"
+	"testing"
 	"time"
 )
 
@@ -50,4 +51,19 @@ func ExampleGoAsync() {
 	goroutines.DelContext()
 
 	// Output:
+}
+
+func TestExampleGoSync(t *testing.T) {
+	start := time.Now()
+	_, _ = goroutines.GoAsyncTimeout(3*time.Second, func(params ...interface{}) (bool, error) {
+		time.Sleep(2 * time.Second)
+		fmt.Println("test")
+		return true, nil
+
+	})
+
+	fmt.Println(time.Since(start).Seconds())
+
+	time.Sleep(3 * time.Second)
+
 }

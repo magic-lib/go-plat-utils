@@ -140,6 +140,6 @@ func GoAsyncTimeout[T any](timeout time.Duration, fun func(paramsIn ...any) (T, 
 	case res := <-result:
 		return res, <-err
 	case <-time.After(timeout):
-		return t, fmt.Errorf("timeout")
+		return t, fmt.Errorf("GoAsyncTimeout timeout: %d", timeout)
 	}
 }
