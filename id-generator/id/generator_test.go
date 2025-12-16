@@ -9,6 +9,6 @@ import (
 func TestGeneratorBase32(t *testing.T) {
 	aa := id2.GeneratorBase32()
 	fmt.Println(aa)
-	aa = id2.GetXId()
+	aa = id2.XId()
 	fmt.Println(aa)
 }

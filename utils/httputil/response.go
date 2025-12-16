@@ -74,8 +74,7 @@ func (comm *CommResponse) withNowTime() *CommResponse {
 func WriteCommResponse(respWriter http.ResponseWriter, comm *CommResponse, statusCode ...int) error {
 	response := comm.withNowTime()
 
-	contentType := "Content-Type"
-	respWriter.Header().Set(contentType, "application/json; charset=utf-8")
+	respWriter.Header().Set("Content-Type", "application/json; charset=utf-8")
 
 	respStr := conv.String(response)
 	respByte := []byte(respStr)
