@@ -2,7 +2,6 @@ package conv
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 	"time"
 )
@@ -130,7 +129,7 @@ func ConvertForType(targetType reflect.Type, v any) (any, error) {
 			}
 		}
 	default:
-		log.Println("ConvertForType: ", convErr.Error())
+		//log.Println("ConvertForType: ", convErr.Error())
 		contConv = true
 	}
 
