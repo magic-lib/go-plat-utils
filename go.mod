@@ -12,6 +12,7 @@ require (
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/bytedance/go-tagexpr/v2 v2.9.11
 	github.com/davecgh/go-spew v1.1.1
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dominikbraun/graph v0.23.0
 	github.com/fatih/color v1.18.0
 	github.com/forgoer/openssl v1.6.0
@@ -75,6 +76,7 @@ require (
 	google.golang.org/protobuf v1.36.5
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
+	gorm.io/gorm v1.30.0
 )
 
 require (

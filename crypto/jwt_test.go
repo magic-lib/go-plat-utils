@@ -2,10 +2,12 @@ package crypto_test
 
 import (
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/magic-lib/go-plat-utils/crypto"
 	"github.com/magic-lib/go-plat-utils/utils"
 	"log"
 	"testing"
+	"time"
 )
 
 func ExampleMd5() {
@@ -89,6 +91,9 @@ func TestJwtCase(t *testing.T) {
 	testCases := []*utils.TestStruct{
 		{"encode string", []any{}, []any{"abcd"}, func() string {
 			kkk, err := crypto.JwtEncrypt(secretKey, oldData, &crypto.JwtCfg{
+				StandardClaims: &jwt.StandardClaims{
+					ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
+				},
 				EncryptJsonKeyList: []string{"PassWord"},
 			})
 			if err != nil {
