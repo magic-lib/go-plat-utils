@@ -1,13 +1,15 @@
 package cond
 
-import "reflect"
+import (
+	"reflect"
+	"slices"
+)
 
 // Contains 数组中是否含有某元素
 func Contains[T comparable](s []T, e T) (bool, int) {
-	for i, a := range s {
-		if a == e {
-			return true, i
-		}
+	i := slices.Index(s, e)
+	if i >= 0 {
+		return true, i
 	}
 	return false, -1
 }

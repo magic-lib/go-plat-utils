@@ -3,7 +3,6 @@ package plugins
 import (
 	"context"
 	"fmt"
-	"reflect"
 )
 
 // 插件注册表，存储插件类型
@@ -37,22 +36,19 @@ func (pm *PluginManager) RegisterPlugin(plugin Plugin) error {
 }
 
 // LoadPlugin 加载插件
-func (pm *PluginManager) LoadPlugin(name string) error {
+func (pm *PluginManager) LoadPlugin(name string) (Plugin, error) {
 	onePlugin, exists := pm.plugins[name]
 	if !exists {
-		return fmt.Errorf("插件 %s 未注册", name)
+		return nil, fmt.Errorf("插件 %s 未注册", name)
 	}
-	pluginType := reflect.TypeOf(onePlugin).Elem()
-	pluginInstance := reflect.New(pluginType).Interface().(Plugin)
-	pm.plugins[name] = pluginInstance
-	return nil
+	return onePlugin, nil
 }
 
 // ExecutePlugin 执行插件
 func (pm *PluginManager) ExecutePlugin(ctx context.Context, name string, args any) (any, error) {
-	plugin, exists := pm.plugins[name]
-	if !exists {
-		return nil, fmt.Errorf("插件 %s 未加载", name)
+	onePlugin, err := pm.LoadPlugin(name)
+	if err != nil {
+		return nil, err
 	}
-	return plugin.Execute(ctx, args)
+	return onePlugin.Execute(ctx, args)
 }

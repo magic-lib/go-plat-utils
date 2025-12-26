@@ -8,6 +8,7 @@ import (
 	jsoniterForNil "github.com/magic-lib/go-plat-utils/internal/jsoniter/go"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
+	"github.com/viant/toolbox"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"reflect"
 	"regexp"
@@ -60,7 +61,7 @@ func String(src any) string {
 	}
 
 	fmt.Printf("jsoniter.Marshal error:%s", err.Error())
-	return fmt.Sprintf("%v", src)
+	return toolbox.AsString(src)
 }
 
 func getBySpecialType(src any) (any, string, bool) {

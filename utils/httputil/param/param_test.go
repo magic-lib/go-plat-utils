@@ -103,3 +103,8 @@ func setContext(ctx context.Context) context.Context {
 	ctx = newCtx
 	return newCtx
 }
+
+func TestURL1(t *testing.T) {
+	var TraceIdKey = CanonicalHeaderKey("x - trace - id")
+	fmt.Println(TraceIdKey)
+}
