@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/utils"
 	"net/http"
 	"net/url"
 	"testing"
@@ -107,4 +108,24 @@ func setContext(ctx context.Context) context.Context {
 func TestURL1(t *testing.T) {
 	var TraceIdKey = CanonicalHeaderKey("x - trace - id")
 	fmt.Println(TraceIdKey)
+}
+
+func TestPathParam(t *testing.T) {
+	testCheckCases := []*utils.TestStruct{
+		{"path Check", []any{"/aa/bb/cc", "/aa/:bb/cc"}, []any{true}, nil},
+		{"path Check", []any{"/aa/bb/cc", "/aa/:bb/cc/mm"}, []any{false}, nil},
+		{"path Check", []any{"/aa/bb/cc", "/aa/:bb/:cc"}, []any{true}, nil},
+	}
+	utils.TestFunction(t, testCheckCases, PathMatch)
+
+	testParamCases := []*utils.TestStruct{
+		{"path Param", []any{"/aa/bb/cc", "/aa/:aa/cc"}, []any{"bb"}, nil},
+		{"path Param", []any{"/aa/bb/cc", "/aa/:bb/cc/mm"}, []any{""}, nil},
+		{"path Param", []any{"/aa/bb/cc", "/aa/:bb/:aa"}, []any{"cc"}, nil},
+	}
+	utils.TestFunction(t, testParamCases, func(requestPath, routePath string) string {
+		paramTemp := PathParam(requestPath, routePath)
+		fmt.Println(paramTemp)
+		return paramTemp["aa"]
+	})
 }
