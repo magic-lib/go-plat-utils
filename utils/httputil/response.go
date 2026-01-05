@@ -1,7 +1,10 @@
 package httputil
 
 import (
+	"context"
 	"github.com/magic-lib/go-plat-utils/conv"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"net/http"
 )
 
@@ -70,6 +73,13 @@ func (comm *CommResponse) withNowTime() *CommResponse {
 	return comm
 }
 
+func (comm *CommResponse) withTraceId(traceId string) *CommResponse {
+	if traceId != "" {
+		comm.TraceId = traceId
+	}
+	return comm
+}
+
 // WriteCommResponse 将通用返回设置到response，输出到客户端
 func WriteCommResponse(respWriter http.ResponseWriter, comm *CommResponse, statusCode ...int) error {
 	response := comm.withNowTime()
@@ -90,18 +100,49 @@ func WriteCommResponse(respWriter http.ResponseWriter, comm *CommResponse, statu
 	return err
 }
 
-// WriteCommFailure 系统默认错误返回
-func WriteCommFailure(respWriter http.ResponseWriter, err error, code int64, statusCode ...int) {
-	_ = WriteCommResponse(respWriter, GetErrorResponse(nil, code, err), statusCode...)
+func getTraceId(ctx context.Context) string {
+	span := trace.SpanFromContext(ctx)
+	if span != nil {
+		spanContext := span.SpanContext()
+		if spanContext.IsValid() {
+			traceID := spanContext.TraceID()
+			return traceID.String()
+		}
+	}
+	return ""
+}
+
+// WriteCommFailure 系统默认错误返回，需要加入ctx信息
+func WriteCommFailure(ctx context.Context, respWriter http.ResponseWriter, err error, code int64, statusCode ...int) {
+	errResp := GetErrorResponse(nil, code, err)
+	traceId := getTraceId(ctx)
+	if traceId != "" {
+		errResp = errResp.withTraceId(traceId)
+		span := trace.SpanFromContext(ctx)
+		if span != nil && err != nil {
+			span.SetStatus(codes.Error, err.Error())
+			span.RecordError(err)
+		}
+	}
+	_ = WriteCommResponse(respWriter, errResp, statusCode...)
 }
 
 // WriteCommSuccess 系统默认正确返回
-func WriteCommSuccess(respWriter http.ResponseWriter, data any) {
-	_ = WriteCommResponse(respWriter, &CommResponse{
+func WriteCommSuccess(ctx context.Context, respWriter http.ResponseWriter, data any) {
+	sucResp := &CommResponse{
 		Code:    0,
 		Message: http.StatusText(http.StatusOK),
 		Data:    data,
-	}, http.StatusOK)
+	}
+	traceId := getTraceId(ctx)
+	if traceId != "" {
+		sucResp = sucResp.withTraceId(traceId)
+		span := trace.SpanFromContext(ctx)
+		if span != nil {
+			span.SetStatus(codes.Ok, sucResp.Message)
+		}
+	}
+	_ = WriteCommResponse(respWriter, sucResp, http.StatusOK)
 }
 
 // GetErrorResponse 系统获取错误码和错误信息

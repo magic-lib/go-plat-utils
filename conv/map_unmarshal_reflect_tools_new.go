@@ -359,6 +359,9 @@ func (c *toolsService) UnmarshalDataFromJson(srcStruct any, dstPoint any) error 
 		//return sonic.UnmarshalString(string(b), dstPoint)
 		return errJson
 	}
+	// 这里有可能对json标签不存在的字段进行忽略了
+	logDebug("UnmarshalDataFromJson success:", String(dstPoint))
+	
 	return nil
 }
 
