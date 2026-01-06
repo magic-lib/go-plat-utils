@@ -2,8 +2,25 @@ package cond
 
 import (
 	"fmt"
+	"math"
 	"strings"
 )
+
+type Number interface {
+	int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | float32 | float64
+}
+
+// IsInteger 判断数字是否为整数
+func IsInteger[T Number](n T) bool {
+	switch any(n).(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		return true
+	case float32, float64:
+		floatVal := float64(n)
+		return math.Floor(floatVal) == floatVal
+	}
+	return false
+}
 
 // IsNumeric 是否是数字
 func IsNumeric(val any) bool {

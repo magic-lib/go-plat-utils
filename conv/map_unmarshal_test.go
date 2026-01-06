@@ -6,6 +6,7 @@ import (
 	"github.com/magic-lib/go-plat-utils/utils"
 	"github.com/magic-lib/go-plat-utils/utils/httputil"
 	"github.com/shopspring/decimal"
+	"golang.org/x/text/language"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	yaml "gopkg.in/yaml.v3"
 	"log"
@@ -352,6 +353,15 @@ func TestConvert(t *testing.T) {
 			}
 			return false
 		}},
+	}
+	utils.TestFunction(t, testCases, nil)
+}
+func TestFormatNumber(t *testing.T) {
+	testCases := []*utils.TestStruct{
+		{"int", []any{"%d", 50000}, []any{"50000"}, conv.FormatNumber[int]},
+		{"int", []any{"%d", 50000, language.English}, []any{"50,000"}, conv.FormatNumber[int]},
+		{"int64", []any{"%d", 50000, language.English}, []any{"50,000"}, conv.FormatNumber[int64]},
+		{"float64", []any{"%.2f", 50000.34343, language.English}, []any{"50,000.34"}, conv.FormatNumber[float64]},
 	}
 	utils.TestFunction(t, testCases, nil)
 }
