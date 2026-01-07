@@ -102,7 +102,7 @@ func WriteCommResponse(respWriter http.ResponseWriter, comm *CommResponse, statu
 
 func getTraceId(ctx context.Context) string {
 	span := trace.SpanFromContext(ctx)
-	if span != nil {
+	if span != nil && span.IsRecording() {
 		spanContext := span.SpanContext()
 		if spanContext.IsValid() {
 			traceID := spanContext.TraceID()
