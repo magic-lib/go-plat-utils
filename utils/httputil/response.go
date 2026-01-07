@@ -100,7 +100,8 @@ func WriteCommResponse(respWriter http.ResponseWriter, comm *CommResponse, statu
 	return err
 }
 
-func getTraceId(ctx context.Context) string {
+// TraceId 获取traceId
+func TraceId(ctx context.Context) string {
 	span := trace.SpanFromContext(ctx)
 	if span != nil && span.IsRecording() {
 		spanContext := span.SpanContext()
@@ -115,7 +116,7 @@ func getTraceId(ctx context.Context) string {
 // WriteCommFailure 系统默认错误返回，需要加入ctx信息
 func WriteCommFailure(ctx context.Context, respWriter http.ResponseWriter, err error, code int64, statusCode ...int) {
 	errResp := GetErrorResponse(nil, code, err)
-	traceId := getTraceId(ctx)
+	traceId := TraceId(ctx)
 	if traceId != "" {
 		errResp = errResp.withTraceId(traceId)
 		span := trace.SpanFromContext(ctx)
@@ -134,7 +135,7 @@ func WriteCommSuccess(ctx context.Context, respWriter http.ResponseWriter, data 
 		Message: http.StatusText(http.StatusOK),
 		Data:    data,
 	}
-	traceId := getTraceId(ctx)
+	traceId := TraceId(ctx)
 	if traceId != "" {
 		sucResp = sucResp.withTraceId(traceId)
 		span := trace.SpanFromContext(ctx)
