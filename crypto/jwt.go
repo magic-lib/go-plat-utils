@@ -71,25 +71,24 @@ func JwtEncrypt(secretKey string, data any, cfgList ...*JwtCfg) (string, error) 
 }
 
 // JwtDecrypt RSA解密数据，secretKey必须是成对出现
-func JwtDecrypt(secretKey string, cipherText string, data any, cfgList ...*JwtCfg) (string, error) {
+func JwtDecrypt[T any](secretKey string, cipherText string, data any, cfgList ...*JwtCfg) (t T, jsonStr1 string, err1 error) {
 	var jsonStr, err = jwtPayload(cipherText)
 	if err != nil {
 		log.Println(err)
 	}
 
-	if data == nil {
-		return jsonStr, fmt.Errorf("data is nil")
-	}
-	pointType := reflect.TypeOf(data)
-	if pointType.Kind() != reflect.Ptr {
-		return jsonStr, fmt.Errorf("data must be a pointer")
+	if data != nil {
+		pointType := reflect.TypeOf(data)
+		if pointType.Kind() != reflect.Ptr {
+			return t, jsonStr, fmt.Errorf("data must be a pointer")
+		}
 	}
 
 	token, err := jwt.ParseWithClaims(cipherText, &jwt.MapClaims{}, func(tk *jwt.Token) (interface{}, error) {
 		return []byte(secretKey), nil
 	})
 	if err != nil {
-		return jsonStr, err
+		return t, jsonStr, err
 	}
 	if decodeToken, ok := token.Claims.(*jwt.MapClaims); ok && token.Valid {
 		var useEncryptList []string
@@ -105,13 +104,20 @@ func JwtDecrypt(secretKey string, cipherText string, data any, cfgList ...*JwtCf
 			//需要移除自带的
 			dataStr = removeStandardClaimsKey(dataStr)
 		}
+		t, err = conv.Convert[T](dataStr)
+		if data == nil {
+			if err != nil {
+				return t, dataStr, err
+			}
+			return t, dataStr, nil
+		}
 		err = conv.Unmarshal(dataStr, data)
 		if err != nil {
-			return dataStr, err
+			return t, dataStr, err
 		}
-		return dataStr, nil
+		return t, dataStr, nil
 	}
-	return jsonStr, fmt.Errorf("token wrong")
+	return t, jsonStr, fmt.Errorf("token wrong")
 }
 
 func removeStandardClaimsKey(dataString string) string {
