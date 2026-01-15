@@ -2,7 +2,10 @@ package httputil
 
 import (
 	"context"
+	"github.com/magic-lib/go-plat-utils/cond"
 	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"net/http"
@@ -84,9 +87,21 @@ func (comm *CommResponse) withTraceId(traceId string) *CommResponse {
 func WriteCommResponse(respWriter http.ResponseWriter, comm *CommResponse, statusCode ...int) error {
 	response := comm.withNowTime()
 
-	respWriter.Header().Set("Content-Type", "application/json; charset=utf-8")
-
 	respStr := conv.String(response)
+	{ //处理列表不要返回null的问题
+		dataList := gjson.Get(respStr, "data.data_list")
+		if dataList.Exists() && !dataList.IsArray() {
+			//判断dataList 是否是nil
+			if cond.IsNil(dataList.Value()) {
+				respStr2, err := sjson.Set(respStr, "data.data_list", []any{})
+				if err == nil {
+					respStr = respStr2
+				}
+			}
+		}
+	}
+
+	respWriter.Header().Set("Content-Type", "application/json; charset=utf-8")
 	respByte := []byte(respStr)
 
 	oneStatusCode := http.StatusOK
