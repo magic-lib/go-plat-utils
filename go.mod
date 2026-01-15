@@ -65,12 +65,16 @@ require (
 	github.com/viant/toolbox v0.37.0
 	github.com/zeromicro/go-zero v1.9.2
 	go.mongodb.org/mongo-driver v1.17.4
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.51.0
+	go.opentelemetry.io/otel v1.38.0
+	go.opentelemetry.io/otel/trace v1.38.0
 	go.uber.org/automaxprocs v1.6.0
 	go.uber.org/ratelimit v0.3.1
 	golang.org/x/crypto v0.45.0
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
 	golang.org/x/net v0.47.0
 	golang.org/x/sync v0.18.0
+	golang.org/x/text v0.31.0
 	golang.org/x/time v0.12.0
 	google.golang.org/grpc v1.77.0
 	google.golang.org/protobuf v1.36.11
@@ -104,6 +108,8 @@ require (
 	github.com/gin-contrib/sse v1.1.0 // indirect
 	github.com/gin-gonic/gin v1.11.0 // indirect
 	github.com/go-errors/errors v1.5.1 // indirect
+	github.com/go-logr/logr v1.4.3 // indirect
+	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-redis/redis v6.15.9+incompatible // indirect
@@ -147,7 +153,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
 	github.com/quic-go/quic-go v0.57.1 // indirect
-	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
@@ -161,11 +166,12 @@ require (
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
 	github.com/yuin/gopher-lua v1.1.1 // indirect
+	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
+	go.opentelemetry.io/otel/metric v1.38.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/mock v0.6.0 // indirect
 	golang.org/x/arch v0.23.0 // indirect
 	golang.org/x/sys v0.39.0 // indirect
-	golang.org/x/text v0.31.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	gopkg.in/redis.v5 v5.2.9 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect

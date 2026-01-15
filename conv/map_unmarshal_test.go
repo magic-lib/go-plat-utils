@@ -2,6 +2,7 @@ package conv_test
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/utils"
 	"github.com/magic-lib/go-plat-utils/utils/httputil"
@@ -364,4 +365,47 @@ func TestFormatNumber(t *testing.T) {
 		{"float64", []any{"%.2f", 50000.34343, language.English}, []any{"50,000.34"}, conv.FormatNumber[float64]},
 	}
 	utils.TestFunction(t, testCases, nil)
+}
+
+type AccountUpdateParam struct {
+	AccountId          bool `db:"account_id" json:"account_id"`                     // 账户ID
+	UserId             bool `db:"user_id" json:"user_id"`                           // 关联user表id
+	MemberId           bool `db:"member_id" json:"member_id"`                       // 关联member表id
+	ProvideId          bool `db:"provide_id" json:"provide_id"`                     // 关联provide表id
+	AccountValue       bool `db:"account_value" json:"account_value"`               // 账号提供商具体的值
+	Source             bool `db:"source" json:"source"`                             // 用户来源0-未确定，1-白名单 2-自绑定，3-KYC获取
+	WalletType         bool `db:"wallet_type" json:"wallet_type"`                   // 0-电子钱包，1-银行卡
+	BankType           bool `db:"bank_type" json:"bank_type"`                       // 银行类型
+	BankKey            bool `db:"bank_key" json:"bank_key"`                         // 银行编码
+	BankAccount        bool `db:"bank_account" json:"bank_account"`                 // 银行账号
+	IsDefault          bool `db:"is_default" json:"is_default"`                     // 是否默认账号
+	IsDefaultReceiving bool `db:"is_default_receiving" json:"is_default_receiving"` // 是否默认收款号码
+	ExtendCheckedInfo  bool `db:"extend_checked_info" json:"extend_checked_info"`   // 是否本人号码（kyc与接口返回是否一致）
+	ExtendProperties   bool `db:"extend_properties" json:"extend_properties"`       // 扩展属性
+	NameCheckedStatus  bool `db:"name_checked_status" json:"name_checked_status"`   // 状态(0无效 1有效 2姓名待确认 3需提供证件)
+	CheckedResult      bool `db:"checked_result" json:"checked_result"`             // 确认状态0-未确认，1-确认yes,2- 确认no
+	CreateTime         bool `db:"create_time" json:"create_time"`                   // 创建时间
+	UpdateTime         bool `db:"update_time" json:"update_time"`                   // 更新时间
+}
+
+func TestFormatConv(t *testing.T) {
+
+	dataKeys := &AccountUpdateParam{
+		AccountId: true,
+		UserId:    true,
+	}
+
+	updateMap := make(map[string]bool)
+	err := conv.Unmarshal(dataKeys, &updateMap)
+	if err != nil {
+		return
+	}
+	updateKeys := make([]string, 0)
+	for k, v := range updateMap {
+		if v {
+			updateKeys = append(updateKeys, k)
+		}
+	}
+
+	fmt.Println(updateKeys)
 }

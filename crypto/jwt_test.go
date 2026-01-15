@@ -90,7 +90,7 @@ func TestJwtCase(t *testing.T) {
 	}
 	testCases := []*utils.TestStruct{
 		{"encode string", []any{}, []any{"abcd"}, func() string {
-			kkk, err := crypto.JwtEncrypt(secretKey, oldData, &crypto.JwtCfg{
+			encodeString, err := crypto.JwtEncrypt(secretKey, oldData, &crypto.JwtCfg{
 				StandardClaims: &jwt.StandardClaims{
 					ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
 				},
@@ -101,10 +101,10 @@ func TestJwtCase(t *testing.T) {
 				return ""
 			}
 			newData := new(UserData)
-			dataStr, err := crypto.JwtDecrypt(secretKey, kkk, newData, &crypto.JwtCfg{
+			dataStr, err := crypto.JwtDecrypt(secretKey, encodeString, newData, &crypto.JwtCfg{
 				EncryptJsonKeyList: []string{"PassWord"},
 			})
-			log.Println(kkk)
+			log.Println(encodeString)
 			log.Println(dataStr)
 			if err != nil {
 				t.Error(err)
