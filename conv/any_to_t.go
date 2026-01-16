@@ -2,14 +2,42 @@ package conv
 
 import (
 	"fmt"
+	"github.com/magic-lib/go-plat-utils/cond"
 	"reflect"
 	"time"
 )
 
 // Convert 转换泛型
-func Convert[T any](v any) (T, error) {
+func Convert[T any](v any) (t T, err error) {
+	if cond.IsArray(t) && cond.IsArray(v) {
+		t, err = toConvertList[T](v)
+		if err == nil {
+			return t, nil
+		}
+	}
 	return toConvert[T](v)
 }
+
+func toConvertList[T any](v any) (T, error) {
+	var t T
+	list, ok := anyToSlice(v)
+	if !ok {
+		return t, fmt.Errorf("convert not match []any")
+	}
+	targetType := reflect.TypeOf(t)
+	elementType := targetType.Elem()
+	sliceValue := reflect.MakeSlice(targetType, 0, len(list))
+	for _, item := range list {
+		itemT, err := ConvertForType(elementType, item)
+		if err != nil {
+			var zero T
+			return zero, err
+		}
+		sliceValue = reflect.Append(sliceValue, reflect.ValueOf(itemT))
+	}
+	return sliceValue.Interface().(T), nil
+}
+
 func toConvert[T any](v any) (T, error) {
 	// 类型断言：尝试将v转换为T
 	if result, ok := v.(T); ok {
@@ -33,6 +61,10 @@ func ConvertForType(targetType reflect.Type, v any) (any, error) {
 	valueType := reflect.TypeOf(v)
 	// 检查类型是否匹配
 	if valueType == targetType {
+		return v, nil
+	}
+	// 如果目标类型是any的话，则直接返回即可
+	if targetType.Kind() == reflect.Interface {
 		return v, nil
 	}
 

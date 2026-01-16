@@ -22,3 +22,9 @@ func IsBytes(src any) bool {
 	t := reflect.TypeOf(src)
 	return t.Kind() == reflect.Slice && t.Elem().Kind() == reflect.Uint8
 }
+
+// IsArray 判断 是否是数组类型
+func IsArray(in any) bool {
+	v := reflect.ValueOf(in)
+	return v.Kind() == reflect.Array || v.Kind() == reflect.Slice
+}

@@ -1,7 +1,9 @@
 package conv_test
 
 import (
+	"database/sql"
 	"fmt"
+	"github.com/magic-lib/go-plat-utils/cond"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/utils"
 	"testing"
@@ -117,4 +119,68 @@ func TestAnyToNumber(t *testing.T) {
 		{"int -5 to string", []any{-5}, []any{"-5"}, conv.Convert[string]},
 	}
 	utils.TestFunction(t, testCases, nil)
+}
+
+type Table1 struct {
+	CreateTime sql.NullTime   `db:"create_time" json:"create_time"`
+	Name       sql.NullString `db:"name" json:"name"`
+}
+
+func insertSql(in any) {
+	if cond.IsArray(in) {
+		inList1, err := conv.Convert[[]Table1](in)
+		if err == nil {
+			fmt.Println(inList1)
+		}
+
+		inList2, err := conv.Convert[[]*Table1](in)
+		if err == nil {
+			fmt.Println(inList2)
+		}
+
+		inList3, err := conv.Convert[[]any](in)
+		if err == nil {
+			fmt.Println(inList3)
+		}
+		num := []int64{1, 2, 3}
+		inList4, err := conv.Convert[[]string](num)
+		if err == nil {
+			fmt.Println(inList4)
+		}
+	}
+	fmt.Println("errr")
+}
+
+func TestAnyToConvert(t *testing.T) {
+	aa := []Table1{
+		{
+			CreateTime: sql.NullTime{
+				Time:  time.Now(),
+				Valid: true,
+			},
+			Name: sql.NullString{
+				String: "aaaaa",
+				Valid:  true,
+			},
+		},
+		{
+			CreateTime: sql.NullTime{
+				Time:  time.Now(),
+				Valid: true,
+			},
+			Name: sql.NullString{
+				String: "bbbbb",
+				Valid:  true,
+			},
+		},
+	}
+	insertSql(aa)
+}
+func TestAnyToString(t *testing.T) {
+	name := sql.NullString{
+		String: "bbbbb",
+		Valid:  true,
+	}
+	aa := conv.String(name)
+	fmt.Println(aa)
 }
