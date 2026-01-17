@@ -100,8 +100,7 @@ func TestJwtCase(t *testing.T) {
 				t.Error(err)
 				return ""
 			}
-			newData := new(UserData)
-			dataStr, err := crypto.JwtDecrypt(secretKey, encodeString, newData, &crypto.JwtCfg{
+			newData, dataStr, err := crypto.JwtDecrypt[UserData](secretKey, encodeString, &crypto.JwtCfg{
 				EncryptJsonKeyList: []string{"PassWord"},
 			})
 			log.Println(encodeString)
@@ -120,8 +119,7 @@ func TestJwtCase(t *testing.T) {
 				t.Error(err)
 				return ""
 			}
-			newData := ""
-			dataStr, err := crypto.JwtDecrypt(secretKey, kkk, &newData, &crypto.JwtCfg{
+			newData, dataStr, err := crypto.JwtDecrypt[string](secretKey, kkk, &crypto.JwtCfg{
 				EncryptJsonKeyList: []string{"."},
 			})
 			log.Println(kkk)

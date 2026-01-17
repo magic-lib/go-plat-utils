@@ -54,10 +54,45 @@ func Character(s string, front, end int, maskCode string) string {
 
 // Phone 隐去手机号中间 4 位地区码, 如 155****8888
 func Phone(phone string) string {
-	if len(phone) >= 8 {
-		return Character(phone, 3, 4, "*")
+	start := 0
+	end := 0
+	pLen := len(phone)
+	if pLen > 8 {
+		if pLen == 11 {
+			start = 3
+			end = 4
+		} else {
+			start = 2
+			end = 4
+		}
+	} else if pLen == 1 {
+		return phone
+	} else if pLen == 2 {
+		start = 0
+		end = 1
+	} else if pLen == 3 {
+		start = 0
+		end = 2
+	} else if pLen == 4 {
+		start = 0
+		end = 2
+	} else if pLen == 5 {
+		start = 0
+		end = 3
+	} else if pLen == 6 {
+		start = 0
+		end = 3
+	} else if pLen == 7 {
+		start = 0
+		end = 4
+	} else if pLen == 8 {
+		start = 1
+		end = 4
+	} else {
+		start = 0
+		end = 2
 	}
-	return Character(phone, 3, 0, "*")
+	return Character(phone, start, end, "*")
 }
 
 // Email 隐藏邮箱ID的中间部分 zhang@go-mall.com ---> z***g@go-mall.com

@@ -16,7 +16,8 @@ import (
 )
 
 const (
-	defaultDataKey = "data_define_name" //内置名，避免覆盖外面对象的名称
+	defaultDataKey    = "data_define_name" //内置名，避免覆盖外面对象的名称
+	defaultExpireTime = time.Hour
 )
 
 var (
@@ -25,6 +26,7 @@ var (
 
 type JwtCfg struct {
 	EncryptJsonKeyList []string //是否对数据key使用加密，避免外部查看
+	ExpireSeconds      int64    //过期时间，默认为秒
 	StandardClaims     *jwt.StandardClaims
 	SigningMethod      *jwt.SigningMethodHMAC
 }
@@ -34,6 +36,7 @@ func JwtEncrypt(secretKey string, data any, cfgList ...*JwtCfg) (string, error) 
 	var cfg = &jwt.StandardClaims{}
 	var signingMethod = jwt.SigningMethodHS256
 	var useEncryptList []string
+	expireTime := defaultExpireTime
 	if len(cfgList) > 0 && cfgList[0] != nil {
 		oneCfg := cfgList[0]
 		if oneCfg.StandardClaims != nil {
@@ -42,6 +45,9 @@ func JwtEncrypt(secretKey string, data any, cfgList ...*JwtCfg) (string, error) 
 		if oneCfg.SigningMethod != nil {
 			signingMethod = oneCfg.SigningMethod
 		}
+		if oneCfg.ExpireSeconds > 0 {
+			expireTime = time.Duration(oneCfg.ExpireSeconds) * time.Second
+		}
 		useEncryptList = oneCfg.EncryptJsonKeyList
 	}
 
@@ -49,7 +55,7 @@ func JwtEncrypt(secretKey string, data any, cfgList ...*JwtCfg) (string, error) 
 		cfg.IssuedAt = time.Now().Unix()
 	}
 	if cfg.ExpiresAt == 0 {
-		cfg.ExpiresAt = time.Now().Add(time.Hour).Unix()
+		cfg.ExpiresAt = time.Now().Add(expireTime).Unix()
 	}
 	mapClaims := jwtEncryptDataToMap(secretKey, useEncryptList, data)
 
@@ -71,17 +77,10 @@ func JwtEncrypt(secretKey string, data any, cfgList ...*JwtCfg) (string, error) 
 }
 
 // JwtDecrypt RSA解密数据，secretKey必须是成对出现
-func JwtDecrypt[T any](secretKey string, cipherText string, data any, cfgList ...*JwtCfg) (t T, jsonStr1 string, err1 error) {
+func JwtDecrypt[T any](secretKey string, cipherText string, cfgList ...*JwtCfg) (t T, jsonStr1 string, err1 error) {
 	var jsonStr, err = jwtPayload(cipherText)
 	if err != nil {
 		log.Println(err)
-	}
-
-	if data != nil {
-		pointType := reflect.TypeOf(data)
-		if pointType.Kind() != reflect.Ptr {
-			return t, jsonStr, fmt.Errorf("data must be a pointer")
-		}
 	}
 
 	token, err := jwt.ParseWithClaims(cipherText, &jwt.MapClaims{}, func(tk *jwt.Token) (interface{}, error) {
@@ -105,13 +104,6 @@ func JwtDecrypt[T any](secretKey string, cipherText string, data any, cfgList ..
 			dataStr = removeStandardClaimsKey(dataStr)
 		}
 		t, err = conv.Convert[T](dataStr)
-		if data == nil {
-			if err != nil {
-				return t, dataStr, err
-			}
-			return t, dataStr, nil
-		}
-		err = conv.Unmarshal(dataStr, data)
 		if err != nil {
 			return t, dataStr, err
 		}
