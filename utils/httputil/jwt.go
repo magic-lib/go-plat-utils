@@ -21,7 +21,7 @@ func ExtractorJwtToken[T any](jwtSecret string, header http.Header, jwtCfgList .
 	if err != nil {
 		return t, err
 	}
-	jwtData, _, err := crypto.JwtDecrypt[T](jwtSecret, authorizationValue, nil, jwtCfgList...)
+	jwtData, _, err := crypto.JwtDecrypt[T](jwtSecret, authorizationValue, jwtCfgList...)
 	if err != nil {
 		return jwtData, err
 	}

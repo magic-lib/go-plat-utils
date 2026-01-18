@@ -16,11 +16,11 @@ func BB(str string, bb string) string {
 
 func TestAesCbc(t *testing.T) {
 	testCases := []*utils.TestStruct{
-		{"变长参数，少参数", []any{AA, "aa"}, []any{"", false}, nil},
+		{"变长参数，少参数", []any{AA, "aa"}, []any{"aa", true}, nil},
 		{"变长参数，参数刚好少一个", []any{AA, "aa", "bb"}, []any{"aa", true}, nil},
 		{"变长参数，参数刚好相等", []any{AA, "aa", "bb", "cc"}, []any{"aa", true}, nil},
 		{"变长参数，多参数", []any{AA, "aa", "bb", "cc", "dd"}, []any{"aa", true}, nil},
-		{"定长参数，少参数", []any{BB, "aa"}, []any{"", false}, nil},
+		{"定长参数，少参数", []any{BB, "aa"}, []any{"aa", true}, nil},
 		{"定长参数，参数刚好", []any{BB, "aa", "bb"}, []any{"aa", true}, nil},
 		{"定长参数，参数多", []any{BB, "aa", "bb", "cc"}, []any{"aa", true}, nil},
 	}
@@ -31,6 +31,11 @@ func TestAesCbc(t *testing.T) {
 		}
 		return ret[0].(string), true
 	})
+}
+func TestArgType(t *testing.T) {
+	ret1, b1, err1 := utils.FuncInTypeList(AA)
+	ret2, b2, err2 := utils.FuncInTypeList(BB)
+	fmt.Println(ret1, err1, ret2, err2, b1, b2)
 }
 
 func TestUUID(t *testing.T) {
