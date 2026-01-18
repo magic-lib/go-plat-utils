@@ -12,7 +12,7 @@ const (
 	Bearer        = "Bearer"
 )
 
-func ExtractorJwtToken[T any](jwtSecret string, header http.Header, jwtCfgList ...*crypto.JwtCfg) (t T, err error) {
+func ExtractAndDecryptJwtData[T any](jwtSecret string, header http.Header, jwtCfgList ...*crypto.JwtCfg) (t T, err error) {
 	authorizationValue := header.Get(Authorization)
 	if authorizationValue == "" {
 		return t, fmt.Errorf("no authorization header")
@@ -21,14 +21,14 @@ func ExtractorJwtToken[T any](jwtSecret string, header http.Header, jwtCfgList .
 	if err != nil {
 		return t, err
 	}
-	jwtData, _, err := crypto.JwtDecrypt[T](jwtSecret, authorizationValue, nil, jwtCfgList...)
+	jwtData, _, err := crypto.JwtDecrypt[T](jwtSecret, authorizationValue, jwtCfgList...)
 	if err != nil {
 		return jwtData, err
 	}
 	return jwtData, nil
 }
 
-func CreateJwtToken(jwtSecret string, data any, cfgList ...*crypto.JwtCfg) (string, error) {
+func GenerateBearerJwtToken(jwtSecret string, data any, cfgList ...*crypto.JwtCfg) (string, error) {
 	encodeStr, err := crypto.JwtEncrypt(jwtSecret, data, cfgList...)
 	if err != nil {
 		return "", err

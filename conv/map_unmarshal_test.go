@@ -371,8 +371,8 @@ type AccountUpdateParam struct {
 	AccountId          bool `db:"account_id" json:"account_id"`                     // 账户ID
 	UserId             bool `db:"user_id" json:"user_id"`                           // 关联user表id
 	MemberId           bool `db:"member_id" json:"member_id"`                       // 关联member表id
-	ProvideId          bool `db:"provide_id" json:"provide_id"`                     // 关联provide表id
-	AccountValue       bool `db:"account_value" json:"account_value"`               // 账号提供商具体的值
+	ProviderId         bool `db:"provider_id" json:"provide_id"`                    // 关联provide表id
+	AccountNo          bool `db:"account_no" json:"account_no"`                     // 账号提供商具体的值
 	Source             bool `db:"source" json:"source"`                             // 用户来源0-未确定，1-白名单 2-自绑定，3-KYC获取
 	WalletType         bool `db:"wallet_type" json:"wallet_type"`                   // 0-电子钱包，1-银行卡
 	BankType           bool `db:"bank_type" json:"bank_type"`                       // 银行类型

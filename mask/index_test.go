@@ -8,6 +8,7 @@ import (
 
 func TestMask(t *testing.T) {
 	testCases := []*utils.TestStruct{
+		{"Phone", []any{""}, []any{""}, mask.Phone},
 		{"Phone", []any{"1"}, []any{"1"}, mask.Phone},
 		{"Phone", []any{"22"}, []any{"*2"}, mask.Phone},
 		{"Phone", []any{"333"}, []any{"*33"}, mask.Phone},

@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"github.com/magic-lib/go-plat-utils/conv"
 	"reflect"
 	"runtime"
 	"strings"
@@ -30,95 +31,23 @@ func FuncExecute(function any, args ...any) (result []any, err error) {
 		return nil, fmt.Errorf("[FuncExecute] not function")
 	}
 
-	var retValues []reflect.Value
-	if len(args) > 0 {
-		argSlice := make([]reflect.Value, len(args))
-		funParamLen := fnType.NumIn() //如果是变长的情况
-
-		isVariadicParam := false
-		if funParamLen > 0 && fnType.IsVariadic() {
-			isVariadicParam = true
-		}
-
-		for i, arg := range args {
-			if arg == nil {
-				if funParamLen > 0 {
-					var fnArgType reflect.Type
-
-					if isVariadicParam {
-						if i < funParamLen-1 {
-							fnArgType = fnType.In(i)
-						} else {
-							//判断最后一个参数是不是slice类型
-							lastParam := fnType.In(funParamLen - 1)
-							fnArgType = lastParam.Elem()
-						}
-					} else {
-						if i < funParamLen {
-							fnArgType = fnType.In(i)
-						}
-					}
-
-					//需要检查是否是interface类型
-					if fnArgType != nil {
-						if fnArgType.Kind() == reflect.Interface {
-							argSlice[i] = reflect.Zero(reflect.TypeOf((*any)(nil)).Elem())
-							continue
-						}
-						if fnArgType.Kind() == reflect.Ptr {
-							argSlice[i] = reflect.Zero(fnArgType)
-							continue
-						}
-					}
-				}
-			}
-			argSlice[i] = reflect.ValueOf(arg)
-		}
-		// 调用函数，捕获panic
-		defer func() {
-			if r := recover(); r != nil {
-				fmt.Println("[FuncExecute] Recovered from panic:", r)
-			}
-		}()
-
-		{ //arg与原方程数量不对，这里需要特殊处理一下
-			if len(argSlice) != funParamLen {
-				//判断最后一个是不是变长参数
-				if funParamLen > 0 {
-
-					paramLengthError := false
-					if isVariadicParam {
-						if len(argSlice) < funParamLen-1 {
-							paramLengthError = true
-						}
-					} else {
-						if len(argSlice) > funParamLen {
-							argSlice = argSlice[0:funParamLen]
-						} else {
-							paramLengthError = true
-						}
-					}
-
-					if paramLengthError {
-						return []any{}, fmt.Errorf("[FuncExecute] param length error: %d, func param length: %d",
-							len(argSlice), funParamLen)
-					}
-				} else {
-					// 如果原方法没有参数，则这里设为nil
-					argSlice = nil
-				}
-			}
-		}
-
-		// 调用函数并返回结果
-		retValues = fnValue.Call(argSlice)
-	} else {
-		if fnType.NumIn() > len(args) {
-			return []any{}, fmt.Errorf("[FuncExecute] param error: %d, func param length: %d",
-				len(args), fnType.NumIn())
-		}
-		retValues = fnValue.Call(nil)
+	trueArgList, err := FuncArgList(function, args...)
+	if err != nil {
+		return nil, err
 	}
+
+	// 调用函数，捕获panic
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("[FuncExecute] Recovered from panic:", r)
+		}
+	}()
+	argSlice := make([]reflect.Value, len(trueArgList))
+	for i, v := range trueArgList {
+		argSlice[i] = reflect.ValueOf(v)
+	}
+	// 调用函数并返回结果
+	retValues := fnValue.Call(argSlice)
 
 	numOut := fnType.NumOut()
 
@@ -141,5 +70,100 @@ func FuncExecute(function any, args ...any) (result []any, err error) {
 		result[i] = retValues[i].Interface()
 	}
 
+	return result, nil
+}
+
+// FuncInTypeList 获取函数的参数类型列表和是否有可变参数
+func FuncInTypeList(function any) ([]reflect.Type, bool, error) {
+	value := reflect.ValueOf(function)
+	if value.Kind() != reflect.Func {
+		return nil, false, fmt.Errorf("[FuncArgTypeList] not function")
+	}
+	fnType := reflect.TypeOf(function)
+	numIn := fnType.NumIn()
+	paramTypes := make([]reflect.Type, numIn)
+	for i := 0; i < numIn; i++ {
+		paramTypes[i] = fnType.In(i)
+	}
+	hasVariadicParam := false
+	if numIn > 0 && fnType.IsVariadic() {
+		hasVariadicParam = true
+	}
+	return paramTypes, hasVariadicParam, nil
+}
+
+func FuncArgList(function any, args ...any) ([]any, error) {
+	argTypeList, hasVariadicParam, err := FuncInTypeList(function)
+	if err != nil {
+		return nil, err
+	}
+	if len(argTypeList) == 0 {
+		return []any{}, nil
+	}
+	var trueArgList = args
+	if !hasVariadicParam {
+		if len(args) > len(argTypeList) {
+			trueArgList = args[0:len(argTypeList)]
+		}
+	}
+
+	getZeroConvertValue := func(fnArgType reflect.Type) reflect.Value {
+		if fnArgType.Kind() == reflect.Interface {
+			return reflect.Zero(reflect.TypeOf((*any)(nil)).Elem())
+		}
+		if fnArgType.Kind() == reflect.Ptr {
+			return reflect.Zero(fnArgType)
+		}
+		return reflect.Zero(fnArgType)
+	}
+
+	// 补充参数
+	argTypeLen := len(argTypeList)
+	for len(trueArgList) < argTypeLen {
+		if hasVariadicParam {
+			if len(trueArgList) >= argTypeLen-1 {
+				break
+			}
+		}
+		zeroValue := getZeroConvertValue(argTypeList[len(trueArgList)]).Interface()
+		trueArgList = append(trueArgList, zeroValue)
+	}
+	var variadicType reflect.Type
+	if hasVariadicParam {
+		variadicType = argTypeList[len(argTypeList)-1].Elem()
+	}
+
+	getConvertValue := func(arg any, thisArgType reflect.Type) reflect.Value {
+		if arg == nil {
+			return getZeroConvertValue(thisArgType)
+		}
+		argValue := reflect.ValueOf(arg)
+		if argValue.Type().ConvertibleTo(thisArgType) {
+			return argValue.Convert(thisArgType)
+		} else {
+			newArg, err := conv.ConvertForType(thisArgType, arg)
+			if err == nil {
+				return reflect.ValueOf(newArg)
+			}
+		}
+		return getZeroConvertValue(thisArgType)
+	}
+
+	argSlice := make([]reflect.Value, 0, len(trueArgList))
+	for i, arg := range trueArgList {
+		if hasVariadicParam && i >= len(argTypeList)-1 {
+			thisValue := getConvertValue(arg, variadicType)
+			argSlice = append(argSlice, thisValue)
+		} else {
+			thisArgType := argTypeList[i]
+			thisValue := getConvertValue(arg, thisArgType)
+			argSlice = append(argSlice, thisValue)
+		}
+	}
+
+	result := make([]any, len(argSlice))
+	for i, v := range argSlice {
+		result[i] = v.Interface()
+	}
 	return result, nil
 }

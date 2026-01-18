@@ -215,7 +215,7 @@ func GetJsonKeyMaps(bean any) map[string]string {
 		field := cType.Elem().Field(i)
 		name := field.Tag.Get("json")
 		if name == "-" || name == "" {
-			name = ChangeVariableName(field.Name, "lower")
+			name = VarNameConverter(field.Name, Snake)
 		}
 		jsonMap[field.Name] = name
 	}

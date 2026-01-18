@@ -1,6 +1,9 @@
 package cond
 
-import "regexp"
+import (
+	"regexp"
+	"strings"
+)
 import "encoding/json"
 
 // IsUUID 是否是UUID字符串
@@ -35,4 +38,15 @@ func IsJson(text string) bool {
 	default: // 其他类型（数字、字符串、布尔值、null等）
 		return false
 	}
+}
+
+// IsStringEmpty 是否是空字符串，不写成EmptyString，是为了好找方法
+func IsStringEmpty(text string) bool {
+	if len(text) == 0 {
+		return true
+	}
+	if strings.TrimSpace(text) == "" {
+		return true
+	}
+	return false
 }

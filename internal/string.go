@@ -1,6 +1,20 @@
 package internal
 
-import "strings"
+import (
+	"strings"
+	"unicode"
+)
+
+// VariableType snake 和 camel 类型
+type VariableType string
+
+const (
+	Snake  VariableType = "snake"
+	Camel  VariableType = "camel"
+	Pascal VariableType = "pascal"
+	Lower  VariableType = "lower"
+	Upper  VariableType = "upper"
+)
 
 // SubStr 截取字符串，支持多字节字符
 // start：起始下标，负数从从尾部开始，最后一个为-1
@@ -116,4 +130,65 @@ func PascalString(s string) string {
 		data = append(data, d)
 	}
 	return string(data[:])
+}
+
+func CamelString(s string) string {
+	s = PascalString(s)
+	if s == "" {
+		return ""
+	}
+	runes := []rune(s)
+	result := make([]rune, 0, len(runes))
+	first := true
+	for _, r := range runes {
+		if first {
+			result = append(result, unicode.ToLower(r))
+			first = false
+		} else {
+			result = append(result, r)
+		}
+	}
+	return string(result)
+}
+
+// VarNameConverter 将驼峰与小写互转
+func VarNameConverter(varName string, toType ...VariableType) string {
+	if varName == "" {
+		return ""
+	}
+	if len(toType) == 1 {
+		typeName := toType[0]
+		switch typeName {
+		case Snake:
+			return SnakeString(varName)
+		case Camel:
+			return CamelString(varName)
+		case Pascal:
+			return PascalString(varName)
+		case Lower:
+			return strings.ToLower(varName)
+		case Upper:
+			return strings.ToUpper(varName)
+		}
+		return varName
+	}
+
+	//检测是否都为小写
+	isLower := true
+	for i := 0; i < len(varName); i++ {
+		c := varName[i]
+		if isASCIIUpper(c) {
+			isLower = false
+			break
+		}
+	}
+
+	if !isLower {
+		return SnakeString(varName)
+	}
+	return PascalString(varName)
+}
+
+func isASCIIUpper(c byte) bool {
+	return 'A' <= c && c <= 'Z'
 }

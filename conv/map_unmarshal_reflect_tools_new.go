@@ -3,6 +3,7 @@ package conv
 import (
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/cond"
+	"github.com/magic-lib/go-plat-utils/internal"
 	jsoniterForNil "github.com/magic-lib/go-plat-utils/internal/jsoniter/go"
 	"reflect"
 	"strings"
@@ -172,8 +173,8 @@ func (c *toolsService) getAllMapNameByField(dstColumn reflect.StructField) []str
 		dstColumnJsonNameList = append(dstColumnJsonNameList, dstColumnJsonName)
 	} else {
 		// 默认为先snake 后 camel，后者优先
-		snakeName := ChangeVariableName(dstColumnTypeName, "snake")
-		camelName := ChangeVariableName(dstColumnTypeName, "camel")
+		snakeName := internal.VarNameConverter(dstColumnTypeName, internal.Snake)
+		camelName := internal.VarNameConverter(dstColumnTypeName, internal.Camel)
 		dstColumnJsonNameList = append(dstColumnJsonNameList, snakeName)
 		if snakeName != camelName {
 			dstColumnJsonNameList = append(dstColumnJsonNameList, camelName)
@@ -361,7 +362,7 @@ func (c *toolsService) UnmarshalDataFromJson(srcStruct any, dstPoint any) error 
 	}
 	// 这里有可能对json标签不存在的字段进行忽略了
 	logDebug("UnmarshalDataFromJson success:", String(dstPoint))
-	
+
 	return nil
 }
 

@@ -21,7 +21,7 @@ func TestJwt(t *testing.T) {
 		UserName: "mmt1234567",
 		PassWord: "abcd",
 	}
-	tokenStr, err := httputil.CreateJwtToken(secretKey, oldData, &crypto.JwtCfg{
+	tokenStr, err := httputil.GenerateBearerJwtToken(secretKey, oldData, &crypto.JwtCfg{
 		StandardClaims: &jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
 		},
@@ -37,7 +37,7 @@ func TestJwt(t *testing.T) {
 		httputil.Authorization: []string{tokenStr},
 	}
 
-	data, err := httputil.ExtractorJwtToken[UserData](secretKey, head, &crypto.JwtCfg{
+	data, err := httputil.ExtractAndDecryptJwtData[UserData](secretKey, head, &crypto.JwtCfg{
 		EncryptJsonKeyList: []string{"PassWord"},
 	})
 	if err != nil {

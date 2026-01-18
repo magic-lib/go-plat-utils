@@ -10,8 +10,22 @@ import (
 	"github.com/magic-lib/go-plat-utils/internal"
 )
 
+// VariableType snake 和 camel 类型
+type VariableType string
+
+const (
+	Snake  = VariableType(internal.Snake)
+	Camel  = VariableType(internal.Camel)
+	Pascal = VariableType(internal.Pascal)
+	Lower  = VariableType(internal.Lower)
+	Upper  = VariableType(internal.Upper)
+)
+
 // RandomString 生成随机字符串
 func RandomString(l int, sourceStr ...string) string {
+	if l <= 0 {
+		return ""
+	}
 	var str = append(lo.NumbersCharset, lo.LowerCaseLettersCharset...)
 	if len(sourceStr) > 0 {
 		sourceArr := make([]rune, 0, len(sourceStr))
@@ -22,18 +36,14 @@ func RandomString(l int, sourceStr ...string) string {
 			str = sourceArr
 		}
 	}
+	return lo.RandomString(l, str)
+}
+
+func RandomStringInt(l int) string {
 	if l <= 0 {
 		return ""
 	}
-	return lo.RandomString(l, str)
-
-	//bytes := []byte(str)
-	//result := make([]byte, 0)
-	//r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	//for i := 0; i < l; i++ {
-	//	result = append(result, bytes[r.Intn(len(bytes))])
-	//}
-	//return string(result)
+	return lo.RandomString(l, append(lo.NumbersCharset))
 }
 
 // UnicodeDecodeString 解码unicode
@@ -53,42 +63,13 @@ func UnicodeDecodeString(s string) string {
 	return strings.Join(newStr, "")
 }
 
-// ChangeVariableName 将驼峰与小写互转
-func ChangeVariableName(varName string, toType ...string) string {
-	if varName == "" {
-		return varName
-	}
-
+// VarNameConverter 将驼峰与小写互转
+func VarNameConverter(varName string, toType ...VariableType) string {
 	if len(toType) == 1 {
-		if toType[0] == "lower" {
-			return internal.SnakeString(varName)
-		} else if toType[0] == "upper" {
-			return internal.PascalString(varName)
-		}
+		inType := internal.VariableType(toType[0])
+		return internal.VarNameConverter(varName, inType)
 	}
-
-	// 检测是否都为小写
-	isLower := true
-	for i := 0; i < len(varName); i++ {
-		c := varName[i]
-		if isASCIIUpper(c) {
-			isLower = false
-			break
-		}
-	}
-
-	if !isLower {
-		return internal.SnakeString(varName)
-	}
-	return internal.PascalString(varName)
-}
-
-func isASCIIUpper(c byte) bool {
-	return 'A' <= c && c <= 'Z'
-}
-
-func isASCIIDigit(c byte) bool {
-	return '0' <= c && c <= '9'
+	return internal.VarNameConverter(varName)
 }
 
 // ReplaceDynamicVariables 将动态分隔符包裹的变量替换为 [变量名] 格式
