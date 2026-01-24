@@ -548,19 +548,42 @@ func getParamFromQuery(req *http.Request, splitString string, pathFunc ParsePath
 	return allParamMap, err
 }
 
-func getParamFromBody(req *http.Request) (string, error) {
-	if req == nil || req.Body == nil {
-		return "", nil
-	}
+type bodyCacheKey struct{}
 
-	b, err := io.ReadAll(req.Body)
+func getParamFromBody(req *http.Request) (string, error) {
+	bodyByte, err := getParamByteFromBody(req)
 	if err != nil {
 		return "", err
 	}
+	if bodyByte == nil {
+		return "", nil
+	}
+	return string(bodyByte), nil
+}
+
+func getParamByteFromBody(req *http.Request) ([]byte, error) {
+	if req == nil || req.Body == nil {
+		return []byte{}, nil
+	}
+	if cachedBody, ok := req.Context().Value(bodyCacheKey{}).([]byte); ok {
+		return cachedBody, nil
+	}
+
+	oldBody := req.Body
+	defer func() {
+		_ = oldBody.Close()
+	}()
+	b, err := io.ReadAll(req.Body)
+	if err != nil {
+		return nil, err
+	}
 	req.Body = io.NopCloser(bytes.NewBuffer(b))
 
-	return string(b), nil
+	newCtx := context.WithValue(req.Context(), bodyCacheKey{}, b)
+	req = req.WithContext(newCtx)
+	return b, nil
 }
+
 func getParamFromForm(req *http.Request) url.Values {
 	queryMap := make(url.Values)
 	if req == nil {

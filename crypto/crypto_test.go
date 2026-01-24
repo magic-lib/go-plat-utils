@@ -161,14 +161,14 @@ TjWDiQ4P6p8=
 	err = rsa.VerifySignMd5("abc", nn, nil)
 	fmt.Println(err)
 
-	qq, err := crypto.EncryptRSA(priStr, "tiantian")
+	qq, err := crypto.RSAEncrypt(priStr, "tiantian")
 	fmt.Println(qq, err)
-	zz, err := crypto.DecryptRSA(pubStr, qq)
+	zz, err := crypto.RSADecrypt(pubStr, qq)
 	fmt.Println(zz, err)
 
-	qq, err = crypto.EncryptRSA(pubStr, "tiantian")
+	qq, err = crypto.RSAEncrypt(pubStr, "tiantian")
 	fmt.Println(qq, err)
-	zz, err = crypto.DecryptRSA(priStr, qq)
+	zz, err = crypto.RSADecrypt(priStr, qq)
 	fmt.Println(zz, err)
 
 }
@@ -192,4 +192,15 @@ func TestJwt(t *testing.T) {
 	aa, err := parseJWT(token, []byte(secret))
 	fmt.Println(err)
 	fmt.Println(conv.String(aa))
+}
+func TestGCM(t *testing.T) {
+	token := "world"
+	secret := "abcde"
+
+	mm, nn, err := crypto.GCMEncrypt(secret, []byte(token))
+	fmt.Println(mm, nn, err)
+
+	pp, err := crypto.GCMDecrypt(secret, nn, mm)
+	fmt.Println(string(pp), err)
+
 }

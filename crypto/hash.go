@@ -6,6 +6,7 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/sha512"
+	"encoding/base64"
 	"github.com/marspere/goencrypt"
 	"hash"
 	"log"
@@ -118,4 +119,13 @@ func getCalculateFunc(sharType shaType) func() hash.Hash {
 		log.Println("Unsupported SHA type")
 		return nil
 	}
+}
+
+// Base64URLEncode 符合JWT规范的Base64URL编码
+func Base64URLEncode(data []byte) string {
+	// 核心：Base64URL编码 + 移除填充符=
+	return base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(data)
+}
+func Base64URLDecode(data string) ([]byte, error) {
+	return base64.URLEncoding.WithPadding(base64.NoPadding).DecodeString(data)
 }
