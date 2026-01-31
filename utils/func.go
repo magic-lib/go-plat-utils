@@ -1,12 +1,41 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"reflect"
 	"runtime"
 	"strings"
 )
+
+// ContextTypedHandler 带有上下文的支持泛型的方法
+type ContextTypedHandler[TReq, TResp any] func(ctx context.Context, args TReq) (TResp, error)
+type ContextAnyHandler func(ctx context.Context, args any) (any, error)
+
+// ContextTypedToAnyHandler 相互转换
+func ContextTypedToAnyHandler[TReq, TResp any](method any) (ContextAnyHandler, error) {
+	if method == nil {
+		panic("method is nil")
+	}
+	methodFun, ok := method.(ContextTypedHandler[TReq, TResp])
+	if !ok {
+		methodName, isMethod := GetFuncName(method)
+		if !isMethod {
+			return nil, fmt.Errorf("%s error: method is not function", methodName)
+		}
+		return nil, fmt.Errorf("method is not func(ctx context.Context, param P) (V, error): %s", methodName)
+	}
+	return func(ctx context.Context, param any) (any, error) {
+		//断言
+		paramPtr, ok := param.(TReq)
+		if !ok {
+			return nil, fmt.Errorf("param is not %T", paramPtr)
+		}
+		//调用方法
+		return methodFun(ctx, paramPtr)
+	}, nil
+}
 
 // GetFuncName 获取方法名
 func GetFuncName(i any) (name string, isMethod bool) {
