@@ -5,6 +5,7 @@ import (
 	"github.com/magic-lib/go-plat-utils/goroutines"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -15,10 +16,13 @@ func TestAsyncExecuteDataList(t *testing.T) {
 		arr = append(arr, i+1)
 	}
 	num := 0
+	var lock sync.Mutex
 	ret, err := goroutines.AsyncExecuteDataList(12*time.Second, arr, func(value int, key int) (breakFlag bool, err error) {
 		fmt.Println("key=", key, "; value=", value)
-		num++
-		time.Sleep(1 * time.Second)
+		time.Sleep(1 * time.Second) //模拟执行耗时
+		lock.Lock()
+		defer lock.Unlock()
+		num++ //可以将执行结果放入数组中
 		return false, fmt.Errorf("3333")
 	})
 	fmt.Println(num, ret, err)

@@ -6,6 +6,8 @@ import (
 	"net/http"
 )
 
+//https://github.com/mennanov/limiters?tab=readme-ov-file
+
 // RateLimitMiddleware 在HTTP中间件中使用
 func RateLimitMiddleware(next http.Handler, limitPerSecond, size int) http.Handler {
 	// 初始化：每秒10个令牌，桶容量30
