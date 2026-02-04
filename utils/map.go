@@ -236,16 +236,27 @@ func DelKey(val map[string]any, fields []string) map[string]any {
 // GetStructInfoByTag converts golang struct field into slice string.
 // tagNames 会依次按传的顺序获取
 func GetStructInfoByTag(in any, f func(string) string, tagNames ...string) (structName string, fieldMap map[string]any, err error) {
+	structNameTemp, fieldKeyList, filedDataList, errTemp := GetFieldListByTag(in, f, tagNames...)
+	if errTemp != nil {
+		return structNameTemp, nil, errTemp
+	}
+	fieldMap = make(map[string]any)
+	lo.ForEach(fieldKeyList, func(item string, index int) {
+		fieldMap[item] = filedDataList[index]
+	})
+	return structNameTemp, fieldMap, nil
+}
+func GetFieldListByTag(in any, f func(string) string, tagNames ...string) (structName string, fieldList []string, fieldData []any, err error) {
 	v := reflect.ValueOf(in)
 	if v.Kind() == reflect.Ptr {
 		if v.IsNil() {
-			return "", nil, fmt.Errorf("input is a nil pointer")
+			return "", nil, nil, fmt.Errorf("input is a nil pointer")
 		}
 		v = v.Elem()
 	}
 	// we only accept structs
 	if v.Kind() != reflect.Struct {
-		return "", nil, fmt.Errorf("ToMap only accepts structs; got %T", v)
+		return "", nil, nil, fmt.Errorf("ToMap only accepts structs; got %T", v)
 	}
 	if f == nil {
 		f = func(s string) string {
@@ -266,7 +277,8 @@ func GetStructInfoByTag(in any, f func(string) string, tagNames ...string) (stru
 	typ := v.Type()
 	structName = typ.Name()
 
-	fieldMap = make(map[string]any)
+	fieldList = make([]string, 0)
+	fieldData = make([]any, 0)
 
 	for i := 0; i < v.NumField(); i++ {
 		// gets us a StructField
@@ -298,7 +310,8 @@ func GetStructInfoByTag(in any, f func(string) string, tagNames ...string) (stru
 
 		if oneKey != "" { //有可能tag设置为-的情况
 			if vi.IsValid() {
-				fieldMap[oneKey] = vi.Interface()
+				fieldList = append(fieldList, oneKey)
+				fieldData = append(fieldData, vi.Interface())
 			}
 		}
 	}
