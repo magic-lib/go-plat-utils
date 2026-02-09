@@ -291,29 +291,55 @@ func TestRingArray(t *testing.T) {
 		return this.Id
 	}
 
+	oneRing, _ := utils.NewArrayRing[int64, *OneData](vsList, key)
+
 	one := utils.NextByRing[int64, *OneData](vsList, &OneData{
 		Id:   22,
 		Name: "admin",
 	}, key, nt)
 	fmt.Println(one.Id)
+	one1 := oneRing.Next(&OneData{
+		Id:   22,
+		Name: "admin",
+	})
+	fmt.Println(one1.Id)
+
 	one = utils.NextByRing[int64, *OneData](vsList, &OneData{
 		Id:   23,
 		Name: "john_do11e",
 	}, key, nt)
 	fmt.Println(one.Id)
+	one1 = oneRing.Next(&OneData{
+		Id:   23,
+		Name: "john_do11e",
+	})
+	fmt.Println(one1.Id)
 	one = utils.NextByRing[int64, *OneData](vsList, &OneData{
 		Id:   25,
 		Name: "john_do1125555e",
 	}, key, nt)
 	fmt.Println(one.Id)
+	one1 = oneRing.Next(&OneData{
+		Id:   25,
+		Name: "john_do1125555e",
+	})
+	fmt.Println(one1.Id)
 	one = utils.NextByRing[int64, *OneData](vsList, &OneData{
 		Id: 36,
 	}, key, nt)
 	fmt.Println(one.Id)
+	one1 = oneRing.Next(&OneData{
+		Id: 36,
+	})
+	fmt.Println(one1.Id)
 	one = utils.NextByRing[int64, *OneData](vsList, &OneData{
 		Id: 37,
 	}, key, nt)
 	fmt.Println(one.Id)
+	one1 = oneRing.Next(&OneData{
+		Id: 37,
+	})
+	fmt.Println(one1.Id)
 	//one = utils.NextByRing[*OneData](vsList, &OneData{
 	//	Id: 10,
 	//}, nt)

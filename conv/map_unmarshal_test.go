@@ -9,7 +9,7 @@ import (
 	"github.com/shopspring/decimal"
 	"golang.org/x/text/language"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	yaml "gopkg.in/yaml.v3"
+	yaml "go.yaml.in/yaml/v3"
 	"log"
 	"testing"
 	"time"
