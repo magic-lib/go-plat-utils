@@ -9,7 +9,7 @@ import (
 	"github.com/marspere/goencrypt"
 	gouuid "github.com/nu7hatch/gouuid"
 	"github.com/rs/xid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 // GetXId 20字符 id 生成器,如：
@@ -22,7 +22,7 @@ func XId() string {
 // ObjectId 24字符 id 生成器,如：
 // 67c9d12e050656d79bb0c630
 func ObjectId() string {
-	return primitive.NewObjectID().Hex()
+	return bson.NewObjectID().Hex()
 }
 
 // Snowflake 24字符 id 生成器,如：
