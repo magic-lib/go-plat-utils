@@ -29,10 +29,10 @@ func TestString(t *testing.T) {
 	fmt.Println(kk)
 }
 func TestPercent(t *testing.T) {
-	var a int = 3
-	var b float64 = 2.5
+	var a = 3
+	var b = 2.777
 
-	kk := utils.Percent(a, b, 2)
+	kk := utils.Percent(a, b)
 	fmt.Println(kk)
 }
 func TestRandomInt64(t *testing.T) {
