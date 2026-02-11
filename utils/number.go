@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/shopspring/decimal"
 	"math/rand"
 	"time"
@@ -55,4 +56,15 @@ func pow10(n int) int64 {
 		result *= 10
 	}
 	return int64(result)
+}
+
+// DecimalAdd 相加数字
+func DecimalAdd(b ...any) decimal.Decimal {
+	var af decimal.Decimal
+	for _, a := range b {
+		if bf, err := conv.Convert[decimal.Decimal](a); err == nil {
+			af = af.Add(bf)
+		}
+	}
+	return af
 }

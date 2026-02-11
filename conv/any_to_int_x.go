@@ -2,6 +2,7 @@ package conv
 
 import (
 	"encoding/binary"
+	"github.com/shopspring/decimal"
 	"math"
 	"reflect"
 	"strconv"
@@ -163,4 +164,47 @@ func forceToInt64(i any) (int64, bool) {
 		return int64(i.(float64)), true
 	}
 	return 0, false
+}
+
+func toDecimal(n1 any) (decimal.Decimal, bool) {
+	if n2, ok := n1.(decimal.Decimal); ok {
+		return n2, true
+	}
+	switch n1.(type) {
+	case float32:
+		if n2, ok := n1.(float32); ok {
+			return decimal.NewFromFloat32(n2), true
+		}
+	case float64:
+		if n2, ok := n1.(float64); ok {
+			return decimal.NewFromFloat(n2), true
+		}
+	case int64, int16, int8, int:
+		n2, err := Convert[int64](n1)
+		if err == nil {
+			return decimal.NewFromInt(n2), true
+		}
+	case int32:
+		if n2, ok := n1.(int32); ok {
+			return decimal.NewFromInt32(n2), true
+		}
+	case uint64, uint32, uint16, uint8, uint:
+		n2, err := Convert[uint64](n1)
+		if err == nil {
+			return decimal.NewFromUint64(n2), true
+		}
+	case string:
+		if n2, ok := n1.(string); ok {
+			n3, err := decimal.NewFromString(n2)
+			if err == nil {
+				return n3, true
+			}
+		}
+		return decimal.Zero, false
+	}
+	n3, err := decimal.NewFromString(String(n1))
+	if err == nil {
+		return n3, true
+	}
+	return decimal.Zero, false
 }

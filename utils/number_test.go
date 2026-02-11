@@ -6,6 +6,7 @@ import (
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/utils"
 	"github.com/serenize/snaker"
+	"github.com/shopspring/decimal"
 	"testing"
 )
 
@@ -69,4 +70,18 @@ func TestRandomInt64(t *testing.T) {
 	//	{"string 1 to int 1", []any{10, 20}, []any{1}, utils.RandomInt},
 	//}
 	//utils.TestFunction(t, testCases, nil)
+}
+
+func TestNumberAdd(t *testing.T) {
+	var a int = 3
+	var b float64 = 2.5
+	var c float32 = 2.7
+	var d uint64 = 7
+	var e = decimal.NewFromFloat(2.5)
+	kk := utils.DecimalAdd(a, b, c, d, e)
+	aa := kk.Equal(decimal.NewFromFloat(17.7))
+	fmt.Println(kk)
+	fmt.Println(aa)
+	kk = utils.DecimalAdd()
+	fmt.Println(kk)
 }

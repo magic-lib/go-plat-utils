@@ -3,6 +3,7 @@ package conv
 import (
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/cond"
+	"github.com/shopspring/decimal"
 	"reflect"
 	"time"
 )
@@ -159,6 +160,14 @@ func ConvertForType(targetType reflect.Type, v any) (any, error) {
 			if convRet, ok := Time(v); ok {
 				return convRet, nil
 			}
+		}
+	case reflect.TypeOf(decimal.Decimal{}):
+		{
+			convRet, ok := toDecimal(v)
+			if ok {
+				return convRet, nil
+			}
+			return convRet, convErr
 		}
 	default:
 		//log.Println("ConvertForType: ", convErr.Error())
