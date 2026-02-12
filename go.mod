@@ -67,6 +67,7 @@ require (
 	github.com/timandy/routine v1.1.5
 	github.com/tmc/langchaingo v0.1.13
 	github.com/tmc/langgraphgo v0.0.0-20240324234251-3b0caeaffd16
+	github.com/traefik/yaegi v0.16.1
 	github.com/viant/toolbox v0.37.0
 	github.com/zeromicro/go-zero v1.9.2
 	go.mongodb.org/mongo-driver/v2 v2.5.1-0.20260209094634-d010e7850e68
@@ -180,3 +181,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
+
+//replace github.com/antlr/antlr4/runtime/Go/antlr => github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210521184019-c5ad59b459ec
+
+//replace github.com/antlr/antlr4 => github.com/antlr/antlr4 v0.0.0-20210521184019-c5ad59b459ec

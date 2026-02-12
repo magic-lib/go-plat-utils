@@ -78,10 +78,18 @@ func TestNumberAdd(t *testing.T) {
 	var c float32 = 2.7
 	var d uint64 = 7
 	var e = decimal.NewFromFloat(2.5)
-	kk := utils.DecimalAdd(a, b, c, d, e)
+	kk, _ := utils.DecimalAdd(a, b, c, d, e)
 	aa := kk.Equal(decimal.NewFromFloat(17.7))
 	fmt.Println(kk)
 	fmt.Println(aa)
-	kk = utils.DecimalAdd()
+	kk, _ = utils.DecimalAdd()
 	fmt.Println(kk)
+
+	kk, _ = utils.DecimalSub(10, a, b, c)
+	fmt.Println(kk)
+	kk, _ = utils.DecimalMul(10, a)
+	fmt.Println(kk)
+	kk, _ = utils.DecimalDiv(10, a)
+	fmt.Println(kk)
+
 }

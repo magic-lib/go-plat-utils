@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/shopspring/decimal"
 	"math/rand"
@@ -51,13 +52,66 @@ func pow10(n int) int64 {
 	return int64(result)
 }
 
-// DecimalAdd 相加数字
-func DecimalAdd(b ...any) decimal.Decimal {
-	var af decimal.Decimal
-	for _, a := range b {
-		if bf, err := conv.Convert[decimal.Decimal](a); err == nil {
-			af = af.Add(bf)
+func getAllDecimalList(args ...any) ([]decimal.Decimal, error) {
+	decimalList := make([]decimal.Decimal, 0)
+	var retError error
+	for _, arg := range args {
+		d, err := conv.Convert[decimal.Decimal](arg)
+		if err == nil {
+			decimalList = append(decimalList, d)
+		} else {
+			retError = err
 		}
 	}
-	return af
+	return decimalList, retError
+}
+
+// relationByNumber 两数相互运算
+func relationByNumber(f func(d1 decimal.Decimal, d2 decimal.Decimal) (decimal.Decimal, error), args ...any) (decimal.Decimal, error) {
+	var af decimal.Decimal
+	decimalList, err := getAllDecimalList(args...)
+	if err != nil {
+		return af, err
+	}
+	if len(decimalList) == 0 {
+		return af, nil
+	}
+	var total decimal.Decimal
+	for i, d := range decimalList {
+		if i == 0 {
+			total = d
+			continue
+		}
+		one, err := f(total, d)
+		if err != nil {
+			return total, err
+		}
+		total = one
+	}
+	return total, nil
+}
+
+// DecimalAdd 相加数字
+func DecimalAdd(b ...any) (decimal.Decimal, error) {
+	return relationByNumber(func(d1 decimal.Decimal, d2 decimal.Decimal) (decimal.Decimal, error) {
+		return d1.Add(d2), nil
+	}, b...)
+}
+func DecimalSub(b ...any) (decimal.Decimal, error) {
+	return relationByNumber(func(d1 decimal.Decimal, d2 decimal.Decimal) (decimal.Decimal, error) {
+		return d1.Sub(d2), nil
+	}, b...)
+}
+func DecimalMul(b ...any) (decimal.Decimal, error) {
+	return relationByNumber(func(d1 decimal.Decimal, d2 decimal.Decimal) (decimal.Decimal, error) {
+		return d1.Mul(d2), nil
+	}, b...)
+}
+func DecimalDiv(b ...any) (decimal.Decimal, error) {
+	return relationByNumber(func(d1 decimal.Decimal, d2 decimal.Decimal) (decimal.Decimal, error) {
+		if d2.IsZero() {
+			return decimal.Zero, fmt.Errorf("除数不能为0")
+		}
+		return d1.Div(d2), nil
+	}, b...)
 }

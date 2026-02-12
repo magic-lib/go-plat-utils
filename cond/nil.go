@@ -7,12 +7,12 @@ import (
 )
 
 // IsNil 判断是否为空
-func IsNil(i any) bool {
-	if i == nil {
+func IsNil(v any) bool {
+	if v == nil {
 		return true
 	}
-	vi := reflect.ValueOf(i)
-	kind := vi.Kind()
+	value := reflect.ValueOf(v)
+	kind := value.Kind()
 	if kind == reflect.Ptr ||
 		kind == reflect.Chan ||
 		kind == reflect.Func ||
@@ -20,8 +20,49 @@ func IsNil(i any) bool {
 		kind == reflect.Map ||
 		kind == reflect.Interface ||
 		kind == reflect.Slice {
-		return vi.IsNil()
+		if value.IsNil() {
+			return true
+		}
+	} else if kind == reflect.Struct {
+		for i := 0; i < value.NumField(); i++ {
+			if !value.Field(i).IsZero() {
+				return false
+			}
+		}
+		return true
+	} else if kind == reflect.Invalid {
+		return true
+	} else if kind == reflect.String ||
+		kind == reflect.Bool {
+		return false
+	} else if kind == reflect.Int ||
+		kind == reflect.Int8 ||
+		kind == reflect.Int16 ||
+		kind == reflect.Int32 ||
+		kind == reflect.Int64 {
+		return false
+	} else if kind == reflect.Float32 ||
+		kind == reflect.Float64 {
+		return false
+	} else if kind == reflect.Uint ||
+		kind == reflect.Uint8 ||
+		kind == reflect.Uint16 ||
+		kind == reflect.Uint32 ||
+		kind == reflect.Uint64 {
+		return false
+	} else if kind == reflect.Complex64 ||
+		kind == reflect.Complex128 {
+		return false
 	}
+
+	if !value.IsValid() {
+		return true
+	}
+
+	if value == reflect.ValueOf(nil) {
+		return true
+	}
+
 	return false
 }
 

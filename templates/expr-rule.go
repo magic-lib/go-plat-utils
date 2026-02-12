@@ -38,7 +38,7 @@ func ruleExprStr(exprStr string, json string) (bool, error) {
 		return retBool, nil
 	}
 
-	return false, fmt.Errorf(exprStr + " error " + json)
+	return false, fmt.Errorf("%s error %s", exprStr, json)
 }
 
 // 执行表达式
@@ -53,7 +53,7 @@ func runExpr(expr ast.Expr, json string) interface{} {
 		if cond.IsNil(x) || cond.IsNil(y) {
 			return nil
 		}
-		{ //类型需要转换成y的类型 TODO
+		{ //类型需要转换成y的类型
 
 		}
 
@@ -70,8 +70,8 @@ func runExpr(expr ast.Expr, json string) interface{} {
 		if opStr == "!=" {
 			return conv.String(x) != conv.String(y)
 		}
-		xInt, _ := conv.Int64(x)
-		yInt, _ := conv.Int64(y)
+		xInt, _ := conv.Convert[int64](x)
+		yInt, _ := conv.Convert[int64](y)
 
 		if opStr == ">" || opStr == ">=" {
 			if opStr == ">" {

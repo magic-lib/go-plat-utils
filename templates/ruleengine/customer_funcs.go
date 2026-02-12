@@ -19,26 +19,8 @@ type customerFunc struct {
 func (r *customerFunc) getAllDecimalList(args ...any) []decimal.Decimal {
 	decimalList := make([]decimal.Decimal, 0)
 	for _, arg := range args {
-		var d decimal.Decimal
-		switch v := arg.(type) {
-		case float64:
-			d = decimal.NewFromFloat(v)
-		case float32:
-			d = decimal.NewFromFloat32(v)
-		case int:
-			d = decimal.NewFromInt(int64(v))
-		case int64:
-			d = decimal.NewFromInt(v)
-		case int32:
-			d = decimal.NewFromInt32(v)
-		case uint:
-			d = decimal.NewFromUint64(uint64(v))
-		case uint32:
-			d = decimal.NewFromUint64(uint64(v))
-		case uint64:
-			d = decimal.NewFromUint64(v)
-		}
-		if !d.IsZero() {
+		d, err := conv.Convert[decimal.Decimal](arg)
+		if err == nil {
 			decimalList = append(decimalList, d)
 		}
 	}
@@ -101,7 +83,6 @@ func (r *customerFunc) Has(args ...any) (any, error) {
 			arg1 := args[0 : len(args)-1]
 			return r.Has(arg1, args[len(args)-1])
 		}
-
 		return false, fmt.Errorf("参数数量不对：%v", args)
 	}
 	listInterface := args[0]
@@ -175,7 +156,7 @@ func (r *customerFunc) As(args ...any) (any, error) {
 		return 0, fmt.Errorf("参数不是int类型：%v", args[1])
 	}
 	if typeName == "int64" {
-		if intTemp, ok := conv.Int64(args[1]); ok {
+		if intTemp, err := conv.Convert[int64](args[1]); err == nil {
 			return intTemp, nil
 		}
 		return 0, fmt.Errorf("参数不是int64类型：%v", args[1])
