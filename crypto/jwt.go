@@ -3,7 +3,7 @@ package crypto
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/samber/lo"
 	"github.com/tidwall/gjson"

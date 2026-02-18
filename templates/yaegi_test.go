@@ -1,6 +1,7 @@
 package templates_test
 
 import (
+	"fmt"
 	"github.com/traefik/yaegi/interp"
 	"github.com/traefik/yaegi/stdlib"
 	"testing"
@@ -13,11 +14,8 @@ func TestTemplates4(t *testing.T) {
 	i.Use(stdlib.Symbols)
 
 	// 3. 执行Go代码
-	_, _ = i.Eval(`import "fmt"`)
-	_, _ = i.Eval(`fmt.Println("Yaegi v0.17+ 运行中")`)
-
-	// 4. 动态函数调用
+	_, _ = i.Eval(`import "fmt"\nfmt.Println("Yaegi v0.17+ 运行中")`)
 	_, _ = i.Eval(`func add(a,b int) int { return a+b }`)
-	v, _ := i.Eval(`add(3,5)`)
-	println("add(3,5) =", v.Int())
+	v, err := i.Eval(`add(3,5)`)
+	fmt.Println("add(3,5) =", v, err)
 }

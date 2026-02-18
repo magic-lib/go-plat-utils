@@ -1,15 +1,24 @@
 package conv
 
-import "reflect"
+import (
+	"reflect"
+)
 
 func anyToSlice(in any) ([]any, bool) {
-	value := reflect.ValueOf(in)
-	if value.Kind() != reflect.Slice {
+	if s, ok := in.([]any); ok {
+		return s, true
+	}
+	s := reflect.ValueOf(in)
+	kind := s.Kind()
+	switch kind {
+	case reflect.Slice, reflect.Array:
+		l := s.Len()
+		ret := make([]any, l)
+		for i := range l {
+			ret[i] = s.Index(i).Interface()
+		}
+		return ret, true
+	default:
 		return nil, false
 	}
-	result := make([]any, value.Len())
-	for i := 0; i < value.Len(); i++ {
-		result[i] = value.Index(i).Interface()
-	}
-	return result, true
 }
