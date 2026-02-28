@@ -11,6 +11,10 @@ import (
 	"net/http"
 )
 
+const (
+	jsonContentType = "application/json; charset=utf-8"
+)
+
 // CommResponse 接口返回值
 type CommResponse struct {
 	Code    int64  `json:"code"`
@@ -84,7 +88,7 @@ func (comm *CommResponse) withTraceId(traceId string) *CommResponse {
 }
 
 // WriteCommResponse 将通用返回设置到response，输出到客户端
-func WriteCommResponse(respWriter http.ResponseWriter, comm *CommResponse, statusCode ...int) error {
+func WriteCommResponse(w http.ResponseWriter, comm *CommResponse, code ...int) error {
 	response := comm.withNowTime()
 
 	respStr := conv.String(response)
@@ -101,16 +105,16 @@ func WriteCommResponse(respWriter http.ResponseWriter, comm *CommResponse, statu
 		}
 	}
 
-	respWriter.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Content-Type", jsonContentType)
 	respByte := []byte(respStr)
 
 	oneStatusCode := http.StatusOK
-	if len(statusCode) > 0 {
-		oneStatusCode = statusCode[0]
+	if len(code) > 0 {
+		oneStatusCode = code[0]
 	}
-	respWriter.WriteHeader(oneStatusCode)
+	w.WriteHeader(oneStatusCode)
 
-	_, err := respWriter.Write(respByte)
+	_, err := w.Write(respByte)
 
 	return err
 }
@@ -129,7 +133,7 @@ func TraceId(ctx context.Context) string {
 }
 
 // WriteCommFailure 系统默认错误返回，需要加入ctx信息
-func WriteCommFailure(ctx context.Context, respWriter http.ResponseWriter, err error, code int64, statusCode ...int) {
+func WriteCommFailure(ctx context.Context, w http.ResponseWriter, err error, code int64, statusCode ...int) {
 	errResp := GetErrorResponse(nil, code, err)
 	traceId := TraceId(ctx)
 	if traceId != "" {
@@ -140,11 +144,11 @@ func WriteCommFailure(ctx context.Context, respWriter http.ResponseWriter, err e
 			span.RecordError(err)
 		}
 	}
-	_ = WriteCommResponse(respWriter, errResp, statusCode...)
+	_ = WriteCommResponse(w, errResp, statusCode...)
 }
 
 // WriteCommSuccess 系统默认正确返回
-func WriteCommSuccess(ctx context.Context, respWriter http.ResponseWriter, data any) {
+func WriteCommSuccess(ctx context.Context, w http.ResponseWriter, data any) {
 	sucResp := &CommResponse{
 		Code:    0,
 		Message: http.StatusText(http.StatusOK),
@@ -158,7 +162,7 @@ func WriteCommSuccess(ctx context.Context, respWriter http.ResponseWriter, data 
 			span.SetStatus(codes.Ok, sucResp.Message)
 		}
 	}
-	_ = WriteCommResponse(respWriter, sucResp, http.StatusOK)
+	_ = WriteCommResponse(w, sucResp, http.StatusOK)
 }
 
 // GetErrorResponse 系统获取错误码和错误信息
