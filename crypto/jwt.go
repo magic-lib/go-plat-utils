@@ -25,8 +25,8 @@ var (
 )
 
 type JwtCfg struct {
-	EncryptJsonKeyList []string //是否对数据key使用加密，避免外部查看
-	ExpireSeconds      int64    //过期时间，默认为秒
+	EncryptJsonKeyList []string      //是否对数据key使用加密，避免外部查看
+	ExpireDuration     time.Duration //jwt的过期时间
 	StandardClaims     *jwt.StandardClaims
 	SigningMethod      *jwt.SigningMethodHMAC
 }
@@ -45,8 +45,10 @@ func JwtEncrypt(secretKey string, data any, cfgList ...*JwtCfg) (string, error) 
 		if oneCfg.SigningMethod != nil {
 			signingMethod = oneCfg.SigningMethod
 		}
-		if oneCfg.ExpireSeconds > 0 {
-			expireTime = time.Duration(oneCfg.ExpireSeconds) * time.Second
+		if oneCfg.ExpireDuration > 0 {
+			if oneCfg.ExpireDuration > 1*time.Minute { //小于1分钟的话，太短时间生成太频繁了，意义不大，就会用默认的1小时
+				expireTime = oneCfg.ExpireDuration
+			}
 		}
 		useEncryptList = oneCfg.EncryptJsonKeyList
 	}
