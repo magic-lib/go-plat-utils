@@ -13,18 +13,28 @@ import (
 type ContextTypedHandler[TReq, TResp any] func(ctx context.Context, args TReq) (TResp, error)
 type ContextAnyHandler func(ctx context.Context, args any) (any, error)
 
-// ContextTypedToAnyHandler 相互转换
-func ContextTypedToAnyHandler[TReq, TResp any](method any) (ContextAnyHandler, error) {
+// ContextMethodToAnyHandler 相互转换
+func ContextMethodToAnyHandler[TReq, TResp any](method any) (ContextAnyHandler, error) {
 	if method == nil {
 		panic("method is nil")
 	}
-	methodFun, ok := method.(ContextTypedHandler[TReq, TResp])
+
+	// 这两种类型底层完全一样，但仍然是两种不同的类型
+	methodFun, ok := method.(func(ctx context.Context, args TReq) (TResp, error))
 	if !ok {
-		methodName, isMethod := GetFuncName(method)
-		if !isMethod {
-			return nil, fmt.Errorf("%s error: method is not function", methodName)
+		methodFun, ok = method.(ContextTypedHandler[TReq, TResp])
+		if !ok {
+			// 最后进行转换
+			var err error
+			methodFun, err = ContextMethodToTypeHandler[TReq, TResp](method)
+			if err != nil {
+				methodName, isMethod := GetFuncName(method)
+				if !isMethod {
+					return nil, fmt.Errorf("%s error: method is not function", methodName)
+				}
+				return nil, fmt.Errorf("method is not func(ctx context.Context, param P) (V, error): %s", methodName)
+			}
 		}
-		return nil, fmt.Errorf("method is not func(ctx context.Context, param P) (V, error): %s", methodName)
 	}
 	return func(ctx context.Context, param any) (any, error) {
 		//断言
@@ -34,6 +44,76 @@ func ContextTypedToAnyHandler[TReq, TResp any](method any) (ContextAnyHandler, e
 		}
 		//调用方法
 		return methodFun(ctx, paramPtr)
+	}, nil
+}
+func ContextMethodToTypeHandler[TReq, TResp any](method any) (ContextTypedHandler[TReq, TResp], error) {
+	if method == nil {
+		return nil, fmt.Errorf("method is nil")
+	}
+
+	methodValue := reflect.ValueOf(method)
+	methodType := methodValue.Type()
+
+	if methodType.Kind() != reflect.Func {
+		return nil, fmt.Errorf("method is not a function")
+	}
+
+	methodName, _ := GetFuncName(method)
+
+	// 验证参数数量：必须是 2 个（context.Context 和 any）
+	if methodType.NumIn() != 2 ||
+		methodType.NumOut() != 2 {
+		return nil, fmt.Errorf("%s must have 2 input or output parameters, got %d, %d: %s", methodName,
+			methodType.NumIn(), methodType.NumOut(), methodType.String())
+	}
+
+	// 验证第一个参数是 context.Context
+	ctxType := reflect.TypeOf((*context.Context)(nil)).Elem()
+	if !methodType.In(0).Implements(ctxType) {
+		return nil, fmt.Errorf("%s first parameter must be context.Context, got %v: %s", methodName, methodType.In(0), methodType.String())
+	}
+	// 验证第二个参数类型是否与 TReq 匹配
+	reqType := reflect.TypeOf((*TReq)(nil)).Elem()
+	if !methodType.In(1).AssignableTo(reqType) && methodType.In(1).Kind() != reflect.Interface {
+		return nil, fmt.Errorf("%s second parameter must be assignable to %v, got %v: %s", methodName, reqType, methodType.In(1), methodType.String())
+	}
+
+	// 验证第一个返回值类型是否与 TResp 匹配
+	respType := reflect.TypeOf((*TResp)(nil)).Elem()
+	if !methodType.Out(0).AssignableTo(respType) && respType.Kind() != reflect.Interface {
+		return nil, fmt.Errorf("%s first return value must be assignable to %v, got %v: %s", methodName, respType, methodType.Out(0), methodType.String())
+	}
+
+	// 验证第二个返回值是 error
+	errorType := reflect.TypeOf((*error)(nil)).Elem()
+	if !methodType.Out(1).Implements(errorType) {
+		return nil, fmt.Errorf("%s second return value must be error, got %v: %s", methodName, methodType.Out(1), methodType.String())
+	}
+
+	// 所有验证通过，返回包装后的处理函数
+	return func(ctx context.Context, args TReq) (TResp, error) {
+		var zeroResp TResp
+		if ctx == nil {
+			ctx = context.Background()
+		}
+
+		results, exeErr := FuncExecute(method, ctx, args)
+		if exeErr != nil {
+			return zeroResp, exeErr
+		}
+
+		// 提取返回值
+		if len(results) != 2 {
+			return zeroResp, fmt.Errorf("unexpected number of return values: expected 2, got %d", len(results))
+		}
+		if ret1, ok1 := results[0].(TResp); ok1 {
+			zeroResp = ret1
+		}
+		exeErr = nil
+		if ret2, ok2 := results[1].(error); ok2 {
+			exeErr = ret2
+		}
+		return zeroResp, exeErr
 	}, nil
 }
 

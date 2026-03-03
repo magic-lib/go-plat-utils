@@ -1,6 +1,7 @@
 package utils_test
 
 import (
+	"context"
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/id-generator/id"
 	"github.com/magic-lib/go-plat-utils/utils"
@@ -41,4 +42,24 @@ func TestArgType(t *testing.T) {
 func TestUUID(t *testing.T) {
 	aa := id.GetUUID("sssss")
 	fmt.Println(aa)
+}
+
+func GetUserTags(ctx context.Context, accountUserReq int) (string, error) {
+	fmt.Println("rrrr")
+	return "55555", nil
+}
+
+var newUserTags utils.ContextTypedHandler[int, string] = GetUserTags
+
+func TestContextMethodToAnyHandler(t *testing.T) {
+	var methodFun any = GetUserTags
+	var newMethodFun any = newUserTags
+	a, ok := utils.ContextMethodToAnyHandler[int, string](methodFun)
+	fmt.Println(a, ok)
+	b, ok2 := utils.ContextMethodToAnyHandler[int, string](newMethodFun)
+	fmt.Println(b, ok2)
+	if ok2 == nil {
+		mm, err := b(nil, 1)
+		fmt.Println(mm, err)
+	}
 }

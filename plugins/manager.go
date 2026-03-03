@@ -29,7 +29,7 @@ func (pm *PluginManager) Register(plugin Plugin) error {
 	}
 	pluginKey := plugin.Name()
 	if pluginKey == "" {
-		return fmt.Errorf("插件Name不能为空")
+		return fmt.Errorf("插件Key不能为空")
 	}
 	// 不能重复注册，避免覆盖
 	if pm.plugins.Has(pluginKey) {
@@ -46,6 +46,15 @@ func (pm *PluginManager) Load(name string) (Plugin, error) {
 		return nil, fmt.Errorf("插件 %s 未注册", name)
 	}
 	return onePlugin, nil
+}
+
+// LoadAll 所有插件
+func (pm *PluginManager) LoadAll() []Plugin {
+	allResources := make([]Plugin, 0)
+	pm.plugins.IterCb(func(key string, item Plugin) {
+		allResources = append(allResources, item)
+	})
+	return allResources
 }
 
 // Execute 执行插件
