@@ -133,3 +133,7 @@ func TestJwtCase(t *testing.T) {
 	}
 	utils.TestFunction(t, testCases, nil)
 }
+func TestPassphraseGenerate(t *testing.T) {
+	aa, err := crypto.PassphraseGenerate(7)
+	fmt.Println(aa, err)
+}

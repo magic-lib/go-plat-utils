@@ -104,3 +104,5 @@ func LeftPadding(length int, str string, complement rune) string {
 	padding := strings.Repeat(string(complement), length-len(str))
 	return fmt.Sprintf("%s%s", padding, str)
 }
+
+

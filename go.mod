@@ -1,6 +1,8 @@
 module github.com/magic-lib/go-plat-utils
 
-go 1.24.1
+go 1.24.2
+
+toolchain go1.24.6
 
 require (
 	github.com/Knetic/govaluate v3.0.0+incompatible
@@ -17,6 +19,7 @@ require (
 	github.com/fatih/color v1.18.0
 	github.com/forgoer/openssl v1.6.0
 	github.com/go-dev-frame/sponge v1.16.1
+	github.com/go-ego/gse v1.0.1
 	github.com/go-playground/validator/v10 v10.28.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/gobwas/ws v1.4.0
@@ -33,6 +36,7 @@ require (
 	github.com/jimstudt/http-authentication v0.0.0-20140401203705-3eca13d6893a
 	github.com/jinzhu/copier v0.4.0
 	github.com/json-iterator/go v1.1.12
+	github.com/leonklingele/passphrase v0.0.0-20250510225810-8392a5b34c3f
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lithammer/shortuuid/v3 v3.0.7
 	github.com/looplab/fsm v1.0.3
@@ -251,6 +255,7 @@ require (
 	github.com/uber/jaeger-client-go v2.25.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.2.0+incompatible // indirect
 	github.com/ugorji/go/codec v1.3.1 // indirect
+	github.com/vcaesar/cedar v0.20.2 // indirect
 	github.com/viant/xreflect v0.0.0-20230303201326-f50afb0feb0d // indirect
 	github.com/viant/xunsafe v0.10.3 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
