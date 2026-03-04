@@ -20,10 +20,9 @@ func setRunTimeProcess() bool {
 		}
 
 		// 如果是宿主机的数量,太大的话，则默认改为10
-		if cpuNumInt <= 0 || cpuNumInt >= 20 {
-			cpuNumInt = 10
+		if !(cpuNumInt <= 0 || cpuNumInt >= 20) {
+			runtime.GOMAXPROCS(cpuNumInt)
 		}
-		runtime.GOMAXPROCS(cpuNumInt)
 		return true
 	}
 	return false
