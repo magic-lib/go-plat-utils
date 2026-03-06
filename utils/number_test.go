@@ -93,3 +93,14 @@ func TestNumberAdd(t *testing.T) {
 	fmt.Println(kk)
 
 }
+
+func TestLeftPadding111(t *testing.T) {
+	// 运营商返回的新姓名 vs 系统存的旧姓名
+	newName := "fdsfd"
+	oldName := "fdsfd44" // 或 "张三丰" 等
+
+	// 使用 Jaro-Winkler 计算相似度（对中文姓名效果好）
+	similarity := utils.JaroWinklerSimilarity(newName, oldName)
+
+	fmt.Println(similarity)
+}

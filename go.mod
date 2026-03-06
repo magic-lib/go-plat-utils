@@ -31,6 +31,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/securecookie v1.1.2
 	github.com/hashicorp/go-multierror v1.1.1
+	github.com/hbollon/go-edlib v1.7.0
 	github.com/iancoleman/orderedmap v0.3.0
 	github.com/jimstudt/http-authentication v0.0.0-20140401203705-3eca13d6893a
 	github.com/jinzhu/copier v0.4.0

@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"github.com/hbollon/go-edlib"
 	"github.com/samber/lo"
 	"regexp"
 	"strings"
@@ -105,4 +106,11 @@ func LeftPadding(length int, str string, complement rune) string {
 	return fmt.Sprintf("%s%s", padding, str)
 }
 
-
+// JaroWinklerSimilarity 字符串相似度，常用来检查名字
+// 返回 0-100之间的数字，100是完全相同
+func JaroWinklerSimilarity(str1, str2 string) int {
+	similarity := edlib.JaroWinklerSimilarity(str1, str2)
+	// 转换为百分比
+	score := similarity * 100
+	return int(score + 0.5) // 小数部份四舍五入
+}
