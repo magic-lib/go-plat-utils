@@ -135,16 +135,25 @@ func TraceId(ctx context.Context) string {
 // WriteCommFailure 系统默认错误返回，需要加入ctx信息
 func WriteCommFailure(ctx context.Context, w http.ResponseWriter, err error, code int64, statusCode ...int) {
 	errResp := GetErrorResponse(nil, code, err)
-	traceId := TraceId(ctx)
-	if traceId != "" {
-		errResp = errResp.withTraceId(traceId)
-		span := trace.SpanFromContext(ctx)
-		if span != nil && err != nil {
+	writeWithTrace(ctx, errResp, func(span trace.Span) {
+		if err != nil {
 			span.SetStatus(codes.Error, err.Error())
 			span.RecordError(err)
 		}
-	}
+	})
 	_ = WriteCommResponse(w, errResp, statusCode...)
+}
+
+func writeWithTrace(ctx context.Context, resp *CommResponse, traceFunc func(span trace.Span)) {
+	traceId := TraceId(ctx)
+	if traceId == "" {
+		return
+	}
+	resp = resp.withTraceId(traceId)
+	span := trace.SpanFromContext(ctx)
+	if span != nil && traceFunc != nil {
+		traceFunc(span)
+	}
 }
 
 // WriteCommSuccess 系统默认正确返回
@@ -154,14 +163,11 @@ func WriteCommSuccess(ctx context.Context, w http.ResponseWriter, data any) {
 		Message: http.StatusText(http.StatusOK),
 		Data:    data,
 	}
-	traceId := TraceId(ctx)
-	if traceId != "" {
-		sucResp = sucResp.withTraceId(traceId)
-		span := trace.SpanFromContext(ctx)
-		if span != nil {
-			span.SetStatus(codes.Ok, sucResp.Message)
-		}
-	}
+
+	writeWithTrace(ctx, sucResp, func(span trace.Span) {
+		span.SetStatus(codes.Ok, sucResp.Message)
+	})
+
 	_ = WriteCommResponse(w, sucResp, http.StatusOK)
 }
 
