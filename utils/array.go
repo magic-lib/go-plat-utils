@@ -10,6 +10,10 @@ import (
 	"strings"
 )
 
+var (
+	DefaultSplitArray = []string{",", "|", ";"}
+)
+
 // Split 字符串，通过多个分隔符进行分隔
 func Split(s string, sep []string) []string {
 	if s == "" {
