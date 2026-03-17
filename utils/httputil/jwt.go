@@ -4,6 +4,7 @@ import (
 	"fmt"
 	jwtRequest "github.com/golang-jwt/jwt/v4/request"
 	"github.com/magic-lib/go-plat-utils/crypto"
+	"github.com/magic-lib/go-plat-utils/utils/httputil/param"
 	"net/http"
 )
 
@@ -34,4 +35,9 @@ func GenerateBearerJwtToken(jwtSecret string, data any, cfgList ...*crypto.JwtCf
 		return "", err
 	}
 	return fmt.Sprintf("%s %s", Bearer, encodeStr), nil
+}
+
+func GetAuthorization(r *http.Request) string {
+	header := param.NewParam().GetAllHeaders(r)
+	return header.Get(Authorization)
 }
