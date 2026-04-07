@@ -513,3 +513,15 @@ func ToMap(input any) map[string]any {
 
 	return result
 }
+
+// SafeGet 安全获取，避免 panic
+func SafeGet[T any](getter func() T, defaultValue ...T) (res T) {
+	defer func() {
+		if r := recover(); r != nil {
+			if len(defaultValue) > 0 {
+				res = defaultValue[0]
+			}
+		}
+	}()
+	return getter()
+}

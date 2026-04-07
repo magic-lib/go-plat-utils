@@ -200,3 +200,10 @@ func TestToMap(t *testing.T) {
 	})
 	fmt.Println(mapRes)
 }
+func TestSafeGet(t *testing.T) {
+	aa := new(Src)
+	pp := SafeGet(func() int64 {
+		return aa.Inner.Id
+	})
+	fmt.Println(pp)
+}
