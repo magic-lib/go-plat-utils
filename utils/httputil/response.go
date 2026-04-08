@@ -19,7 +19,7 @@ const (
 type CommResponse struct {
 	Code        int64  `json:"code"`
 	Message     string `json:"message"`
-	ErrorDetail string `json:"error_detail,omitempty"` // 内部错误
+	InternalMsg string `json:"internal_msg,omitempty"` // 内部消息
 	Now         string `json:"now,omitempty"`
 	Env         string `json:"env,omitempty"` // 环境
 	Time        int64  `json:"time,omitempty"`
