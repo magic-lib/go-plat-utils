@@ -17,16 +17,17 @@ const (
 
 // CommResponse 接口返回值
 type CommResponse struct {
-	Code    int64  `json:"code"`
-	Message string `json:"message"`
-	Now     string `json:"now,omitempty"`
-	Env     string `json:"env,omitempty"` //环境
-	Time    int64  `json:"time,omitempty"`
-	LogId   string `json:"log_id,omitempty"`
-	TraceId string `json:"trace_id,omitempty"`
-	Params  any    `json:"params,omitempty"`
-	Debug   any    `json:"debug,omitempty"`
-	Data    any    `json:"data"`
+	Code        int64  `json:"code"`
+	Message     string `json:"message"`
+	ErrorDetail string `json:"error_detail,omitempty"` // 内部错误
+	Now         string `json:"now,omitempty"`
+	Env         string `json:"env,omitempty"` // 环境
+	Time        int64  `json:"time,omitempty"`
+	LogId       string `json:"log_id,omitempty"`
+	TraceId     string `json:"trace_id,omitempty"`
+	Params      any    `json:"params,omitempty"`
+	Debug       any    `json:"debug,omitempty"`
+	Data        any    `json:"data"`
 }
 
 // PageModel 分页结构输出
