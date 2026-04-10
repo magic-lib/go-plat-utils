@@ -14,7 +14,13 @@ type JsonTemplate struct {
 	suffixString string
 }
 
-func NewJsonTemplate(prefixString, suffixString string) *JsonTemplate {
+func NewJsonTemplate(fixString ...string) *JsonTemplate {
+	prefixString := prefixDefault
+	suffixString := suffixDefault
+	if len(fixString) > 1 {
+		prefixString = fixString[0]
+		suffixString = fixString[1]
+	}
 	if prefixString == "" {
 		prefixString = prefixDefault
 	}
