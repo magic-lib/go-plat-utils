@@ -228,3 +228,29 @@ func TestRecursiveJSONGet(t *testing.T) {
 			tc.name, tc.path, result.String(), tc.expected, status)
 	}
 }
+
+func TestReplaceVar(t *testing.T) {
+
+	jsonReplaceModel := templates.NewJsonTemplate("{{", "}}")
+
+	testCases := []*utils.TestStruct{
+		{"err", []any{0}, []any{""}, func(n int) string {
+			newArg, err := jsonReplaceModel.Replace(map[string]string{
+				"name": "{{person.name}}",
+				"age":  "{{age}}",
+			}, map[string]any{
+				"person": map[string]string{
+					"name": "zhangsan",
+				},
+			}, map[string]any{
+				"age": 55,
+			})
+			if err != nil {
+				return err.Error()
+			}
+			fmt.Println(newArg)
+			return ""
+		}},
+	}
+	utils.TestFunction(t, testCases, nil)
+}

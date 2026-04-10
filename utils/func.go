@@ -37,13 +37,26 @@ func ContextMethodToAnyHandler[TReq, TResp any](method any) (ContextAnyHandler, 
 		}
 	}
 	return func(ctx context.Context, param any) (any, error) {
-		//断言
 		paramPtr, ok := param.(TReq)
 		if !ok {
-			return nil, fmt.Errorf("param is not %T", paramPtr)
+			var zero TReq
+			actionParam, err := conv.ConvertForType(reflect.TypeOf(zero), param)
+			if err != nil {
+				return nil, fmt.Errorf("param is not %T, not %T", paramPtr, reflect.TypeOf(zero).Name())
+			}
+			paramPtr, ok = actionParam.(TReq)
+			if !ok {
+				return nil, fmt.Errorf("param is not %T", paramPtr)
+			}
+		}
+		retData, err := methodFun(ctx, paramPtr)
+		retDataPtr, ok := any(retData).(TResp)
+		if !ok {
+			var zero TResp
+			return nil, fmt.Errorf("retData is %T, not %T", retDataPtr, reflect.TypeOf(zero).Name())
 		}
 		//调用方法
-		return methodFun(ctx, paramPtr)
+		return retData, err
 	}, nil
 }
 func ContextMethodToTypeHandler[TReq, TResp any](method any) (ContextTypedHandler[TReq, TResp], error) {

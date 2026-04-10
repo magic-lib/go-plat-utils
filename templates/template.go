@@ -95,6 +95,11 @@ func (t *impl) Replace(data ...any) string {
 			if key == "." {
 				continue // 全量替换在后面单独处理
 			}
+			// key以.开头
+			if strings.HasPrefix(key, ".") {
+				key = key[1:] // 去掉.
+			}
+
 			// 获取JSON中的值
 			value, exists := JsonGet(itemJSON, key)
 			if !exists {
