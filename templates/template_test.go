@@ -3,6 +3,7 @@ package templates_test
 import (
 	"fmt"
 	"github.com/PaesslerAG/gval"
+	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/templates"
 	"github.com/magic-lib/go-plat-utils/utils"
 	"github.com/rulego/rulego"
@@ -231,10 +232,10 @@ func TestRecursiveJSONGet(t *testing.T) {
 
 func TestReplaceVar(t *testing.T) {
 
-	jsonReplaceModel := templates.NewJsonTemplate("{{", "}}")
+	jsonReplaceModel := templates.NewJsonMapTemplate("{{", "}}")
 
 	testCases := []*utils.TestStruct{
-		{"err", []any{0}, []any{""}, func(n int) string {
+		{"normal", []any{0}, []any{`{"age":"55","name":"zhangsan"}`}, func(n int) string {
 			newArg, err := jsonReplaceModel.Replace(map[string]string{
 				"name": "{{person.name}}",
 				"age":  "{{age}}",
@@ -249,7 +250,24 @@ func TestReplaceVar(t *testing.T) {
 				return err.Error()
 			}
 			fmt.Println(newArg)
-			return ""
+			return conv.String(newArg)
+		}},
+		{"empty", []any{0}, []any{`{"name":"12345","age":"{{age}"}`}, func(n int) string {
+			newArg, err := jsonReplaceModel.Replace(map[string]string{
+				"name": "12345",
+				"age":  "{{age}",
+			}, map[string]any{
+				"person": map[string]string{
+					"name": "zhangsan",
+				},
+			}, map[string]any{
+				"age": 55,
+			})
+			if err != nil {
+				return err.Error()
+			}
+			fmt.Println(newArg)
+			return conv.String(newArg)
 		}},
 	}
 	utils.TestFunction(t, testCases, nil)

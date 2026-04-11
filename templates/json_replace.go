@@ -9,12 +9,12 @@ import (
 	"regexp"
 )
 
-type JsonTemplate struct {
+type JsonMapTemplate struct {
 	prefixString string
 	suffixString string
 }
 
-func NewJsonTemplate(fixString ...string) *JsonTemplate {
+func NewJsonMapTemplate(fixString ...string) *JsonMapTemplate {
 	prefixString := prefixDefault
 	suffixString := suffixDefault
 	if len(fixString) > 1 {
@@ -27,14 +27,19 @@ func NewJsonTemplate(fixString ...string) *JsonTemplate {
 	if suffixString == "" {
 		suffixString = suffixDefault
 	}
-	return &JsonTemplate{
+	return &JsonMapTemplate{
 		prefixString: prefixString,
 		suffixString: suffixString,
 	}
 }
 
-func (j *JsonTemplate) Replace(args any, bindings ...map[string]any) (any, error) {
-	allParamStrRet := trimTemplateSpaces(j.prefixString, j.suffixString, conv.String(args))
+func (j *JsonMapTemplate) Replace(args any, bindings ...map[string]any) (any, error) {
+	argsStr := conv.String(args)
+	allParamStrRet := trimTemplateSpaces(j.prefixString, j.suffixString, argsStr)
+
+	if !hasTemplatePatternStrict(j.prefixString, j.suffixString, argsStr) {
+		return args, nil
+	}
 
 	var err error
 	lo.ForEachWhile(bindings, func(binding map[string]any, _ int) bool {
@@ -46,7 +51,7 @@ func (j *JsonTemplate) Replace(args any, bindings ...map[string]any) (any, error
 		return true
 	})
 	if err != nil {
-		return args, fmt.Errorf("ReplaceAllByBindings: %w", err)
+		return args, fmt.Errorf("JsonMapTemplate Replace: %w", err)
 	}
 	if cond.IsPointer(args) {
 		_ = conv.Unmarshal(allParamStrRet, args)
@@ -66,7 +71,17 @@ func trimTemplateSpaces(prefixString, suffixString string, input string) string 
 	// {{\s+  匹配{{后面跟一个或多个空白字符
 	// (\S.*?) 捕获非空白字符开始的内容（非贪婪模式）
 	// \s+}}  匹配一个或多个空白字符后面跟}}
-	compileStr := fmt.Sprintf(`%s\s+(\S.*?)\s+%s`, prefixString, suffixString)
+	escapedPrefix := regexp.QuoteMeta(prefixString)
+	escapedSuffix := regexp.QuoteMeta(suffixString)
+	compileStr := fmt.Sprintf(`%s\s+(\S.*?)\s+%s`, escapedPrefix, escapedSuffix)
 	re := regexp.MustCompile(compileStr)
 	return re.ReplaceAllString(input, fmt.Sprintf("%s$1%s", prefixString, suffixString))
+}
+
+func hasTemplatePatternStrict(prefixString, suffixString, input string) bool {
+	escapedPrefix := regexp.QuoteMeta(prefixString)
+	escapedSuffix := regexp.QuoteMeta(suffixString)
+	pattern := fmt.Sprintf(`%s\s*\S+?\s*%s`, escapedPrefix, escapedSuffix)
+	matched, _ := regexp.MatchString(pattern, input)
+	return matched
 }

@@ -123,22 +123,29 @@ func GoAsync(task func(params ...any), params ...any) {
 	}
 }
 
+type asyncResult[M any] struct {
+	data M
+	err  error
+}
+
 // GoAsyncTimeout 执行一个方法带过期时间
 func GoAsyncTimeout[T any](timeout time.Duration, fun func(paramsIn ...any) (T, error), paramsOut ...any) (t T, e error) {
-	result := make(chan T)
-	err := make(chan error)
+	resultChan := make(chan asyncResult[T], 1)
 
 	// 启动一个 goroutine 来执行耗时操作
 	GoAsync(func(paramsInIn ...any) {
 		oneRet, oneErr := fun(paramsInIn...)
-		result <- oneRet
-		err <- oneErr
+		resultChan <- asyncResult[T]{data: oneRet, err: oneErr}
 	}, paramsOut...)
+
+	if timeout <= 0 {
+		return t, nil // 直接异步，不等待结果
+	}
 
 	// 使用 select 语句来等待结果或超时
 	select {
-	case res := <-result:
-		return res, <-err
+	case res := <-resultChan:
+		return res.data, res.err
 	case <-time.After(timeout):
 		return t, fmt.Errorf("GoAsyncTimeout timeout: %d", timeout)
 	}
