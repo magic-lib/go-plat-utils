@@ -23,6 +23,7 @@ require (
 	github.com/go-ego/gse v1.0.1
 	github.com/go-playground/validator/v10 v10.28.0
 	github.com/go-redis/redis/v8 v8.11.5
+	github.com/gobwas/pool v0.2.1
 	github.com/gobwas/ws v1.4.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang-jwt/jwt/v4 v4.5.2
@@ -65,6 +66,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/soniah/evaler v2.2.0+incompatible
 	github.com/sony/sonyflake v1.2.0
+	github.com/sourcegraph/conc v0.3.0
 	github.com/spf13/cast v1.10.0
 	github.com/stretchr/testify v1.11.1
 	github.com/tidwall/gjson v1.18.0
@@ -128,7 +130,6 @@ require (
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/go-sql-driver/mysql v1.9.3 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
-	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/goccy/go-yaml v1.19.0 // indirect
 	github.com/gofrs/uuid/v5 v5.0.0 // indirect
