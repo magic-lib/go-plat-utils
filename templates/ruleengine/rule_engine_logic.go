@@ -210,7 +210,11 @@ func (r *EngineLogic) RunString(ruleString string, parameters map[string]any) (a
 	}
 	retVal, err := r.runOneRuleString(ruleString, parameters)
 	if err != nil {
-		return nil, err
+		errHasOccurred := ""
+		if strings.Contains(ruleString, ".") {
+			errHasOccurred = "如果有'.'符号，则需要用[]将条件变量包括起来，或者用\\\\进行转义"
+		}
+		return nil, fmt.Errorf("err: %w, RunString: %s %s", err, ruleString, errHasOccurred)
 	}
 	return retVal, nil
 }

@@ -42,7 +42,9 @@ func ContextMethodToAnyHandler[TReq, TResp any](method any) (ContextAnyHandler, 
 			var zero TReq
 			actionParam, err := conv.ConvertForType(reflect.TypeOf(zero), param)
 			if err != nil {
-				return nil, fmt.Errorf("param is not %T, not %T", paramPtr, reflect.TypeOf(zero).Name())
+				funcName, _ := GetFuncName(method)
+				paramList, _, _ := FuncInTypeList(method)
+				return nil, fmt.Errorf("methodName: %s, %s, param is %s, not %T, err: %v", funcName, conv.String(paramList), conv.String(param), reflect.TypeOf(zero).String(), err)
 			}
 			paramPtr, ok = actionParam.(TReq)
 			if !ok {
