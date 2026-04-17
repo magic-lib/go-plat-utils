@@ -25,6 +25,9 @@ func TestMask(t *testing.T) {
 		{"Email", []any{"dear@go-mall.com"}, []any{"d**r@go-mall.com"}, mask.Email},
 		{"RealName", []any{"张三"}, []any{"张*"}, mask.RealName},
 		{"RealName", []any{"赵丽颖"}, []any{"赵*颖"}, mask.RealName},
+		{"AutoCharacter", []any{"12345678", 0.5, "*"}, []any{"12****78"}, mask.AutoCharacter},
+		{"AutoCharacter", []any{"1234567854354", 0.4, "*"}, []any{"1234*****4354"}, mask.AutoCharacter},
+		{"AutoCharacter", []any{"1234567890", 0.3, "*"}, []any{"1234***890"}, mask.AutoCharacter},
 	}
 	utils.TestFunction(t, testCases, nil)
 }
