@@ -38,10 +38,27 @@ func TestAsyncForEachWhile(t *testing.T) {
 		num++
 		//time.Sleep(1 * time.Second)
 		if value > 4 {
-			return true, fmt.Errorf("eeee")
+			return false, fmt.Errorf("eeee")
 		}
-		return true, nil
+		return false, nil
 	}, goroutines.AsyncForEachWhileOptions{ChunkSize: 2, MaxConcurrency: 2})
+	fmt.Println(num, ret, err)
+}
+func TestAsyncExecuteDataList2(t *testing.T) {
+	arr := make([]int, 0)
+	for i := 0; i < 10; i++ {
+		arr = append(arr, i+1)
+	}
+	num := 0
+	ret, err := goroutines.AsyncExecuteDataList(5*time.Minute, arr, func(value int, key int) (bool, error) {
+		fmt.Println("value=", value)
+		num++
+		time.Sleep(1 * time.Second)
+		if value > 4 {
+			return false, fmt.Errorf("eeee")
+		}
+		return false, nil
+	})
 	fmt.Println(num, ret, err)
 }
 func TestGoroutineId(t *testing.T) {

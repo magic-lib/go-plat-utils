@@ -51,6 +51,8 @@ func NewEngineLogic() *EngineLogic {
 		"As":      ruleLogicFunc.As,
 		"Replace": ruleLogicFunc.Replace,
 		"Split":   ruleLogicFunc.Split,
+		"Max":     ruleLogicFunc.Max,
+		"Min":     ruleLogicFunc.Min,
 	}
 	return ruleLogic
 }

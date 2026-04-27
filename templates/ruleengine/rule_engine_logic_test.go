@@ -191,6 +191,35 @@ func TestIfFunction(t *testing.T) {
 	fmt.Println(customList)
 	return
 }
+func TestMaxOrMinFunction(t *testing.T) {
+	condTypeCustomVarPattern := `Max('dfss',2,3.4,2.1,7.0,10.6)`
+	ruleLogic := ruleengine.NewEngineLogic()
+	result, err := ruleLogic.RunString(condTypeCustomVarPattern, nil)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(result)
+	condTypeCustomVarPattern = `Min('dfss',2,3.4,2.1,7.0,10.6)`
+	ruleLogic = ruleengine.NewEngineLogic()
+	result, err = ruleLogic.RunString(condTypeCustomVarPattern, nil)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(result)
+
+	condTypeCustomVarPattern = `Min('dfss','5t')`
+	ruleLogic = ruleengine.NewEngineLogic()
+	result, err = ruleLogic.RunString(condTypeCustomVarPattern, nil)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(result)
+
+	return
+}
 func TestAsFunction(t *testing.T) {
 	condTypeCustomVarPattern := `As('int',Replace(is_match_bank_card, '\\u', ''))`
 	ruleLogic := ruleengine.NewEngineLogic()

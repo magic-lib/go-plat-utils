@@ -96,6 +96,7 @@ func (t *impl) Replace(data ...any) string {
 				continue // 全量替换在后面单独处理
 			}
 			// key以.开头
+			oldKey := key
 			if strings.HasPrefix(key, ".") {
 				key = key[1:] // 去掉.
 			}
@@ -107,7 +108,7 @@ func (t *impl) Replace(data ...any) string {
 			}
 
 			// 编译当前key的正则表达式并执行替换
-			keyRegex := regexp.MustCompile(fmt.Sprintf(regexPattern, regexp.QuoteMeta(key)))
+			keyRegex := regexp.MustCompile(fmt.Sprintf(regexPattern, regexp.QuoteMeta(oldKey)))
 			templateStr = keyRegex.ReplaceAllString(templateStr, value.String())
 		}
 	}

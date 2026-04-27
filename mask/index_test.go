@@ -1,6 +1,7 @@
 package mask_test
 
 import (
+	"fmt"
 	"github.com/magic-lib/go-plat-utils/mask"
 	"github.com/magic-lib/go-plat-utils/utils"
 	"testing"
@@ -30,4 +31,9 @@ func TestMask(t *testing.T) {
 		{"AutoCharacter", []any{"1234567890", 0.3, "*"}, []any{"1234***890"}, mask.AutoCharacter},
 	}
 	utils.TestFunction(t, testCases, nil)
+
+	aa := "aaaabbbb"
+	bb := mask.AutoCharacter(aa, 0.5, "*")
+	fmt.Println(aa, bb)
+
 }

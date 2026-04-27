@@ -215,3 +215,60 @@ func (r *customerFunc) If(args ...any) (any, error) {
 	}
 	return args[2], nil
 }
+
+func (r *customerFunc) Max(args ...any) (any, error) {
+	if len(args) == 0 {
+		return 0, fmt.Errorf("参数为空")
+	}
+	var currentNum float64
+	var found bool
+	var notFirst bool
+	lo.ForEach(args, func(item any, _ int) {
+		one, err := conv.Convert[float64](item)
+		if err != nil {
+			return
+		}
+		found = true
+		if !notFirst {
+			currentNum = one
+			notFirst = true
+			return
+		}
+		if one > currentNum {
+			currentNum = one
+		}
+	})
+	if !found {
+		return 0, fmt.Errorf("没有找到数字")
+	}
+
+	return currentNum, nil
+}
+
+func (r *customerFunc) Min(args ...any) (any, error) {
+	if len(args) == 0 {
+		return 0, fmt.Errorf("参数为空")
+	}
+	var currentNum float64
+	var found bool
+	var notFirst bool
+	lo.ForEach(args, func(item any, _ int) {
+		one, err := conv.Convert[float64](item)
+		if err != nil {
+			return
+		}
+		found = true
+		if !notFirst {
+			currentNum = one
+			notFirst = true
+			return
+		}
+		if one < currentNum {
+			currentNum = one
+		}
+	})
+	if !found {
+		return 0, fmt.Errorf("没有找到数字")
+	}
+	return currentNum, nil
+}

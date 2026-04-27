@@ -164,6 +164,17 @@ func AsyncForEachWhile[T any](collection []T,
 	if err != nil {
 		return false, err
 	}
+
+	// 检查是否被主动中断
+	if atomic.LoadInt64(&breakDataListFlag) > 0 {
+		// 被中断，但有错误也返回错误
+		if errTotal != nil {
+			return false, errTotal
+		}
+		return false, nil
+	}
+
+	// 正常完成，但有错误
 	if errTotal != nil {
 		return true, errTotal
 	}
