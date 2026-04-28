@@ -6,15 +6,15 @@ import (
 	"github.com/magic-lib/go-plat-utils/templates/ruleengine"
 )
 
-// ExprEngine 公式计算引擎（变量替换 + 表达式计算 + 函数支持）
-type ExprEngine struct {
+// RuleExprEngine 公式计算引擎（变量替换 + 表达式计算 + 函数支持）
+type RuleExprEngine struct {
 	prefix       string
 	suffix       string
 	jsonTemplate *JsonMapTemplate
 }
 
-// NewExprEngine 创建引擎实例
-func NewExprEngine(fixString ...string) *ExprEngine {
+// NewRuleExprEngine 创建引擎实例
+func NewRuleExprEngine(fixString ...string) *RuleExprEngine {
 	prefix := prefixDefault
 	suffix := suffixDefault
 	if len(fixString) == 1 {
@@ -30,7 +30,7 @@ func NewExprEngine(fixString ...string) *ExprEngine {
 		suffix = suffixDefault
 	}
 	jsonTemplate := NewJsonMapTemplate(prefix, suffix)
-	return &ExprEngine{
+	return &RuleExprEngine{
 		prefix:       prefix,
 		suffix:       suffix,
 		jsonTemplate: jsonTemplate,
@@ -40,11 +40,11 @@ func NewExprEngine(fixString ...string) *ExprEngine {
 // RunString
 // 执行公式字符串：先替换变量，再计算表达式
 // 支持：${var}、四则运算、比较、逻辑、内置函数
-func (e *ExprEngine) RunString(expr string, args any) (any, error) {
+func (e *RuleExprEngine) RunString(expr string, args any) (any, error) {
 	argMap := make(map[string]any)
 	err := conv.Unmarshal(args, &argMap)
 	if err != nil {
-		fmt.Println("ExprEngine RunString expr:", expr, "args:", conv.String(args), "err:", err)
+		fmt.Println("RuleExprEngine RunString expr:", expr, "args:", conv.String(args), "err:", err)
 	}
 
 	tmpl := NewTemplate(expr, e.prefix, e.suffix)

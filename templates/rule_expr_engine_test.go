@@ -7,7 +7,7 @@ import (
 )
 
 func TestMaxOrMinFunction(t *testing.T) {
-	exprEngine := templates.NewExprEngine()
+	exprEngine := templates.NewRuleExprEngine()
 	result, err := exprEngine.RunString(`Max('{{.dfss}}',2,3.4,Min(14,13),10.6)`, map[string]any{
 		"dfss": 12,
 	})
