@@ -3,6 +3,7 @@ package cond_test
 import (
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/cond"
+	"github.com/wI2L/jsondiff"
 	"testing"
 	"time"
 )
@@ -30,4 +31,13 @@ func TestIsZero(t *testing.T) {
 	if retBool {
 		fmt.Println("sssss empty time")
 	}
+}
+
+func TestIsJson(t *testing.T) {
+	a := `{"accno":"0750000000","mid":0,"nid":"460660/99/3","name":"","from":"","bcode":""}`
+	b := `{"mid":0,"accno":"0750000000","nid":"460660/99/3","name":"","from":"","bcode":""}`
+
+	// 只判断是否相等（忽略key顺序）
+	patch, err := jsondiff.CompareJSON([]byte(a), []byte(b))
+	fmt.Println("相等？", len(patch) == 0, err) // true
 }

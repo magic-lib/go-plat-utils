@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	graphA "github.com/dominikbraun/graph"
+	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/utils"
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langgraphgo/graph"
 	"sync"
@@ -198,4 +200,18 @@ func TestURL(t *testing.T) {
 	for _, result := range results {
 		fmt.Printf("Field1: %s, Field2: %s\n", result.Field1, result.Field2)
 	}
+}
+
+func TestJson(t *testing.T) {
+
+	a := `{"accno":"0750000000","mid":0,"nid":"460660/99/3","name":"","from":"","bcode":""}`
+	b := `{"mid":0,"accno":"0750000000","nid":"460660/99/3","name":"","from":"","bcode":""}`
+	var v1, v2 map[string]any
+	_ = conv.Unmarshal(a, &v1)
+	_ = conv.Unmarshal(b, &v2)
+
+	a1, err1 := utils.UniqueJsonId(v1)
+	a2, err2 := utils.UniqueJsonId(v2)
+
+	fmt.Println(a1, err1, a2, err2)
 }

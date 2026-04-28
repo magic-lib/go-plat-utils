@@ -15,6 +15,7 @@ require (
 	github.com/bytedance/go-tagexpr/v2 v2.9.11
 	github.com/chuckpreslar/inflect v0.0.0-20150228233301-423e3ac59c61
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
+	github.com/docker/go v1.5.1-1
 	github.com/dominikbraun/graph v0.23.0
 	github.com/fatih/color v1.18.0
 	github.com/forgoer/openssl v1.6.0
@@ -23,7 +24,6 @@ require (
 	github.com/go-ego/gse v1.0.1
 	github.com/go-playground/validator/v10 v10.28.0
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/gobwas/pool v0.2.1
 	github.com/gobwas/ws v1.4.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang-jwt/jwt/v4 v4.5.2
@@ -76,6 +76,7 @@ require (
 	github.com/tmc/langgraphgo v0.0.0-20240324234251-3b0caeaffd16
 	github.com/traefik/yaegi v0.16.1
 	github.com/viant/toolbox v0.37.0
+	github.com/wI2L/jsondiff v0.7.1
 	github.com/zeromicro/go-zero v1.9.2
 	go.mongodb.org/mongo-driver/v2 v2.5.1-0.20260209094634-d010e7850e68
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.66.0
@@ -130,6 +131,7 @@ require (
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/go-sql-driver/mysql v1.9.3 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
+	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/goccy/go-yaml v1.19.0 // indirect
 	github.com/gofrs/uuid/v5 v5.0.0 // indirect
@@ -164,7 +166,7 @@ require (
 	github.com/quic-go/qpack v0.6.0 // indirect
 	github.com/quic-go/quic-go v0.57.1 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
-	github.com/tidwall/pretty v1.2.0 // indirect
+	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/uber/jaeger-client-go v2.25.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.2.0+incompatible // indirect
@@ -181,6 +183,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.41.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/mock v0.6.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/arch v0.23.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260209200024-4cfbd4190f57 // indirect
