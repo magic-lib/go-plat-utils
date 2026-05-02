@@ -39,11 +39,11 @@ const (
 
 // 策略字符串常量
 const (
-	KeyPolicyFrontendOnly     KeySourcePolicy = "FRONTEND_ONLY"
-	KeyPolicyBackendOnly      KeySourcePolicy = "BACKEND_ONLY"
-	KeyPolicyFrontendPriority KeySourcePolicy = "FRONTEND_PRIORITY"
-	KeyPolicyBackendPriority  KeySourcePolicy = "BACKEND_PRIORITY"
-	KeyPolicyDefaultOnly      KeySourcePolicy = "DEFAULT_ONLY"
+	KeyPolicyFrontendOnly     KeySourcePolicy = "frontend"
+	KeyPolicyBackendOnly      KeySourcePolicy = "backend"
+	KeyPolicyFrontendPriority KeySourcePolicy = "frontend+" // 前端优先模式
+	KeyPolicyBackendPriority  KeySourcePolicy = "backend+"
+	KeyPolicyDefaultOnly      KeySourcePolicy = "default"
 )
 
 var policyMap = map[KeySourcePolicy]SourcePolicy{

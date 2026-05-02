@@ -10,10 +10,15 @@ var (
 	commPluginManager = cmapv2.New[*PluginManager]()
 )
 
-func Register(namespace string, onePlugin Plugin) error {
+func getNamespace(namespace string) string {
 	if namespace == "" {
-		namespace = "default"
+		return "default"
 	}
+	return namespace
+}
+
+func Register(namespace string, onePlugin Plugin) error {
+	namespace = getNamespace(namespace)
 	var onePluginManager *PluginManager
 	if !commPluginManager.Has(namespace) {
 		onePluginManager = NewPluginManager()
@@ -34,9 +39,7 @@ func Register(namespace string, onePlugin Plugin) error {
 }
 
 func Load(namespace string, pluginKey string) (Plugin, error) {
-	if namespace == "" {
-		namespace = "default"
-	}
+	namespace = getNamespace(namespace)
 	if !commPluginManager.Has(namespace) {
 		return nil, fmt.Errorf("插件管理器 %s 未注册", namespace)
 	}
@@ -54,9 +57,7 @@ func Load(namespace string, pluginKey string) (Plugin, error) {
 	return onePlugin, nil
 }
 func LoadAll(namespace string) ([]Plugin, error) {
-	if namespace == "" {
-		namespace = "default"
-	}
+	namespace = getNamespace(namespace)
 	if !commPluginManager.Has(namespace) {
 		return nil, fmt.Errorf("插件管理器 %s 未注册", namespace)
 	}
