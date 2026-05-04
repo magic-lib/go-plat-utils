@@ -44,7 +44,7 @@ func (e *RuleExprEngine) RunString(expr string, args any) (any, error) {
 	argMap := make(map[string]any)
 	err := conv.Unmarshal(args, &argMap)
 	if err != nil {
-		fmt.Println("RuleExprEngine RunString expr:", expr, "args:", conv.String(args), "err:", err)
+		fmt.Println("RuleExprEngine RunString Unmarshal expr:", expr, "args:", conv.String(args), "err:", err)
 	}
 
 	tmpl := NewTemplate(expr, e.prefix, e.suffix)
@@ -57,5 +57,11 @@ func (e *RuleExprEngine) RunString(expr string, args any) (any, error) {
 	ruleEngine := ruleengine.NewEngineLogic()
 	runStringArg := conv.KeyListFromMap(args)
 	newWhenString := conv.String(newWhen)
-	return ruleEngine.RunString(newWhenString, runStringArg)
+	retVal, err := ruleEngine.RunString(newWhenString, runStringArg)
+	if err != nil {
+		// 有可能就没有变量，所以不需要去运行错误，比如一个字符串不加引号，就应该是正确的，如果有表达式，计算的话，就应该报错
+		fmt.Println("RuleExprEngine RunString expr:", expr, "return:", newWhenString, "args:", conv.String(args), "err:", err)
+		return newWhenString, err
+	}
+	return retVal, nil
 }

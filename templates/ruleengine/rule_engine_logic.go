@@ -214,7 +214,7 @@ func (r *EngineLogic) RunString(ruleString string, parameters map[string]any) (a
 	if err != nil {
 		errHasOccurred := ""
 		if strings.Contains(ruleString, ".") {
-			errHasOccurred = "如果有'.'符号，则需要用[]将条件变量包括起来，或者用\\\\进行转义"
+			errHasOccurred = "如果有'.'符号，则需要用[]将条件变量包括起来，或者用\\\\进行转义，不要使用{{}}括起来，这样会被替换掉该变量"
 		}
 		return nil, fmt.Errorf("err: %w, RunString: %s %s", err, ruleString, errHasOccurred)
 	}

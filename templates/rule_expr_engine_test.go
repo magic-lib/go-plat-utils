@@ -2,7 +2,9 @@ package templates_test
 
 import (
 	"fmt"
+	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/templates"
+	"github.com/magic-lib/go-plat-utils/templates/ruleengine"
 	"testing"
 )
 
@@ -27,6 +29,48 @@ func TestMaxOrMinFunction(t *testing.T) {
 		return
 	}
 	fmt.Println(result)
+
+	return
+}
+func TestRuleStringFunction(t *testing.T) {
+	args := map[string]any{
+		"dfss": map[string]any{
+			"aaa": "aa",
+		},
+	}
+	newWhen := `{{dfss.aaa}}=='aa'`
+
+	exprEngine := templates.NewRuleExprEngine()
+	result, err := exprEngine.RunString(newWhen, args)
+
+	if err != nil {
+		fmt.Println(result, err)
+	}
+	fmt.Println(result)
+
+	newWhen2 := "[dfss.aaa]=='aa'"
+
+	ruleEngine := ruleengine.NewEngineLogic()
+	runStringArg := conv.KeyListFromMap(args)
+	newWhenString := conv.String(newWhen2)
+
+	fmt.Println(newWhenString)
+
+	retVal, err := ruleEngine.RunString(newWhenString, runStringArg)
+
+	fmt.Println(retVal, err)
+
+	newWhen2 = "dfss\\.aaa=='aa'"
+
+	ruleEngine = ruleengine.NewEngineLogic()
+	runStringArg = conv.KeyListFromMap(args)
+	newWhenString = conv.String(newWhen2)
+
+	fmt.Println(newWhenString)
+
+	retVal, err = ruleEngine.RunString(newWhenString, runStringArg)
+
+	fmt.Println(retVal, err)
 
 	return
 }

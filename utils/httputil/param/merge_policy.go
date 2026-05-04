@@ -57,7 +57,7 @@ var policyMap = map[KeySourcePolicy]SourcePolicy{
 // ParseKeyPolicy 将配置文件的字符串解析为内部策略
 func ParseKeyPolicy(s KeySourcePolicy) (SourcePolicy, error) {
 	sTemp := string(s)
-	sTemp = strings.ToUpper(strings.TrimSpace(sTemp))
+	sTemp = strings.TrimSpace(sTemp)
 	s = KeySourcePolicy(sTemp)
 	policy, ok := policyMap[s]
 	if !ok {
