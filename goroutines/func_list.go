@@ -112,7 +112,7 @@ func AsyncForEachWhile[T any](collection []T,
 	waitGroupTemp.add(len(collection))
 
 	var breakDataListFlag int64 = 0
-	var errTotal *multierror.Error
+	var errTotal error
 	var mu sync.Mutex // 用于保护 errTotal
 
 	// 使用带缓冲的 channel 实现最大并发控制

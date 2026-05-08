@@ -34,7 +34,22 @@ func IsJson(text string) bool {
 	case map[string]any: // JSON对象
 		return true
 	case []any: // JSON数组
+		return true
+	default: // 其他类型（数字、字符串、布尔值、null等）
 		return false
+	}
+}
+
+// IsJsonMap 是否是jsonMap字符串
+func IsJsonMap(text string) bool {
+	var temp any
+	if err := json.Unmarshal([]byte(text), &temp); err != nil {
+		return false
+	}
+	// 检查解析后的类型是否为对象或数组
+	switch temp.(type) {
+	case map[string]any: // JSON对象
+		return true
 	default: // 其他类型（数字、字符串、布尔值、null等）
 		return false
 	}
