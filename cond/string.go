@@ -24,6 +24,11 @@ func IsUUID(uuid string) bool {
 
 // IsJson 是否是json字符串
 func IsJson(text string) bool {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return false
+	}
+
 	var temp any
 	if err := json.Unmarshal([]byte(text), &temp); err != nil {
 		return false
@@ -42,6 +47,11 @@ func IsJson(text string) bool {
 
 // IsJsonMap 是否是jsonMap字符串
 func IsJsonMap(text string) bool {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return false
+	}
+
 	var temp any
 	if err := json.Unmarshal([]byte(text), &temp); err != nil {
 		return false
