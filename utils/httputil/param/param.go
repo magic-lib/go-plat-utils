@@ -312,10 +312,42 @@ func (p *Param) GetAllMap(r *http.Request, hasAll bool) map[string]any {
 	return newParamMap
 }
 
+func (p *Param) hasJsonTag(obj interface{}) (jsonTagMap map[string]string, hasJsonTag bool, isStruct bool) {
+	result := make(map[string]string)
+
+	v := reflect.ValueOf(obj)
+	t := reflect.TypeOf(obj)
+
+	if t.Kind() == reflect.Ptr {
+		v = v.Elem()
+		t = t.Elem()
+	}
+
+	if t.Kind() != reflect.Struct {
+		return result, hasJsonTag, false
+	}
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		jsonTag := field.Tag.Get("json")
+		if jsonTag != "" {
+			hasJsonTag = true
+		}
+		result[field.Name] = jsonTag
+	}
+	return result, hasJsonTag, true
+}
+
 // Parse 简单赋值
-// openValidate 打开检查，默认是true; dst 传指针
+// openValidate 打开检查，默认是true; dst 传指针, 必须设置json标签，不然无法进行匹配上参数
 func (p *Param) Parse(r *http.Request, dst any, openValidate ...bool) error {
 	paramMap := p.GetAllMap(r, true)
+
+	_, hasJsonTag, isStruct := p.hasJsonTag(dst)
+	if isStruct && !hasJsonTag {
+		return fmt.Errorf("param json tag no set")
+	}
+
 	err := conv.Unmarshal(paramMap, dst)
 	if err != nil {
 		//用post里的数据整体进行，如果传的是数组的话

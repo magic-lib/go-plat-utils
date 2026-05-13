@@ -106,10 +106,15 @@ func Unmarshal(srcStruct any, dstPoint any) error {
 	return nil
 }
 
-var OpenLog = false
+var openLog = false
+
+// OpenUnmarshalLog 打开日志
+func OpenUnmarshalLog() {
+	openLog = true
+}
 
 func logDebug(str ...any) {
-	if !OpenLog {
+	if !openLog {
 		return
 	}
 	strArr := make([]any, 0)
