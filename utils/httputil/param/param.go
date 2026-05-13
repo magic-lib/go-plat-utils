@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/zeromicro/go-zero/rest/httpx"
 	"io"
 	"log"
 	"net/http"
@@ -312,7 +313,7 @@ func (p *Param) GetAllMap(r *http.Request, hasAll bool) map[string]any {
 	return newParamMap
 }
 
-func (p *Param) hasJsonTag(obj interface{}) (jsonTagMap map[string]string, hasJsonTag bool, isStruct bool) {
+func (p *Param) hasTag(obj interface{}, tagName string) (tagMap map[string]string, hasJsonTag bool, isStruct bool) {
 	result := make(map[string]string)
 
 	v := reflect.ValueOf(obj)
@@ -329,7 +330,7 @@ func (p *Param) hasJsonTag(obj interface{}) (jsonTagMap map[string]string, hasJs
 
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
-		jsonTag := field.Tag.Get("json")
+		jsonTag := field.Tag.Get(tagName)
 		if jsonTag != "" {
 			hasJsonTag = true
 		}
@@ -343,9 +344,10 @@ func (p *Param) hasJsonTag(obj interface{}) (jsonTagMap map[string]string, hasJs
 func (p *Param) Parse(r *http.Request, dst any, openValidate ...bool) error {
 	paramMap := p.GetAllMap(r, true)
 
-	_, hasJsonTag, isStruct := p.hasJsonTag(dst)
+	_, hasJsonTag, isStruct := p.hasTag(dst, "json")
 	if isStruct && !hasJsonTag {
-		return fmt.Errorf("param json tag no set")
+		log.Println("param form tag no set")
+		return httpx.Parse(r, dst)
 	}
 
 	err := conv.Unmarshal(paramMap, dst)
