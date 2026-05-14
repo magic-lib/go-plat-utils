@@ -207,3 +207,17 @@ func TestSafeGet(t *testing.T) {
 	})
 	fmt.Println(pp)
 }
+func TestMergeStructs(t *testing.T) {
+	aa := new(Src)
+	cc := time.Now()
+	_ = MergeStructs(aa, &Src{
+		Id: 1,
+	}, Src{
+		Username: "hahah",
+	}, Src{
+		CreateTime: time.Now(),
+		UpdateTime: &cc,
+	})
+
+	fmt.Println(aa)
+}
