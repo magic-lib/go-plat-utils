@@ -1,6 +1,7 @@
 package crypto_test
 
 import (
+	basecrypto "crypto"
 	"fmt"
 	"github.com/golang-jwt/jwt"
 	"github.com/magic-lib/go-plat-utils/crypto"
@@ -13,7 +14,7 @@ import (
 func ExampleMd5() {
 	str := "hello"
 
-	res := crypto.SHA(crypto.MD5, str)
+	res := crypto.SHA(basecrypto.MD5, str)
 	fmt.Println(res)
 
 	// Output:

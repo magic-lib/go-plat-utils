@@ -9,6 +9,7 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"log"
+	"net/url"
 	"reflect"
 	"runtime"
 	"sort"
@@ -386,4 +387,39 @@ func GetStructInfo(obj any) StructInfo {
 		TypeName:    typeName,
 		Fields:      fields,
 	}
+}
+
+// MapToUrlParams map 转 a=1&b=2 格式
+func MapToUrlParams(m map[string]any) string {
+	if len(m) == 0 {
+		return ""
+	}
+	paramKeys := lo.Keys(m)
+	sort.Strings(paramKeys)
+	var buf = make([]string, 0)
+	lo.ForEach(paramKeys, func(key string, index int) {
+		if one, ok := m[key]; ok {
+			keyEscaped := url.QueryEscape(key)
+			value := url.QueryEscape(conv.String(one))
+			value = encodeSpecialChars(value)
+			buf = append(buf, fmt.Sprintf("%s=%s", keyEscaped, value))
+		}
+	})
+	// 自动编码、自动拼接 &
+	return strings.Join(buf, "&")
+}
+
+func encodeSpecialChars(s string) string {
+	s = strings.ReplaceAll(s, "+", " ")
+	replacements := map[string]string{
+		" ": "%20",
+		"-": "%2D",
+		"~": "%7E",
+		"_": "%5F",
+		".": "%2E",
+	}
+	for old, newStr := range replacements {
+		s = strings.ReplaceAll(s, old, newStr)
+	}
+	return s
 }

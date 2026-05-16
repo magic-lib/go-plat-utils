@@ -1,6 +1,7 @@
 package crypto_test
 
 import (
+	basecrypto "crypto"
 	"crypto/rand"
 	"fmt"
 	"github.com/forgoer/openssl"
@@ -14,7 +15,7 @@ func TestSHAForHmac(t *testing.T) {
 
 	key := "tianlin020250214"
 	testCases := []*utils.TestStruct{
-		{"SHAWithHmac", []any{crypto.SHA256, "hello world", key}, []any{"b390cd4fcd9864133e838efa76ee3e0b0e0b4774dc04a646edc956ba34b8072c"}, crypto.SHAWithHmac},
+		{"SHAWithHmac", []any{basecrypto.SHA256, "hello world", key}, []any{"b390cd4fcd9864133e838efa76ee3e0b0e0b4774dc04a646edc956ba34b8072c"}, crypto.SHAWithHmac},
 	}
 	utils.TestFunction(t, testCases, nil)
 }
@@ -30,6 +31,14 @@ func generateRandomBytes22(n uint32) ([]byte, error) {
 }
 func TestSHAForHmac1(t *testing.T) {
 	mm, _ := generateRandomBytes22(2)
+
+	fmt.Printf("%x", mm)
+
+	fmt.Println("")
+
+}
+func TestStringToHash(t *testing.T) {
+	mm, _ := crypto.StringToHash("AA")
 
 	fmt.Printf("%x", mm)
 

@@ -2,6 +2,8 @@ package utils_test
 
 import (
 	"fmt"
+	"github.com/magic-lib/go-plat-utils/utils"
+	"net/url"
 	"testing"
 )
 
@@ -17,5 +19,22 @@ func TestTag(t *testing.T) {
 	err := fmt.Errorf("aaaaaa")
 	mm := fmt.Errorf("fdsfs: %w", err)
 	fmt.Println(mm.Error())
+}
+func TestMapToUrlParams(t *testing.T) {
+	oneMap := map[string]any{
+		"a":   1,
+		"b":   "2",
+		"c":   `/ ? # & = @ : , ; + - * () * ~!@#$%^&*()_+,./';:"?><`,
+		"d":   true,
+		"aaa": "wo 是谁",
+	}
+	aaa := utils.MapToUrlParams(oneMap)
+	fmt.Println(aaa)
 
+	bbb, err := url.QueryUnescape(aaa)
+	fmt.Println(bbb, err)
+
+	aa := url.QueryEscape("+ ")
+	bb := url.PathEscape("+ ")
+	fmt.Println(aa, bb)
 }

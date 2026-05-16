@@ -23,7 +23,7 @@ func getAllKeyString(key string) string {
 	if keyLen >= 16 {
 		return key[0:16]
 	}
-	if keyLen > 0 && keyLen < 16 {
+	if keyLen > 0 {
 		for i := keyLen; i < 16; i++ {
 			key += " " //不足的后面增加空格字符补齐
 		}
@@ -132,11 +132,11 @@ func AesCbcEncrypt(plainStr string, key string, en ...EnDeCoder) (string, error)
 
 	keyByte := []byte(key)
 
-	cipher, err := goencrypt.NewAESCipher(keyByte, keyByte, goencrypt.CBCMode, goencrypt.PkcsZero, goencrypt.PrintHex)
+	cipherTool, err := goencrypt.NewAESCipher(keyByte, keyByte, goencrypt.CBCMode, goencrypt.PkcsZero, goencrypt.PrintHex)
 	if err != nil {
 		return "", err
 	}
-	cipherText, err := cipher.AESEncrypt([]byte(plainStr))
+	cipherText, err := cipherTool.AESEncrypt([]byte(plainStr))
 	if err != nil {
 		return "", err
 	}
@@ -168,10 +168,10 @@ func AesCbcDecrypt(cipherStr string, key string, de ...EnDeCoder) (string, error
 		return "", err
 	}
 
-	cipher, err := goencrypt.NewAESCipher(keyByte, keyByte, goencrypt.CBCMode, goencrypt.PkcsZero, goencrypt.PrintHex)
+	cipherTool, err := goencrypt.NewAESCipher(keyByte, keyByte, goencrypt.CBCMode, goencrypt.PkcsZero, goencrypt.PrintHex)
 	if err != nil {
 		return "", err
 	}
 	originStr := hex.EncodeToString(cipherTextTemp)
-	return cipher.AESDecrypt(originStr)
+	return cipherTool.AESDecrypt(originStr)
 }

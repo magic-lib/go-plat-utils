@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"strings"
 )
 
 // stringToCipherBlock 将任意字符串转为 cipher.Block
@@ -16,6 +17,8 @@ import (
 func stringToCipherBlock(algorithm, keyStr string) (cipher.Block, error) {
 	hash := sha256.Sum256([]byte(keyStr))
 	var key []byte
+
+	algorithm = strings.ToLower(algorithm)
 
 	switch algorithm {
 	case "aes-128":
