@@ -2,7 +2,6 @@
 package param
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -10,7 +9,6 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/zeromicro/go-zero/rest/httpx"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -347,7 +345,11 @@ func (p *Param) Parse(r *http.Request, dst any, openValidate ...bool) error {
 	_, hasJsonTag, isStruct := p.hasTag(dst, "json")
 	if isStruct && !hasJsonTag {
 		log.Println("param form tag no set")
-		return httpx.Parse(r, dst)
+		var err error
+		_ = SafeReadBody(r, func(r *http.Request) {
+			err = httpx.Parse(r, dst)
+		})
+		return err
 	}
 
 	err := conv.Unmarshal(paramMap, dst)
@@ -602,20 +604,10 @@ func getParamByteFromBody(req *http.Request) ([]byte, error) {
 	if cachedBody, ok := req.Context().Value(bodyCacheKey{}).([]byte); ok {
 		return cachedBody, nil
 	}
-
-	oldBody := req.Body
-	defer func() {
-		_ = oldBody.Close()
-	}()
-	b, err := io.ReadAll(req.Body)
-	if err != nil {
-		return nil, err
-	}
-	req.Body = io.NopCloser(bytes.NewBuffer(b))
-
-	newCtx := context.WithValue(req.Context(), bodyCacheKey{}, b)
+	requestBody := SafeReadBody(req, nil)
+	newCtx := context.WithValue(req.Context(), bodyCacheKey{}, requestBody)
 	req = req.WithContext(newCtx)
-	return b, nil
+	return requestBody, nil
 }
 
 func getParamFromForm(req *http.Request) url.Values {

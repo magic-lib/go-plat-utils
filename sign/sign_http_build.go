@@ -1,12 +1,9 @@
 package sign
 
 import (
-	"bytes"
 	"context"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/utils"
-	"io"
-	"net/http"
 	"net/url"
 )
 
@@ -56,19 +53,4 @@ func buildAllSortedParams(ctx context.Context, p *Params, bodyEncode func(ctx co
 	_ = conv.Unmarshal(newSignParams, &queryMap)
 
 	return queryMap
-}
-
-func readAndRestoreBody(r *http.Request) ([]byte, error) {
-	if r.Body == nil {
-		return []byte{}, nil
-	}
-	defer func() {
-		_ = r.Body.Close()
-	}()
-	bs, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
-	}
-	r.Body = io.NopCloser(bytes.NewBuffer(bs))
-	return bs, nil
 }

@@ -24,8 +24,8 @@ func checkNonce(ctx context.Context, appID, nonce string, getStartTimeFunc func(
 	if nonce == "" || appID == "" {
 		return false, fmt.Errorf("%s", "app_id or nonce is empty")
 	}
-	if getStartTimeFunc == nil {
-		return false, nil
+	if getStartTimeFunc == nil { //表示不检查nonce的时间问题
+		return true, nil
 	}
 	startTime, err := getStartTimeFunc(ctx, appID, nonce)
 	if err != nil {
@@ -55,7 +55,7 @@ func checkTimestamp(ts string, window time.Duration) bool {
 	return diff <= window
 }
 
-func getBaseSignDtoFromHeader(headerPrefix string, header http.Header) (*BaseSignDto, error) {
+func baseSignDtoFromHeader(headerPrefix string, header http.Header) (*BaseSignDto, error) {
 	if header == nil {
 		return nil, fmt.Errorf("header is nil")
 	}
@@ -72,28 +72,34 @@ func getBaseSignDtoFromHeader(headerPrefix string, header http.Header) (*BaseSig
 	signMethodKey := http.CanonicalHeaderKey(headerPrefix + "Sign-Method")
 
 	baseSign.AppId = header.Get(clientIdKey)
-	if baseSign.AppId == "" {
-		return nil, fmt.Errorf("app_id is empty in header")
-	}
-
 	baseSign.Timestamp = header.Get(timestampKey)
-	if baseSign.Timestamp == "" {
-		return nil, fmt.Errorf("timestamp is empty in header")
-	}
-
 	baseSign.Nonce = header.Get(nonceKey)
-	if baseSign.Nonce == "" {
-		return nil, fmt.Errorf("nonce is empty in header")
-	}
-
 	baseSign.SignMethod = header.Get(signMethodKey)
-	if baseSign.SignMethod == "" {
-		return nil, fmt.Errorf("sign_method is empty in header")
-	}
 	baseSign.Signature = header.Get(signatureKey)
-	if baseSign.Signature == "" {
-		return nil, fmt.Errorf("signature is empty in header")
-	}
 
 	return baseSign, nil
+}
+
+func checkBaseSignDto(baseSign *BaseSignDto) error {
+
+	if baseSign.AppId == "" {
+		return fmt.Errorf("app_id is empty in header")
+	}
+
+	if baseSign.Timestamp == "" {
+		return fmt.Errorf("timestamp is empty in header")
+	}
+
+	if baseSign.Nonce == "" {
+		return fmt.Errorf("nonce is empty in header")
+	}
+
+	if baseSign.SignMethod == "" {
+		return fmt.Errorf("sign_method is empty in header")
+	}
+	if baseSign.Signature == "" {
+		return fmt.Errorf("signature is empty in header")
+	}
+
+	return nil
 }

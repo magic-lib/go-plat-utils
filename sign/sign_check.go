@@ -6,11 +6,19 @@ import (
 	"github.com/magic-lib/go-plat-utils/conv"
 	cryptotool "github.com/magic-lib/go-plat-utils/crypto"
 	"github.com/magic-lib/go-plat-utils/utils"
+	"github.com/magic-lib/go-plat-utils/utils/httputil/param"
 	"github.com/samber/lo"
 	"net/http"
 	"strings"
 	"time"
 )
+
+type SingChecker interface {
+	GeneratorSignature(ctx context.Context, baseSign *BaseSignDto, params map[string]any) (map[string]any, error)
+	BaseSignDtoFromHeader(header http.Header) (*BaseSignDto, error)
+	CheckSignature(ctx context.Context, header http.Header, params map[string]any) (bool, error)
+	CheckHttpSignature(r *http.Request) (bool, error)
+}
 
 // BaseSignCheck 基础签名参数结构体
 type BaseSignCheck struct {
@@ -22,7 +30,7 @@ type BaseSignCheck struct {
 	TimestampTimeout          time.Duration                                                     // 时间戳的过期时间，超过就不让访问了，默认为5分钟
 }
 
-func New(bs *BaseSignCheck) (*BaseSignCheck, error) {
+func New(bs *BaseSignCheck) (SingChecker, error) {
 	if bs == nil {
 		bs = &BaseSignCheck{}
 	}
@@ -35,9 +43,8 @@ func New(bs *BaseSignCheck) (*BaseSignCheck, error) {
 	if bs.TimestampTimeout == 0 {
 		bs.TimestampTimeout = 5 * time.Minute
 	}
-	if bs.GetNonceCreateTimeFunc == nil ||
-		bs.GetAppTokenFunc == nil {
-		return nil, fmt.Errorf("%s", "GetNonceCreateTimeFunc or AppSecretFunc not set")
+	if bs.GetAppTokenFunc == nil {
+		return nil, fmt.Errorf("%s", "GetAppTokenFunc not set")
 	}
 	return bs, nil
 }
@@ -75,14 +82,18 @@ func (bs *BaseSignCheck) GeneratorSignature(ctx context.Context, baseSign *BaseS
 	return paramNew, nil
 }
 
-// checkSignatureFromHeader 从header中进行签名验证
-func (bs *BaseSignCheck) checkSignatureFromHeader(ctx context.Context, header http.Header, params map[string]any) (bool, error) {
+func (bs *BaseSignCheck) BaseSignDtoFromHeader(header http.Header) (*BaseSignDto, error) {
+	baseSign, err := baseSignDtoFromHeader(bs.HeaderKeyPrefix, header)
+	if err != nil {
+		return nil, err
+	}
+	return baseSign, nil
+}
+
+// checkSignatureByBaseSignDto 从header中进行签名验证
+func (bs *BaseSignCheck) checkSignatureByBaseSignDto(ctx context.Context, baseSign *BaseSignDto, params map[string]any) (bool, error) {
 	if bs.GetAppTokenFunc == nil {
 		return false, fmt.Errorf("AppSecretFunc is empty")
-	}
-	baseSign, err := getBaseSignDtoFromHeader(bs.HeaderKeyPrefix, header)
-	if err != nil {
-		return false, err
 	}
 	if params == nil {
 		params = make(map[string]any)
@@ -101,7 +112,11 @@ func (bs *BaseSignCheck) checkSignatureFromHeader(ctx context.Context, header ht
 }
 
 func (bs *BaseSignCheck) CheckSignature(ctx context.Context, header http.Header, params map[string]any) (bool, error) {
-	baseSign, err := getBaseSignDtoFromHeader(bs.HeaderKeyPrefix, header)
+	baseSign, err := bs.BaseSignDtoFromHeader(header)
+	if err != nil {
+		return false, err
+	}
+	err = checkBaseSignDto(baseSign)
 	if err != nil {
 		return false, err
 	}
@@ -118,7 +133,7 @@ func (bs *BaseSignCheck) CheckSignature(ctx context.Context, header http.Header,
 	if !checkNonceTemp {
 		return false, nil
 	}
-	checkSignature, err := bs.checkSignatureFromHeader(ctx, header, params)
+	checkSignature, err := bs.checkSignatureByBaseSignDto(ctx, baseSign, params)
 	if err != nil {
 		return false, err
 	}
@@ -137,6 +152,6 @@ func (bs *BaseSignCheck) CheckHttpSignature(r *http.Request) (bool, error) {
 	p.Method = r.Method
 	p.Path = r.URL.Path
 	p.Query = r.URL.Query()
-	p.Body, _ = readAndRestoreBody(r)
+	p.Body = param.SafeReadBody(r, nil)
 	return bs.checkHttpSignature(r.Context(), r.Header, p)
 }
