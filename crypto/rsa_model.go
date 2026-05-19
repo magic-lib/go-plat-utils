@@ -146,7 +146,6 @@ func (r *RSASecurity) PriKeyDecryptByte(input []byte) ([]byte, error) {
 	if err != nil {
 		return []byte(""), err
 	}
-
 	return io.ReadAll(output)
 }
 

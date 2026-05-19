@@ -18,6 +18,7 @@ func SafeReadBody(r *http.Request, next func(r *http.Request)) []byte {
 		var err error
 		requestBody, err = io.ReadAll(r.Body)
 		if err == nil {
+			_ = r.Body.Close()
 			r.Body = io.NopCloser(bytes.NewBuffer(requestBody))
 		}
 	}
