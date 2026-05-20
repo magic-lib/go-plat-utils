@@ -22,12 +22,13 @@ type SingChecker interface {
 
 // BaseSignCheck 基础签名参数结构体
 type BaseSignCheck struct {
-	GetAppTokenFunc           func(ctx context.Context, appId string) (string, error)           //根据appId获取GetAppTokenFunc
-	GetNonceCreateTimeFunc    func(ctx context.Context, appId, nonce string) (time.Time, error) //从缓存或数据库中获取nonce的创建时间
-	HttpRequestBodyEncodeFunc func(ctx context.Context, body []byte) (string, error)            //httpBody编码函数，避免内容太长影响效率
-	HeaderKeyPrefix           string                                                            //header中key的前缀名称
-	NonceTimeout              time.Duration                                                     // nonce缓存的过期时间
-	TimestampTimeout          time.Duration                                                     // 时间戳的过期时间，超过就不让访问了，默认为5分钟
+	GetAppTokenFunc           func(ctx context.Context, appId string) (string, error)                            //根据appId获取GetAppTokenFunc
+	GetOrSetNonceFunc         func(ctx context.Context, appId, nonce string, timeout time.Duration) (int, error) //从缓存或数据库中获取nonce的创建时间
+	HttpRequestBodyEncodeFunc func(ctx context.Context, body []byte) (string, error)                             //httpBody编码函数，避免内容太长影响效率
+	HeaderKeyPrefix           string                                                                             //header中key的前缀名称
+	NonceUseTimes             int                                                                                //同一个nonce能使用次数                                                               // nonce缓存的过期时间
+	NonceTimeout              time.Duration                                                                      // nonce缓存的过期时间
+	TimestampTimeout          time.Duration                                                                      // 时间戳的过期时间，超过就不让访问了，默认为5分钟
 }
 
 func New(bs *BaseSignCheck) (SingChecker, error) {
@@ -36,6 +37,9 @@ func New(bs *BaseSignCheck) (SingChecker, error) {
 	}
 	if bs.HeaderKeyPrefix == "" {
 		bs.HeaderKeyPrefix = "X-"
+	}
+	if bs.NonceUseTimes == 0 {
+		bs.NonceUseTimes = 1
 	}
 	if bs.NonceTimeout == 0 {
 		bs.NonceTimeout = 2 * time.Minute
@@ -126,7 +130,7 @@ func (bs *BaseSignCheck) CheckSignature(ctx context.Context, header http.Header,
 		return false, nil
 	}
 	// 检查nonce
-	checkNonceTemp, err := checkNonce(ctx, baseSign.AppId, baseSign.Nonce, bs.GetNonceCreateTimeFunc, bs.NonceTimeout)
+	checkNonceTemp, err := checkNonce(ctx, baseSign.AppId, baseSign.Nonce, bs.GetOrSetNonceFunc, bs.NonceTimeout, bs.NonceUseTimes)
 	if err != nil {
 		return false, err
 	}

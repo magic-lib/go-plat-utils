@@ -20,20 +20,20 @@ type BaseSignDto struct {
 	SignMethod string `json:"sign_method" form:"sign_method" binding:"required"` // 签名方法
 }
 
-func checkNonce(ctx context.Context, appID, nonce string, getStartTimeFunc func(ctx context.Context, appId, nonce string) (time.Time, error), ttl time.Duration) (pass bool, err error) {
+func checkNonce(ctx context.Context, appID, nonce string,
+	getOrSetNonceFunc func(ctx context.Context, appId, nonce string, timeout time.Duration) (int, error),
+	timeout time.Duration, nonceUseTimes int) (pass bool, err error) {
 	if nonce == "" || appID == "" {
 		return false, fmt.Errorf("%s", "app_id or nonce is empty")
 	}
-	if getStartTimeFunc == nil { //表示不检查nonce的时间问题
+	if getOrSetNonceFunc == nil { //表示不检查nonce的时间问题
 		return true, nil
 	}
-	startTime, err := getStartTimeFunc(ctx, appID, nonce)
+	useTimes, err := getOrSetNonceFunc(ctx, appID, nonce, timeout)
 	if err != nil {
 		return false, err
 	}
-
-	diff := time.Since(startTime)
-	if diff < ttl {
+	if useTimes < nonceUseTimes {
 		return true, nil
 	}
 	return false, nil

@@ -1,6 +1,9 @@
 package param
 
-import "strings"
+import (
+	"net/http"
+	"strings"
+)
 
 type PathConfig struct {
 	SplitPath string
@@ -101,4 +104,26 @@ func PathParam(requestPath, routePath string, pcs ...*PathConfig) map[string]str
 		}
 	}
 	return params
+}
+
+type CurrentRoute struct {
+	Method string
+	Path   string
+}
+
+// FindMatchingRoute 在路由列表中查找与HTTP请求匹配的路由
+// 返回匹配的HTTP方法和路径模板，如果没有匹配则返回空字符串
+func FindMatchingRoute(r *http.Request, routesList []*CurrentRoute, pc ...*PathConfig) (*CurrentRoute, bool) {
+	requestMethod := strings.ToUpper(r.Method)
+	for _, route := range routesList {
+		routeMethod := strings.ToUpper(route.Method)
+		if routeMethod == requestMethod &&
+			PathMatch(r.URL.Path, route.Path, pc...) {
+			return route, true
+		}
+	}
+	return &CurrentRoute{
+		Method: requestMethod,
+		Path:   r.URL.Path,
+	}, false
 }
