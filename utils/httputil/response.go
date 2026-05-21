@@ -158,10 +158,15 @@ func writeWithTrace(ctx context.Context, resp *CommResponse, traceFunc func(span
 }
 
 // WriteCommSuccess 系统默认正确返回
-func WriteCommSuccess(ctx context.Context, w http.ResponseWriter, data any) {
+func WriteCommSuccess(ctx context.Context, w http.ResponseWriter, data any, msg ...string) {
+	retMsg := http.StatusText(http.StatusOK)
+	if len(msg) > 0 {
+		retMsg = msg[0]
+	}
+
 	sucResp := &CommResponse{
 		Code:    0,
-		Message: http.StatusText(http.StatusOK),
+		Message: retMsg,
 		Data:    data,
 	}
 
