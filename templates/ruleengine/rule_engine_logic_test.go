@@ -347,3 +347,35 @@ func TestCheckRuleList2(t *testing.T) {
 
 	return
 }
+func TestCeilToDigit(t *testing.T) {
+	condTypeCustomVarPattern := `CeilToDigit(149)`
+	ruleLogic := ruleengine.NewEngineLogic()
+	customList, err := ruleLogic.RunString(condTypeCustomVarPattern, map[string]any{})
+	if err != nil {
+		return
+	}
+	fmt.Println(customList)
+	return
+}
+func TestContains(t *testing.T) {
+	condTypeCustomVarPattern := `Contains('dfsfsjfdsf', 'fdsfg')`
+	ruleLogic := ruleengine.NewEngineLogic()
+	customList, err := ruleLogic.RunString(condTypeCustomVarPattern, map[string]any{})
+	if err != nil {
+		return
+	}
+	fmt.Println(customList)
+	return
+}
+func TestJsonGet(t *testing.T) {
+	condTypeCustomVarPattern := `JsonGet(AAAAA, 'tag')==123`
+	ruleLogic := ruleengine.NewEngineLogic()
+	customList, err := ruleLogic.RunString(condTypeCustomVarPattern, map[string]any{
+		"AAAAA": "{\"tag\":123}",
+	})
+	if err != nil {
+		return
+	}
+	fmt.Println(customList)
+	return
+}

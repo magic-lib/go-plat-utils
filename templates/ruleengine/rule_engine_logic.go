@@ -40,19 +40,27 @@ func NewEngineLogic() *EngineLogic {
 	ruleLogicFunc := new(customerFunc)
 	// 内置方法
 	ruleLogic.functions = map[string]govaluate.ExpressionFunction{
-		"Add":     ruleLogicFunc.Add,
-		"Sub":     ruleLogicFunc.Sub,
-		"Mul":     ruleLogicFunc.Mul,
-		"Div":     ruleLogicFunc.Div,
-		"Has":     ruleLogicFunc.Has,
-		"In":      ruleLogicFunc.In,
-		"Is":      ruleLogicFunc.Is,
-		"If":      ruleLogicFunc.If,
-		"As":      ruleLogicFunc.As,
-		"Replace": ruleLogicFunc.Replace,
-		"Split":   ruleLogicFunc.Split,
-		"Max":     ruleLogicFunc.Max,
-		"Min":     ruleLogicFunc.Min,
+		// 数字相关
+		"Add":         ruleLogicFunc.Add,
+		"Sub":         ruleLogicFunc.Sub,
+		"Mul":         ruleLogicFunc.Mul,
+		"Div":         ruleLogicFunc.Div,
+		"Max":         ruleLogicFunc.Max,
+		"Min":         ruleLogicFunc.Min,
+		"CeilToDigit": ruleLogicFunc.CeilToDigit,
+		// 数组相关
+		"Has": ruleLogicFunc.Has,
+		"In":  ruleLogicFunc.In,
+		// 类型相关
+		"Is": ruleLogicFunc.Is,
+		"As": ruleLogicFunc.As,
+		// 逻辑判断
+		"If": ruleLogicFunc.If,
+		// 字符串相关
+		"Replace":  ruleLogicFunc.Replace,
+		"Split":    ruleLogicFunc.Split,
+		"Contains": ruleLogicFunc.Contains,
+		"JsonGet":  ruleLogicFunc.JsonGet,
 	}
 	return ruleLogic
 }

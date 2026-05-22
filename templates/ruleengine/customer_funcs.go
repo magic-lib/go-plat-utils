@@ -7,6 +7,7 @@ import (
 	"github.com/magic-lib/go-plat-utils/utils"
 	"github.com/samber/lo"
 	"github.com/shopspring/decimal"
+	"github.com/tidwall/gjson"
 	"reflect"
 	"strings"
 	"time"
@@ -199,6 +200,24 @@ func (r *customerFunc) Split(args ...any) (any, error) {
 	})
 	return utils.Split(conv.String(args[0]), splitArr), nil
 }
+func (r *customerFunc) Contains(args ...any) (any, error) {
+	if len(args) != 2 {
+		return false, fmt.Errorf("参数数量不对：%v", args)
+	}
+	return strings.Contains(conv.String(args[0]), conv.String(args[1])), nil
+}
+func (r *customerFunc) JsonGet(args ...any) (any, error) {
+	if len(args) != 2 {
+		return false, fmt.Errorf("参数数量不对：%v", args)
+	}
+	jsonStr := conv.String(args[0])
+	pathStr := conv.String(args[1])
+	gResult := gjson.Get(jsonStr, pathStr)
+	if !gResult.Exists() {
+		return "", nil
+	}
+	return gResult.Value(), nil
+}
 
 // If 三元运算符
 func (r *customerFunc) If(args ...any) (any, error) {
@@ -271,4 +290,57 @@ func (r *customerFunc) Min(args ...any) (any, error) {
 		return 0, fmt.Errorf("没有找到数字")
 	}
 	return currentNum, nil
+}
+
+// CeilToDigit 指定位数向上取整，默认是10进位
+func (r *customerFunc) CeilToDigit(args ...any) (any, error) {
+	var baseNum any = 10
+	var numDecimal any = 0
+	if len(args) == 0 {
+		return 0, fmt.Errorf("参数数量不对，需要2个参数：位数和数字")
+	} else if len(args) == 1 {
+		numDecimal = args[0]
+	} else if len(args) == 2 {
+		baseNum = args[0]
+		numDecimal = args[1]
+	}
+
+	// 获取基数参数（10, 100, 1000等）
+	base, err := conv.Convert[float64](baseNum)
+	if err != nil {
+		return 0, fmt.Errorf("基数参数转换失败：%v", baseNum)
+	}
+
+	// 验证基数是否为10的幂次方
+	if !isValidBase(base) {
+		return 0, fmt.Errorf("基数必须是10的幂次方（1, 10, 100, 1000...），当前值：%v", base)
+	}
+
+	// 获取数字参数
+	num, err := conv.Convert[float64](numDecimal)
+	if err != nil {
+		return 0, fmt.Errorf("数字参数转换失败：%v", numDecimal)
+	}
+
+	decimalBase := decimal.NewFromFloat(base)
+	decimalNum := decimal.NewFromFloat(num)
+
+	// 除以基数，向上取整，再乘以基数
+	result := decimalNum.Div(decimalBase).Ceil().Mul(decimalBase)
+
+	return result.InexactFloat64(), nil
+}
+
+// isValidBase 验证基数是否为10的幂次方（1, 10, 100, 1000...）
+func isValidBase(base float64) bool {
+	if base <= 0 {
+		return false
+	}
+	if base == 1 {
+		return true
+	}
+	for base >= 10 {
+		base = base / 10
+	}
+	return base == 1
 }
