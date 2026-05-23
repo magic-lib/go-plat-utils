@@ -61,6 +61,7 @@ func NewEngineLogic() *EngineLogic {
 		"Split":    ruleLogicFunc.Split,
 		"Contains": ruleLogicFunc.Contains,
 		"JsonGet":  ruleLogicFunc.JsonGet,
+		"Join":     ruleLogicFunc.Join,
 	}
 	return ruleLogic
 }

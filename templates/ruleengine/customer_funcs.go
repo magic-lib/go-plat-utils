@@ -219,6 +219,38 @@ func (r *customerFunc) JsonGet(args ...any) (any, error) {
 	return gResult.Value(), nil
 }
 
+// Join 连接字符串，第一个字符为连接符
+func (r *customerFunc) Join(args ...any) (any, error) {
+	sep := ""
+	var dataList []any
+	if len(args) == 0 {
+		return "", nil
+	} else if len(args) == 1 {
+		if list, ok := args[0].([]any); ok {
+			dataList = list
+		} else {
+			return conv.String(args[0]), nil
+		}
+	} else if len(args) == 2 {
+		sep = conv.String(args[0])
+		if list, ok := args[1].([]string); ok {
+			dataList = lo.Map(list, func(item string, index int) any {
+				return any(item)
+			})
+		} else {
+			dataList = args[1:]
+		}
+	} else {
+		sep = conv.String(args[0])
+		dataList = args[1:]
+	}
+	retStr := make([]string, 0)
+	lo.ForEach(dataList, func(item any, _ int) {
+		retStr = append(retStr, conv.String(item))
+	})
+	return strings.Join(retStr, sep), nil
+}
+
 // If 三元运算符
 func (r *customerFunc) If(args ...any) (any, error) {
 	if len(args) != 3 {

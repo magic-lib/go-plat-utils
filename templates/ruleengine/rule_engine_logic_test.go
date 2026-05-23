@@ -348,7 +348,7 @@ func TestCheckRuleList2(t *testing.T) {
 	return
 }
 func TestCeilToDigit(t *testing.T) {
-	condTypeCustomVarPattern := `CeilToDigit(149)`
+	condTypeCustomVarPattern := `CeilToDigit(149.67)+CeilToDigit(141.67)`
 	ruleLogic := ruleengine.NewEngineLogic()
 	customList, err := ruleLogic.RunString(condTypeCustomVarPattern, map[string]any{})
 	if err != nil {
@@ -374,6 +374,51 @@ func TestJsonGet(t *testing.T) {
 		"AAAAA": "{\"tag\":123}",
 	})
 	if err != nil {
+		return
+	}
+	fmt.Println(customList)
+	return
+}
+func TestJoin(t *testing.T) {
+	condTypeCustomVarPattern := `Join('#', 'tag', 'mmm')`
+	ruleLogic := ruleengine.NewEngineLogic()
+	customList, err := ruleLogic.RunString(condTypeCustomVarPattern, map[string]any{})
+	if err != nil {
+		return
+	}
+	fmt.Println(customList)
+
+	condTypeCustomVarPattern = `Join('#', 'tag')`
+	ruleLogic = ruleengine.NewEngineLogic()
+	customList, err = ruleLogic.RunString(condTypeCustomVarPattern, map[string]any{})
+	if err != nil {
+		return
+	}
+	fmt.Println(customList)
+
+	condTypeCustomVarPattern = `Join('#')`
+	ruleLogic = ruleengine.NewEngineLogic()
+	customList, err = ruleLogic.RunString(condTypeCustomVarPattern, map[string]any{})
+	if err != nil {
+		return
+	}
+	fmt.Println(customList)
+
+	condTypeCustomVarPattern = `Join()`
+	ruleLogic = ruleengine.NewEngineLogic()
+	customList, err = ruleLogic.RunString(condTypeCustomVarPattern, map[string]any{})
+	if err != nil {
+		return
+	}
+	fmt.Println(customList)
+
+	condTypeCustomVarPattern = `Join('|', kkk)`
+	ruleLogic = ruleengine.NewEngineLogic()
+	customList, err = ruleLogic.RunString(condTypeCustomVarPattern, map[string]any{
+		"kkk": []string{"mm", "nn", "kk"},
+	})
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
 	fmt.Println(customList)
