@@ -21,7 +21,7 @@ var (
 	baseInt         = 10
 	onceCache       = sync.Once{}
 	ctxCache        *gocache.Cache
-	localStorage    routine.ThreadLocal[string]
+	localStorage    = routine.NewInheritableThreadLocal[string]()
 )
 
 // getInitCache 初始化并获得缓存
@@ -29,9 +29,12 @@ func getInitCache() *gocache.Cache {
 	if ctxCache == nil {
 		onceCache.Do(func() {
 			ctxCache = gocache.New(expiration, cleanupInterval)
-			localStorage = routine.NewInheritableThreadLocal[string]()
 			localStorage.Set(getCurrentGoId()) //初始化
 		})
+	}
+	ctxKey := localStorage.Get()
+	if ctxKey == "" {
+		localStorage.Set(getCurrentGoId())
 	}
 	return ctxCache
 }
