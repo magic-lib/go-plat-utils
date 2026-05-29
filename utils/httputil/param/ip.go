@@ -35,9 +35,9 @@ func ClientIP(r *http.Request) string {
 	return host
 }
 
-// InstanceId 获取唯一实例Id，ip+pid
-func InstanceId() string {
-	return getLocalIP() + ":" + strconv.Itoa(os.Getpid())
+// MachineCode 获取机器的唯一实例Id，ip+pid
+func MachineCode() string {
+	return getLocalIP() + "/" + strconv.Itoa(os.Getpid())
 }
 
 // getLocalIP 获取本机IP:随便返回一个就行，多网卡模式(eth0/eth1)、容器化部署模式干扰因素都不需要考虑。

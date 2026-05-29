@@ -18,29 +18,35 @@ type (
 
 // LogCommData 不会改变的数据
 type LogCommData struct {
-	CreateTime time.Time      `json:"createTime"`       //第一条日志的创建时间
-	LogId      string         `json:"id"`               //logId
-	UserId     string         `json:"userid,omitempty"` //userID
-	Env        conf.EnvCode   `json:"env"`              //env
-	Path       string         `json:"path,omitempty"`   //当前请求的地址
-	Method     string         `json:"method,omitempty"` //当前请求的方法
-	Extend     map[string]any `json:"extend,omitempty"` //额外的业务参数
+	LogId      string       `json:"log_id"`            //logId
+	LogKey     string       `json:"log_key,omitempty"` //LogKey
+	Env        conf.EnvCode `json:"env"`               //env
+	Path       string       `json:"path,omitempty"`    //当前请求的地址
+	Method     string       `json:"method,omitempty"`  //当前请求的方法
+	LogTime    time.Time    `json:"log_time"`          //日志的日志时间
+	CreateTime time.Time    `json:"create_time"`       //第一条日志的创建时间
+	Extends    any          `json:"extends,omitempty"` //额外的业务参数
 }
 
 // LogData 每条单独日志的数据
 type LogData struct {
 	LogCommData
-	Now      time.Time `json:"now"` //初始化时间
-	FileName string    //文件名
-	Line     int       //行号
-	LogLevel LogLevel  `json:"logLevel"`
-	Message  []any     `json:"message"`
+	Ip           string    `json:"ip"`
+	Now          time.Time `json:"now"` //初始化时间
+	LogLevel     LogLevel  `json:"log_level"`
+	FileName     string    `json:"file_name"` //文件名
+	Line         int       `json:"line"`      //行号
+	Message      []any     `json:"message"`
+	CostDuration int64     `json:"cost_duration"`
 }
 
 // Init 初始化
 func (l *LogCommData) Init() {
 	if cond.IsTimeEmpty(l.CreateTime) {
 		l.CreateTime = time.Now()
+	}
+	if cond.IsTimeEmpty(l.LogTime) {
+		l.LogTime = time.Now()
 	}
 	if l.LogId == "" {
 		l.LogId = httputil.GetLogId()
@@ -55,11 +61,18 @@ func NewLogData(logCommData ...*LogCommData) *LogData {
 			l.LogCommData = *(logCommData[0])
 		}
 	}
-
-	logData := &l.LogCommData
-	logData.Init()
-
+	l.Init()
 	return l
+}
+
+func (l *LogData) Init() {
+	l.LogCommData.Init()
+	if l.CostDuration == 0 {
+		l.CostDuration = time.Now().Sub(l.LogTime).Milliseconds()
+	}
+	if l.Ip == "" {
+		l.Ip = param.MachineCode()
+	}
 }
 
 // AddMessage 将日志添加
@@ -115,17 +128,17 @@ func (l *LogData) String() string {
 		}
 	}
 
-	if len(l.Extend) > 0 {
-		logList = append(logList, fmt.Sprintf("[%s]", param.HttpBuildQuery(l.Extend)))
-	}
+	//if len(l.Extends) > 0 {
+	//	logList = append(logList, fmt.Sprintf("[%s]", param.HttpBuildQuery(l.Extends)))
+	//}
 
-	if len(l.UserId) > 0 {
-		logList = append(logList, fmt.Sprintf("[%s]", l.UserId))
+	if len(l.LogKey) > 0 {
+		logList = append(logList, fmt.Sprintf("[%s]", l.LogKey))
 	}
 
 	logList = append(logList, fmt.Sprintf("%s", utils.Join(l.Message, " ")))
 
-	minTime := l.Now.Sub(l.CreateTime).Milliseconds()
+	minTime := l.Now.Sub(l.LogTime).Milliseconds()
 	if minTime > 0 {
 		logList = append(logList, fmt.Sprintf("[%dms]", minTime))
 	}
