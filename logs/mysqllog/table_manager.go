@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/samber/lo"
+	"strings"
 	"sync"
 	"time"
 
@@ -264,6 +265,20 @@ func (tm *tableManager) buildInsertArgs(logData *logs.LogData) []any {
 		if msgList, ok := msgObj.([]any); ok {
 			if len(msgList) == 1 {
 				allLogMap["message"] = msgList[0]
+			} else {
+				hasStr := false
+				lo.ForEachWhile(msgList, func(item any, _ int) bool {
+					if _, ok := item.(string); ok {
+						hasStr = true
+						return false
+					}
+					return true
+				})
+				if hasStr {
+					allLogMap["message"] = strings.Join(lo.Map(msgList, func(item any, _ int) string {
+						return conv.String(item)
+					}), "")
+				}
 			}
 		}
 	}

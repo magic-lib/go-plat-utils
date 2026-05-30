@@ -6,7 +6,6 @@ import (
 	"github.com/magic-lib/go-plat-utils/cond"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/goroutines"
-	"github.com/samber/lo"
 	"sync"
 	"time"
 
@@ -175,6 +174,7 @@ func (ml *mysqlLogger) log(level logs.LogLevel, msg ...any) {
 	var logData *logs.LogData
 
 	// 如果传入的是 *logs.LogData 类型，直接使用
+	isMultiLog := false
 	if len(msg) == 1 {
 		if cond.IsNil(msg[0]) {
 			return
@@ -196,11 +196,8 @@ func (ml *mysqlLogger) log(level logs.LogLevel, msg ...any) {
 			logData.Message = []any{msg[0]}
 		}
 	} else {
-		// 多条转化为单条发送
-		lo.ForEach(msg, func(item any, _ int) {
-			ml.log(level, item)
-		})
-		return
+		isMultiLog = true
+		logData = logs.NewLogData(nil)
 	}
 
 	if logData != nil {
@@ -212,6 +209,9 @@ func (ml *mysqlLogger) log(level logs.LogLevel, msg ...any) {
 		}
 		if logData.LogTime.IsZero() {
 			logData.LogTime = time.Now()
+		}
+		if isMultiLog {
+			logData.Message = msg
 		}
 	}
 

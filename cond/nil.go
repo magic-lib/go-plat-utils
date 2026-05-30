@@ -119,3 +119,19 @@ func IsPointer(val any) bool {
 	// 获取值的类型并判断其Kind是否为指针
 	return reflect.TypeOf(val).Kind() == reflect.Ptr
 }
+
+func IsError(val any) bool {
+	_, ok := val.(error)
+	if !ok {
+		return false
+	}
+
+	value := reflect.ValueOf(val)
+	typ := value.Type()
+	if typ.Kind() == reflect.Interface &&
+		typ.NumMethod() == 1 &&
+		typ.Method(0).Name == "Error" {
+		return true
+	}
+	return false
+}

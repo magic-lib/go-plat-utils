@@ -23,6 +23,9 @@ func String(src any) string {
 	if src == nil {
 		return ""
 	}
+	if cond.IsError(src) {
+		return src.(error).Error()
+	}
 
 	var retStr string
 	var ok bool
