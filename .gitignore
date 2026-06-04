@@ -30,3 +30,4 @@ git
 .DS_Store
 .vscode
 .fleet
+.codebuddy
