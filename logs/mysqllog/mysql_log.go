@@ -6,6 +6,7 @@ import (
 	"github.com/magic-lib/go-plat-utils/cond"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/goroutines"
+	"github.com/samber/lo"
 	"sync"
 	"time"
 
@@ -165,54 +166,132 @@ func (ml *mysqlLogger) addToBatch(logData *logs.LogData) {
 	}
 }
 
-// log 统一日志写入入口
-func (ml *mysqlLogger) log(level logs.LogLevel, msg ...any) {
+// buildLogData 从消息参数构建 LogData 对象
+func (ml *mysqlLogger) buildLogData(level logs.LogLevel, msg ...any) *logs.LogData {
 	if len(msg) == 0 {
-		return
+		return nil
 	}
 
 	var logData *logs.LogData
 
-	// 如果传入的是 *logs.LogData 类型，直接使用
-	isMultiLog := false
+	// 单参数处理
 	if len(msg) == 1 {
-		if cond.IsNil(msg[0]) {
-			return
-		}
-		if data, ok := msg[0].(*logs.LogData); ok && data != nil {
-			logData = data
-		}
-		if data, ok := msg[0].(logs.LogData); ok {
-			logData = &data
-		}
-		if logData == nil {
-			logData = logs.NewLogData(nil)
-			if cond.IsJsonMap(conv.String(msg[0])) {
-				_ = conv.Unmarshal(msg[0], logData)
-				extends := make(map[string]any)
-				_ = conv.Unmarshal(msg[0], &extends)
-				logData.Extends = extends
-			}
-			logData.Message = []any{msg[0]}
-		}
+		logData = ml.parseSingleMessage(msg[0])
 	} else {
-		isMultiLog = true
-		logData = logs.NewLogData(nil)
+		logData = ml.parseMultipleMessages(msg)
 	}
 
+	// 设置默认值
 	if logData != nil {
-		if logData.LogLevel == 0 {
-			logData.LogLevel = level
+		ml.setLogDataDefaults(logData, level)
+	}
+
+	return logData
+}
+
+// parseSingleMessage 解析单个消息参数
+func (ml *mysqlLogger) parseSingleMessage(msg any) *logs.LogData {
+	if cond.IsNil(msg) {
+		return nil
+	}
+
+	// 直接是 LogData 类型
+	if data, ok := msg.(*logs.LogData); ok && data != nil {
+		return ml.ensureLogDataFields(data)
+	}
+	// LogData 值类型
+	if data, ok := msg.(logs.LogData); ok {
+		return ml.ensureLogDataFields(&data)
+	}
+
+	// 其他类型，尝试解析
+	logData := logs.NewLogData(nil)
+	if cond.IsJsonMap(conv.String(msg)) {
+		_ = conv.Unmarshal(msg, logData)
+		extends := make(map[string]any)
+		_ = conv.Unmarshal(msg, &extends)
+		logData.Extends = extends
+	} else {
+		logData.Message = []any{msg}
+	}
+
+	return logData
+}
+
+// parseMultipleMessages 解析多个消息参数
+func (ml *mysqlLogger) parseMultipleMessages(msg []any) *logs.LogData {
+	allMap := make(map[string]any)
+	textMsg := make([]any, 0)
+
+	for _, v := range msg {
+		// 尝试作为 JSON map 解析
+		if cond.IsJsonMap(conv.String(v)) {
+			tempMap := make(map[string]any)
+			_ = conv.Unmarshal(v, &tempMap)
+			if len(tempMap) > 0 {
+				allMap = lo.Assign(allMap, tempMap)
+			}
+		} else {
+			textMsg = append(textMsg, v)
 		}
-		if logData.Now.IsZero() {
-			logData.Now = time.Now()
-		}
-		if logData.LogTime.IsZero() {
-			logData.LogTime = time.Now()
-		}
-		if isMultiLog {
-			logData.Message = msg
-		}
+	}
+	if len(allMap) == 0 && len(textMsg) == 0 {
+		return nil
+	}
+
+	logData := logs.NewLogData(nil)
+
+	if len(allMap) > 0 {
+		_ = conv.Unmarshal(allMap, logData)
+		logData.Extends = allMap
+	}
+
+	if len(textMsg) > 0 {
+		logData.Message = textMsg
+	}
+
+	return logData
+}
+
+// ensureLogDataFields 确保 LogData 包含必要的字段
+func (ml *mysqlLogger) ensureLogDataFields(logData *logs.LogData) *logs.LogData {
+	if logData == nil {
+		return nil
+	}
+
+	// 确保 Message 字段已初始化
+	if logData.Message == nil {
+		logData.Message = []any{}
+	}
+
+	return logData
+}
+
+// setLogDataDefaults 设置 LogData 的默认值
+func (ml *mysqlLogger) setLogDataDefaults(logData *logs.LogData, level logs.LogLevel) {
+	if logData == nil {
+		return
+	}
+	// 设置日志级别
+	if logData.LogLevel == 0 {
+		logData.LogLevel = level
+	}
+	now := time.Now()
+	// 设置 Now 时间
+	if logData.Now.IsZero() {
+		logData.Now = now
+	}
+	// 设置 LogTime
+	if logData.LogTime.IsZero() {
+		logData.LogTime = now
+	}
+}
+
+// log 统一日志写入入口
+func (ml *mysqlLogger) log(level logs.LogLevel, msg ...any) {
+	logData := ml.buildLogData(level, msg...)
+	if logData == nil {
+		return
 	}
 
 	// 批量模式
