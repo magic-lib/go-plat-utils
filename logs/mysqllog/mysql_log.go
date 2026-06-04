@@ -26,6 +26,10 @@ type mysqlLogger struct {
 	cancel      context.CancelFunc
 }
 
+var (
+	mysqlLoggerTemp logs.ILogger
+)
+
 // New 创建一个新的 MySQL 日志记录器
 //
 // 使用示例:
@@ -78,7 +82,19 @@ func New(cfg *Config) (logs.ILogger, error) {
 		})
 	}
 
+	if mysqlLoggerTemp == nil {
+		mysqlLoggerTemp = ml
+	}
+
 	return ml, nil
+}
+
+// DefaultLogger 获取mysql默认的日志
+func DefaultLogger() logs.ILogger {
+	if mysqlLoggerTemp == nil {
+		panic("mysqlLogger is nil, please init first")
+	}
+	return mysqlLoggerTemp
 }
 
 // writeLog 写入单条日志到数据库
