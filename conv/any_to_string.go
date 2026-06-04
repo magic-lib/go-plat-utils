@@ -9,6 +9,8 @@ import (
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
 	"github.com/viant/toolbox"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"reflect"
 	"regexp"
@@ -25,6 +27,13 @@ func String(src any) string {
 	}
 	if cond.IsError(src) {
 		return src.(error).Error()
+	}
+
+	if pb, ok := src.(proto.Message); ok {
+		b, err := protojson.Marshal(pb)
+		if err == nil {
+			return string(b)
+		}
 	}
 
 	var retStr string

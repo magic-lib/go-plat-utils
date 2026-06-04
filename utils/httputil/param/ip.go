@@ -1,7 +1,9 @@
 package param
 
 import (
+	"context"
 	"fmt"
+	"google.golang.org/grpc/peer"
 	"net"
 	"net/http"
 	"os"
@@ -33,6 +35,14 @@ func IPv4() (net.IP, error) {
 func ClientIP(r *http.Request) string {
 	host, _, _ := net.SplitHostPort(r.RemoteAddr)
 	return host
+}
+
+// GrpcClientIP 得到客户端IP地址
+func GrpcClientIP(ctx context.Context) string {
+	if p, ok := peer.FromContext(ctx); ok {
+		return p.Addr.String()
+	}
+	return ""
 }
 
 // MachineCode 获取机器的唯一实例Id，ip+pid

@@ -112,6 +112,9 @@ func getMapFromHeaderCookieQuery(l Location, r *http.Request, querySplit string,
 }
 func getMapFromBody(r *http.Request, defaultBodyKeyName string, valueToString bool, querySplit string) (map[string]any, any, error) {
 	allRetParamMap, bodyDataStr, err := getMapFromBodyForm(r, defaultBodyKeyName)
+	if bodyDataStr == "" {
+		return allRetParamMap, bodyDataStr, err
+	}
 
 	if json.Valid([]byte(bodyDataStr)) {
 		allRetParamMap1, paasParamMap, err1 := getMapFromBodyJsonString(bodyDataStr, valueToString)
@@ -204,6 +207,7 @@ func getMapFromBodyForm(r *http.Request, defaultBodyKeyName string) (map[string]
 
 	var bodyDataStr string
 	var err error
+	var isMultiFile bool
 	bodyDataStr, err = getParamFromBody(r)
 	if bodyDataStr == "" {
 		//如果返回为空，则可能是因为header中没有添加 Content-Type: application/json，造成获取不到的情况
@@ -222,6 +226,21 @@ func getMapFromBodyForm(r *http.Request, defaultBodyKeyName string) (map[string]
 				}
 			}
 		}
+	} else {
+		//可能是文件格式
+		bodyByte, err := getParamByteFromBody(r)
+		if err == nil {
+			multiData, err := parseMultipartForm(r.Header, bodyByte)
+			if err == nil {
+				isMultiFile = true
+				for key, one := range multiData.Fields {
+					bodyForm[key] = one
+				}
+				for key, one := range multiData.Files {
+					bodyForm[key] = one
+				}
+			}
+		}
 	}
 
 	allRetParamMap := make(map[string]any)
@@ -231,8 +250,12 @@ func getMapFromBodyForm(r *http.Request, defaultBodyKeyName string) (map[string]
 		}
 	}
 
-	if defaultBodyKeyName != "" {
-		allRetParamMap[defaultBodyKeyName] = bodyDataStr
+	if !isMultiFile { // 如果是文件，太大就不进行设置了
+		if defaultBodyKeyName != "" {
+			allRetParamMap[defaultBodyKeyName] = bodyDataStr
+		}
+	} else {
+		bodyDataStr = ""
 	}
 
 	return allRetParamMap, bodyDataStr, err
