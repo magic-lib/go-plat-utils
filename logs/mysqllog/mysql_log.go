@@ -97,6 +97,59 @@ func DefaultLogger() logs.ILogger {
 	return mysqlLoggerTemp
 }
 
+// batchFlushLoop 批量刷新协程
+func (ml *mysqlLogger) batchFlushLoop() {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ml.ctx.Done():
+			ml.flushBatch()
+			return
+		case <-ml.flushCh:
+			ml.flushBatch()
+		case <-ticker.C:
+			ml.flushBatch()
+		}
+	}
+}
+
+// flushBatch 刷新批量缓冲区，按 SubBatchSize 分组进行多行批量插入
+func (ml *mysqlLogger) flushBatch() {
+	ml.batchMu.Lock()
+	if len(ml.batchBuffer) == 0 {
+		ml.batchMu.Unlock()
+		return
+	}
+	batch := ml.batchBuffer
+	ml.batchBuffer = make([]*logs.LogData, 0, ml.cfg.BatchSize)
+	ml.batchMu.Unlock()
+
+	subSize := ml.cfg.SubBatchSize
+	if subSize <= 1 {
+		// 逐条插入
+		for _, logData := range batch {
+			if err := ml.writeLog(logData); err != nil {
+				logs.DefaultLogger().Warn("mysqllog: batch write log failed: ", err.Error())
+			}
+		}
+		return
+	}
+
+	// 按 subSize 拆分为子批次，每个子批次用一条多行 INSERT 写入
+	for i := 0; i < len(batch); i += subSize {
+		end := i + subSize
+		if end > len(batch) {
+			end = len(batch)
+		}
+		subBatch := batch[i:end]
+		if err := ml.writeLogBatch(subBatch); err != nil {
+			logs.DefaultLogger().Warn("mysqllog: batch write log failed: ", err.Error())
+		}
+	}
+}
+
 // writeLog 写入单条日志到数据库
 func (ml *mysqlLogger) writeLog(logData *logs.LogData) error {
 	if logData == nil {
@@ -131,40 +184,37 @@ func (ml *mysqlLogger) writeLog(logData *logs.LogData) error {
 	return fmt.Errorf("mysqllog: write log failed after %d retries: %w", maxRetry, lastErr)
 }
 
-// batchFlushLoop 批量刷新协程
-func (ml *mysqlLogger) batchFlushLoop() {
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
+// writeLogBatch 批量写入多条日志（单条 INSERT 多行 VALUES）
+func (ml *mysqlLogger) writeLogBatch(batch []*logs.LogData) error {
+	if len(batch) == 0 {
+		return nil
+	}
 
-	for {
-		select {
-		case <-ml.ctx.Done():
-			ml.flushBatch()
-			return
-		case <-ml.flushCh:
-			ml.flushBatch()
-		case <-ticker.C:
-			ml.flushBatch()
+	// 确保表存在
+	if err := ml.tm.ensureTodayTable(); err != nil {
+		return fmt.Errorf("ensure table: %w", err)
+	}
+
+	sqlStr := ml.tm.getBatchInsertSQL(len(batch))
+	args := ml.tm.buildBatchInsertArgs(batch)
+	if args == nil || sqlStr == "" {
+		return nil
+	}
+
+	var lastErr error
+	maxRetry := ml.cfg.MaxRetry + 1
+	for attempt := 0; attempt < maxRetry; attempt++ {
+		if attempt > 0 {
+			time.Sleep(time.Duration(attempt) * 50 * time.Millisecond)
 		}
-	}
-}
-
-// flushBatch 刷新批量缓冲区
-func (ml *mysqlLogger) flushBatch() {
-	ml.batchMu.Lock()
-	if len(ml.batchBuffer) == 0 {
-		ml.batchMu.Unlock()
-		return
-	}
-	batch := ml.batchBuffer
-	ml.batchBuffer = make([]*logs.LogData, 0, ml.cfg.BatchSize)
-	ml.batchMu.Unlock()
-
-	for _, logData := range batch {
-		if err := ml.writeLog(logData); err != nil {
-			logs.DefaultLogger().Warn("mysqllog: batch write log failed: ", err.Error())
+		_, err := ml.cfg.DB.ExecContext(ml.ctx, sqlStr, args...)
+		if err == nil {
+			return nil
 		}
+		lastErr = err
 	}
+
+	return fmt.Errorf("mysqllog: batch write log failed after %d retries: %w", maxRetry, lastErr)
 }
 
 // addToBatch 添加到批量缓冲区
@@ -278,7 +328,7 @@ func (ml *mysqlLogger) parseMultipleMessages(msg []any) *logs.LogData {
 	if len(textMsg) > 0 {
 		if len(logData.Message) > 0 {
 			logData.Message = append(logData.Message, textMsg...)
-		}else{
+		} else {
 			logData.Message = textMsg
 		}
 	}

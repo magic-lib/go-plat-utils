@@ -47,6 +47,10 @@ type Config struct {
 
 	// BatchSize 批量写入大小，默认1（逐条写入）
 	BatchSize int
+
+	// SubBatchSize 子批次插入大小，flushBatch 时按此大小拆分为多条 INSERT，每条包含多行数据。
+	// 默认5，设为1表示逐条插入（不合并多行），设为0使用默认值5。
+	SubBatchSize int
 }
 
 // DefaultConfig 返回默认配置
@@ -60,6 +64,7 @@ func DefaultConfig() *Config {
 		LogLevel:       logs.INFO, // INFO级别
 		MaxRetry:       0,
 		BatchSize:      1,
+		SubBatchSize:   5,
 	}
 }
 
@@ -86,6 +91,9 @@ func (c *Config) Validate() error {
 	}
 	if c.LogLevel <= 0 {
 		c.LogLevel = newConfig.LogLevel
+	}
+	if c.SubBatchSize <= 0 {
+		c.SubBatchSize = newConfig.SubBatchSize
 	}
 	return nil
 }
@@ -199,4 +207,21 @@ func (c *Config) getInsertSQLByFields(tableName string, fields []string) (string
 		tableName,
 		strings.Join(fields, ", "),
 		strings.Join(placeholders, ", ")), nil
+}
+
+// buildBatchInsertSQL 构建批量插入SQL，支持一次插入多行数据
+// 生成格式: INSERT INTO `table` (col1, col2) VALUES (?, ?), (?, ?), (?, ?)
+func (c *Config) buildBatchInsertSQL(tableName string, fields []string, rowCount int) string {
+	if len(fields) == 0 || rowCount <= 0 {
+		return ""
+	}
+	oneRow := "(" + strings.Repeat("?, ", len(fields)-1) + "?)"
+	rows := make([]string, rowCount)
+	for i := range rows {
+		rows[i] = oneRow
+	}
+	return fmt.Sprintf("INSERT INTO `%s` (%s) VALUES %s",
+		tableName,
+		strings.Join(fields, ", "),
+		strings.Join(rows, ", "))
 }

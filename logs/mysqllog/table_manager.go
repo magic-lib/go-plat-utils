@@ -222,11 +222,33 @@ func (tm *tableManager) Stop() {
 // getInsertSQL 获取带表名的插入SQL
 func (tm *tableManager) getInsertSQL() string {
 	tableName := tm.cfg.getTableName(time.Now())
-	if tableFields, ok := tm.createdTables[tableName]; ok {
-		return tm.cfg.buildInsertSQLByFields(tableName, tableFields)
+	fields := tm.getTableFieldsForInsert()
+	if len(fields) > 0 {
+		return tm.cfg.buildInsertSQLByFields(tableName, fields)
 	}
-
 	return tm.cfg.buildInsertSQL(tableName)
+}
+
+// getBatchInsertSQL 获取批量插入SQL，rowCount 为一次插入的行数
+func (tm *tableManager) getBatchInsertSQL(rowCount int) string {
+	tableName := tm.cfg.getTableName(time.Now())
+	fields := tm.getTableFieldsForInsert()
+	if len(fields) == 0 {
+		fields = tm.cfg.getTableFieldList()
+	}
+	return tm.cfg.buildBatchInsertSQL(tableName, fields, rowCount)
+}
+
+// getTableFieldsForInsert 获取当前表的字段列表（优先使用真实表字段）
+func (tm *tableManager) getTableFieldsForInsert() []string {
+	tableName := tm.cfg.getTableName(time.Now())
+	tm.mu.RLock()
+	fields, ok := tm.createdTables[tableName]
+	tm.mu.RUnlock()
+	if ok {
+		return fields
+	}
+	return nil
 }
 
 func (tm *tableManager) getTableExtendFieldList() []string {
@@ -242,6 +264,24 @@ func (tm *tableManager) getTableExtendFieldList() []string {
 	basicFields := tm.cfg.getTableBasicFieldList()
 	extendFieldList, _ := lo.Difference(allFields, basicFields)
 	return extendFieldList
+}
+
+// buildBatchInsertArgs 构建批量插入参数，将多条日志的参数展平为一个切片
+func (tm *tableManager) buildBatchInsertArgs(batch []*logs.LogData) []any {
+	if len(batch) == 0 {
+		return nil
+	}
+	args := make([]any, 0)
+	for _, logData := range batch {
+		if logData == nil {
+			continue
+		}
+		rowArgs := tm.buildInsertArgs(logData)
+		if rowArgs != nil {
+			args = append(args, rowArgs...)
+		}
+	}
+	return args
 }
 
 // buildInsertArgs 构建插入参数
