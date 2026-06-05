@@ -99,7 +99,7 @@ func DefaultLogger() logs.ILogger {
 
 // batchFlushLoop 批量刷新协程
 func (ml *mysqlLogger) batchFlushLoop() {
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
 	for {
