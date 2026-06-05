@@ -161,7 +161,7 @@ func (c *getNewService) GetByDstAll(srcInterface any, dstType reflect.Type) (new
 
 	var newDstList reflect.Value
 	var found bool
-
+	logDebug("GetByDstAll param 163:", dstType.Kind().String())
 	if dstType.Kind() == reflect.Slice {
 		found = true
 		newDstList, err = c.getByDstSlice(srcInterface, dstType)
@@ -205,7 +205,9 @@ func (c *getNewService) GetByDstAll(srcInterface any, dstType reflect.Type) (new
 	}
 
 	//未找到的情况用默认的方法
+	logDebug("getByDstOther 207:", dstType.String(), String(srcInterface))
 	newDstList2, err2 := c.getByDstOther(srcInterface, dstType)
+	logDebug("getByDstOther 209:", newDstList2, err2)
 	if err2 == nil && newDstList2.IsValid() {
 		return newDstList2, nil
 	}
@@ -293,7 +295,7 @@ func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (new
 	defer func() {
 		errTemp := recover()
 		if !cond.IsNil(errTemp) {
-			log.Println("Unmarshal error:", errTemp)
+			log.Print("Unmarshal error:", errTemp)
 			err = fmt.Errorf(errStrRecover2, errTemp)
 		}
 	}()
@@ -315,10 +317,17 @@ func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (new
 		logDebug("getByDstStruct Type:", dstColumnField.Name, dstColumnField.Type.Name())
 		if dstColumnField.Name == dstColumnField.Type.Name() {
 			newDataValue, errTemp := c.GetByDstAll(srcStruct, dstColumnField.Type)
+			logDebug("GetByDstAll end 319:", errTemp, newDataValue)
+			if errTemp != nil {
+				logDebug("GetByDstAll end 320:")
+				continue
+			}
+			logDebug("GetByDstAll end 324:")
 
-			logDebug("getByDstStruct:", dstColumnField.Name, dstColumnField.Type.String(), newDataValue.Interface())
+			logDebug("getByDstStruct1:", dstColumnField.Name, dstColumnField.Type.String())
+			logDebug("getByDstStruct2:", newDataValue.Interface())
 
-			if errTemp == nil && newDataValue.IsValid() {
+			if newDataValue.IsValid() {
 				logDebug("getByDstStruct 312:", dstColumnValue.Type().String(), newDataValue.Interface())
 				if dstColumnValue.CanSet() {
 					dstColumnValue.Set(newDataValue)
@@ -350,6 +359,8 @@ func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (new
 			//源数据为nil，则不用设置
 			continue
 		}
+
+		logDebug("getByDstStruct 353")
 
 		newDataValue, errTemp := c.GetByDstAll(valueTemp, dstColumnField.Type)
 		if errTemp == nil && newDataValue.IsValid() {
@@ -442,6 +453,9 @@ func (c *getNewService) getByDstOther(srcOther any, dstType reflect.Type) (newDs
 			}
 		}
 	}
+
+	logDebug("getByDstOther 448:", hasSet)
+
 	if !hasSet {
 		if srcValue.CanConvert(dstType) {
 			newV := srcValue.Convert(dstType)
@@ -452,6 +466,9 @@ func (c *getNewService) getByDstOther(srcOther any, dstType reflect.Type) (newDs
 				hasSet = true
 			}
 		}
+
+		logDebug("getByDstOther 461:", hasSet)
+
 		if !hasSet {
 			//自定义转换
 			newDst, err := c.getByDstDefault(srcOther, dstType)
@@ -469,12 +486,16 @@ func (c *getNewService) getByDstOther(srcOther any, dstType reflect.Type) (newDs
 			}
 		}
 	}
+
+	logDebug("getByDstOther 481:", hasSet)
 	if hasSet {
 		return newPtr.Elem(), err
 	}
+	logDebug("getByDstOther 485:", hasSet)
 	if err == nil {
 		err = fmt.Errorf(errStrGetByDstOther, "no set")
 	}
+	logDebug("getByDstOther 489:", hasSet)
 	return reflect.Value{}, err
 }
 

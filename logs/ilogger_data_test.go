@@ -3,6 +3,7 @@ package logs_test
 import (
 	"context"
 	"fmt"
+	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/goroutines"
 	"github.com/magic-lib/go-plat-utils/logs"
 	"testing"
@@ -13,13 +14,13 @@ func TestLoggerData(t *testing.T) {
 	logData := logs.NewLogData(&logs.LogCommData{
 		CreateTime: time.Now(),
 		LogId:      "logid12345",
-		UserId:     "userid44444",
-		Env:        "dev",
-		Path:       "/name/pri",
-		Method:     "get",
-		Extend: map[string]any{
-			"service": "dnf",
-		},
+		//UserId:     "userid44444",
+		Env:    "dev",
+		Path:   "/name/pri",
+		Method: "get",
+		//Extend: map[string]any{
+		//	"service": "dnf",
+		//},
 	})
 
 	time.Sleep(5 * time.Millisecond)
@@ -35,13 +36,13 @@ func TestPrintLogger(t *testing.T) {
 	prtLogger := logs.NewPrintLogger(logs.DEBUG, &logs.LogCommData{
 		CreateTime: time.Now(),
 		LogId:      "",
-		UserId:     "userid44444",
-		Env:        "dev",
-		Path:       "/name/pri",
-		Method:     "get",
-		Extend: map[string]any{
-			"service": "dnf",
-		},
+		//UserId:     "userid44444",
+		Env:    "dev",
+		Path:   "/name/pri",
+		Method: "get",
+		//Extend: map[string]any{
+		//	"service": "dnf",
+		//},
 	})
 
 	time.Sleep(5 * time.Millisecond)
@@ -106,5 +107,47 @@ func TestGuessNumber(t *testing.T) {
 			fmt.Println("ok:", i)
 		}
 	}
+
+}
+
+type TrafficLog struct {
+	LogId           int64     `db:"log_id" json:"log_id"`
+	LogType         string    `db:"log_type" json:"log_type"`                 // 日志类型
+	RequestId       string    `db:"request_id" json:"request_id"`             // 请求唯一标识
+	UserId          int64     `db:"user_id" json:"user_id"`                   // 关联user表id
+	AccountId       int64     `db:"account_id" json:"account_id"`             // 关联account表id
+	Nid             string    `db:"nid" json:"nid"`                           // 客户Nrc
+	Mobile          string    `db:"mobile" json:"mobile"`                     // 客户端mobile
+	Ip              string    `db:"ip" json:"ip"`                             // 客户端IP地址
+	Method          string    `db:"method" json:"method"`                     // HTTP方法(GET/POST/PUT/DELETE等)
+	Url             string    `db:"url" json:"url"`                           // 请求URL
+	Path            string    `db:"path" json:"path"`                         // 请求路径
+	StatusCode      int       `db:"status_code" json:"status_code"`           // HTTP状态码
+	ResponseTime    int       `db:"response_time" json:"response_time"`       // 响应时间(毫秒)
+	RequestSize     int       `db:"request_size" json:"request_size"`         // 请求大小(字节)
+	ResponseSize    int       `db:"response_size" json:"response_size"`       // 响应大小(字节)
+	UserAgent       string    `db:"user_agent" json:"user_agent"`             // 用户代理
+	Referer         string    `db:"referer" json:"referer"`                   // 来源页面
+	RequestHeaders  string    `db:"request_headers" json:"request_headers"`   // 请求头信息(JSON格式)
+	ResponseHeaders string    `db:"response_headers" json:"response_headers"` // 响应头信息(JSON格式)
+	RequestBody     string    `db:"request_body" json:"request_body"`         // 请求体内容
+	ResponseBody    string    `db:"response_body" json:"response_body"`       // 响应体内容
+	ErrorMessage    string    `db:"error_message" json:"error_message"`       // 错误信息
+	Extra1          string    `db:"extra1" json:"extra1"`                     // 扩展1
+	Extra2          string    `db:"extra2" json:"extra2"`                     // 扩展2
+	Extra3          string    `db:"extra3" json:"extra3"`                     // 扩展3
+	CreateTime      time.Time `db:"create_time" json:"create_time"`           // 创建时间
+	UpdateTime      time.Time `db:"update_time" json:"update_time"`           // 更新时间
+}
+
+func TestAAAA(t *testing.T) {
+	msg := new(TrafficLog)
+	msg.CreateTime = time.Now()
+	logData := new(logs.LogData)
+
+	//conv.OpenUnmarshalLog()
+	_ = conv.Unmarshal(msg, logData)
+
+	fmt.Println(conv.String(logData))
 
 }
