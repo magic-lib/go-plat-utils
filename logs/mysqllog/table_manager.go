@@ -255,11 +255,20 @@ func (tm *tableManager) buildInsertArgs(logData *logs.LogData) []any {
 	extendFields := tm.getTableExtendFieldList()
 
 	allLogMap := make(map[string]any)
-	_ = conv.Unmarshal(logData, &allLogMap)
 	extendMap := make(map[string]any)
 	_ = conv.Unmarshal(logData.Extends, &extendMap)
 	if len(extendMap) > 0 {
 		allLogMap = lo.Assign(allLogMap, extendMap)
+	}
+	logDataMap := make(map[string]any)
+	_ = conv.Unmarshal(logData, &logDataMap)
+	if len(logDataMap) > 0 {
+		allLogMap = lo.Assign(allLogMap, logDataMap)
+	}
+	commDataMap := make(map[string]any)
+	_ = conv.Unmarshal(logData.LogCommData, &commDataMap)
+	if len(commDataMap) > 0 {
+		allLogMap = lo.Assign(allLogMap, commDataMap)
 	}
 	if msgObj, ok := allLogMap["message"]; ok {
 		if msgList, ok := msgObj.([]any); ok {

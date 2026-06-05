@@ -259,11 +259,28 @@ func (ml *mysqlLogger) parseMultipleMessages(msg []any) *logs.LogData {
 
 	if len(allMap) > 0 {
 		_ = conv.Unmarshal(allMap, logData)
+		// allMap 需要去掉包含的所有logData包含的所有字段
+		// 获取 LogData 结构体的所有字段名，用于从 allMap 中排除
+		logDataMap := make(map[string]any)
+		_ = conv.Unmarshal(logData, &logDataMap)
+		if len(logDataMap) > 0 {
+			for k, field := range logDataMap {
+				if oneData, ok := allMap[k]; ok {
+					if oneData == field {
+						delete(allMap, k)
+					}
+				}
+			}
+		}
 		logData.Extends = allMap
 	}
 
 	if len(textMsg) > 0 {
-		logData.Message = textMsg
+		if len(logData.Message) > 0 {
+			logData.Message = append(logData.Message, textMsg...)
+		}else{
+			logData.Message = textMsg
+		}
 	}
 
 	return logData
