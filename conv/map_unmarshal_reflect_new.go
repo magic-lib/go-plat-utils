@@ -201,6 +201,7 @@ func (c *getNewService) GetByDstAll(srcInterface any, dstType reflect.Type) (new
 		if err2 == nil && newDstList2.IsValid() {
 			return newDstList2, nil
 		}
+		logDebug("GetByDstAll 204:", err)
 		return newDstList, err
 	}
 
@@ -495,7 +496,7 @@ func (c *getNewService) getByDstOther(srcOther any, dstType reflect.Type) (newDs
 	if err == nil {
 		err = fmt.Errorf(errStrGetByDstOther, "no set")
 	}
-	logDebug("getByDstOther 489:", hasSet)
+	logDebug("getByDstOther 489:", hasSet, err)
 	return reflect.Value{}, err
 }
 

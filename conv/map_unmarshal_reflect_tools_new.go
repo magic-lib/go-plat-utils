@@ -335,12 +335,15 @@ func (c *toolsService) getNewSrcAndDst(srcStruct any, dstPoint any) (
 	return newSrcStruct, newDstPoint
 }
 func (c *toolsService) UnmarshalDataFromJson(srcStruct any, dstPoint any) error {
-	logDebug("UnmarshalDataFromJson param:", String(srcStruct), reflect.TypeOf(srcStruct).String())
+	if String(srcStruct) == "{}" || String(srcStruct) == "[]" {
+		return nil
+	}
+	logDebug("UnmarshalDataFromJson param 338:", String(srcStruct), reflect.TypeOf(srcStruct).String())
 	srcType := reflect.TypeOf(srcStruct)
 	if srcType.Kind() == reflect.String || cond.IsBytes(srcStruct) {
 		errJson := jsoniterForNil.UnmarshalFromString(String(srcStruct), dstPoint)
 		if errJson != nil {
-			logDebug("UnmarshalDataFromJson err2:", String(srcStruct), errJson.Error())
+			logDebug("UnmarshalDataFromJson err2 343:", String(srcStruct), errJson.Error())
 			//"github.com/bytedance/sonic"
 			//return sonic.UnmarshalString(string(b), dstPoint)
 			return errJson
@@ -355,7 +358,7 @@ func (c *toolsService) UnmarshalDataFromJson(srcStruct any, dstPoint any) error 
 	}
 	errJson := jsoniterForNil.Unmarshal(b, dstPoint)
 	if errJson != nil {
-		logDebug("UnmarshalDataFromJson err2:", String(srcStruct), errJson.Error())
+		logDebug("UnmarshalDataFromJson err2 358:", String(srcStruct), errJson.Error())
 		//"github.com/bytedance/sonic"
 		//return sonic.UnmarshalString(string(b), dstPoint)
 		return errJson

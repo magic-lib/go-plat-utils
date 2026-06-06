@@ -144,17 +144,19 @@ func getMapFromBodyJsonString(bodyDataStr string, valueToString bool) (map[strin
 	allRetParamMap := make(map[string]any)
 	paasParamMap := make(map[string]any)
 	err := conv.Unmarshal(bodyDataStr, &paasParamMap)
-	if err == nil && len(paasParamMap) > 0 {
-		//表示是map格式
-		for key, one := range paasParamMap {
-			allRetParamMap[key] = one
-		}
-		if valueToString {
-			for key, one := range allRetParamMap {
-				allRetParamMap[key] = conv.String(one)
+	if err == nil {
+		if len(paasParamMap) > 0 || bodyDataStr == "{}" {
+			//表示是map格式
+			for key, one := range paasParamMap {
+				allRetParamMap[key] = one
 			}
+			if valueToString {
+				for key, one := range allRetParamMap {
+					allRetParamMap[key] = conv.String(one)
+				}
+			}
+			return allRetParamMap, paasParamMap, nil
 		}
-		return allRetParamMap, paasParamMap, nil
 	}
 	//array
 	paasParamArray := make([]any, 0)
