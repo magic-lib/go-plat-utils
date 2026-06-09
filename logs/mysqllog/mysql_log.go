@@ -162,6 +162,7 @@ func (ml *mysqlLogger) writeLog(logData *logs.LogData) error {
 	}
 
 	sqlStr := ml.tm.getInsertSQL()
+	logData.LogCommData.CreateTime = time.Now() //插入mysql时间
 	args := ml.tm.buildInsertArgs(logData)
 	if args == nil || sqlStr == "" {
 		return nil
@@ -196,6 +197,11 @@ func (ml *mysqlLogger) writeLogBatch(batch []*logs.LogData) error {
 	}
 
 	sqlStr := ml.tm.getBatchInsertSQL(len(batch))
+	lo.ForEach(batch, func(logData *logs.LogData, i int) {
+		if logData != nil {
+			logData.LogCommData.CreateTime = time.Now()
+		}
+	})
 	args := ml.tm.buildBatchInsertArgs(batch)
 	if args == nil || sqlStr == "" {
 		return nil
