@@ -1,14 +1,18 @@
 package httputil
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"github.com/magic-lib/go-plat-utils/cond"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"log"
 	"net/http"
+	"net/url"
 )
 
 const (
@@ -210,4 +214,23 @@ func GetErrorResponse(allErrorMap map[int64]string, errorCode int64, err ...erro
 	}
 
 	return respError
+}
+
+func WriteFileSuccess(w http.ResponseWriter, fileName string, f *bytes.Buffer) {
+	if f == nil || f.Len() == 0 {
+		log.Println("WriteFileSuccess file is empty")
+		return
+	}
+	escapedFileName := url.PathEscape(fileName)
+
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", escapedFileName))
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", f.Len()))
+
+	_, err := f.WriteTo(w)
+	if err != nil {
+		log.Println("WriteFileSuccess failed to write buffer to response:", err.Error())
+		return
+	}
+	return
 }
