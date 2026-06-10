@@ -46,6 +46,12 @@ type PageModel struct {
 	DataList   any   `json:"data_list"`             // 数据列表
 }
 
+type UploadFile struct {
+	Filename string
+	Size     int
+	Buffer   *bytes.Buffer
+}
+
 func (p *PageModel) GetPage(maxPageSize int) *PageModel {
 	if maxPageSize <= 0 {
 		maxPageSize = 50
@@ -216,21 +222,28 @@ func GetErrorResponse(allErrorMap map[int64]string, errorCode int64, err ...erro
 	return respError
 }
 
-func WriteFileSuccess(w http.ResponseWriter, fileName string, f *bytes.Buffer) {
-	if f == nil || f.Len() == 0 {
-		log.Println("WriteFileSuccess file is empty")
-		return
+func WriteFileSuccess(_ context.Context, w http.ResponseWriter, file *UploadFile) error {
+	if file == nil || file.Buffer == nil {
+		return fmt.Errorf("file is nil")
 	}
-	escapedFileName := url.PathEscape(fileName)
+	if file.Size <= 0 {
+		file.Size = file.Buffer.Len()
+	}
+	if file.Size == 0 {
+		log.Println("WriteFileSuccess file is empty")
+		return fmt.Errorf("file size is 0")
+	}
+
+	escapedFileName := url.PathEscape(file.Filename)
 
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", escapedFileName))
 	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Header().Set("Content-Length", fmt.Sprintf("%d", f.Len()))
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", file.Size))
 
-	_, err := f.WriteTo(w)
+	_, err := file.Buffer.WriteTo(w)
 	if err != nil {
 		log.Println("WriteFileSuccess failed to write buffer to response:", err.Error())
-		return
+		return err
 	}
-	return
+	return nil
 }
