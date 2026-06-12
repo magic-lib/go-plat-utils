@@ -30,9 +30,11 @@ func String(src any) string {
 	}
 
 	if pb, ok := src.(proto.Message); ok {
-		b, err := protojson.Marshal(pb)
-		if err == nil {
-			return string(b)
+		if !hasCustomJSONTag(pb) {
+			b, err := protojson.Marshal(pb)
+			if err == nil {
+				return string(b)
+			}
 		}
 	}
 
@@ -137,6 +139,35 @@ func getBySpecialType(src any) (any, string, bool) {
 	}
 
 	return src, "", false
+}
+
+func hasCustomJSONTag(msg proto.Message) bool {
+	val := reflect.ValueOf(msg)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+
+	if val.Kind() != reflect.Struct {
+		return false
+	}
+
+	typ := val.Type()
+	for i := 0; i < val.NumField(); i++ {
+		field := typ.Field(i)
+		if field.PkgPath != "" {
+			continue
+		}
+
+		jsonTag := field.Tag.Get("json")
+		if jsonTag != "" && jsonTag != "-" {
+			tagName := strings.Split(jsonTag, ",")[0]
+			if tagName != "" && tagName != field.Name {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func getBySyncMap(synMap *sync.Map) map[any]any {

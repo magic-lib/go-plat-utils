@@ -3,9 +3,11 @@ package conv_test
 import (
 	"database/sql"
 	"fmt"
+	"git.biucn.com/BiuTech/ussd/grpc-pb/credit-pb/creditpb"
 	"github.com/magic-lib/go-plat-utils/cond"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/utils"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	"testing"
 	"time"
 )
@@ -183,4 +185,20 @@ func TestAnyToString(t *testing.T) {
 	}
 	aa := conv.String(name)
 	fmt.Println(aa)
+}
+
+func TestString(t *testing.T) {
+	lastFinishedOrder := &creditpb.LastFinishedOrder{
+		LoanAmount: 1000,
+
+		ActiveRepaidAmount:  34,
+		PassiveRepaidAmount: 13,
+		OrderEndTime:        &timestamppb.Timestamp{},
+		OrderFinishTime:     &timestamppb.Timestamp{},
+		IsActiveRepaid:      true,
+		ActualDueDayDiff:    13,
+	}
+
+	str := conv.String(lastFinishedOrder)
+	fmt.Println(str)
 }
