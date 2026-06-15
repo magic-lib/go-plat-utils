@@ -3,12 +3,13 @@ package param
 
 import (
 	"bytes"
+	"github.com/samber/lo"
 	"io"
 	"net/http"
 )
 
 // SafeReadBody 安全读取body内容，不会丢失数据
-func SafeReadBody(r *http.Request, next func(r *http.Request)) []byte {
+func SafeReadBody(r *http.Request, nexts ...func(r *http.Request)) []byte {
 	var requestBody []byte
 	if r == nil {
 		return requestBody
@@ -23,11 +24,19 @@ func SafeReadBody(r *http.Request, next func(r *http.Request)) []byte {
 		}
 	}
 
-	if next == nil {
+	if len(nexts) == 0 {
+		return requestBody
+	}
+	nexts = lo.Filter(nexts, func(next func(r *http.Request), _ int) bool {
+		return next != nil
+	})
+	if len(nexts) == 0 {
 		return requestBody
 	}
 
-	next(r)
+	lo.ForEach(nexts, func(next func(r *http.Request), _ int) {
+		next(r)
+	})
 
 	// 有可能next里有读取以后，并未放入body，需要重新放置一下。
 	if len(requestBody) > 0 {
