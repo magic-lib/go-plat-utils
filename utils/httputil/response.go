@@ -38,12 +38,12 @@ type CommResponse struct {
 type PageModel struct {
 	Count      int64 `json:"count"`                 // 数据总数
 	PageNow    int   `json:"page_now,omitempty"`    // 当前页数
-	PageStart  uint  `json:"page_start,omitempty"`  // 当前开始页数
-	PageEnd    uint  `json:"page_end,omitempty"`    // 当前结束页数
-	PageOffset int   `json:"page_offset,omitempty"` // 当前页面的偏移量
+	PageStart  uint  `json:"page_start,omitempty"`  // 当前页第一条数据的全局序号（从1开始)
+	PageEnd    uint  `json:"page_end,omitempty"`    // 当前页最后一条数据的全局序号， 前端快速实现「共 XX 条，展示第 XX~XX 条」的文案展示
+	PageOffset int   `json:"page_offset,omitempty"` // 偏移下标（切片start索引，从0开始）
 	PageSize   int   `json:"page_size,omitempty"`   // 每页显示的数目
 	PageTotal  int   `json:"page_total,omitempty"`  // 总页数
-	DataList   any   `json:"data_list"`             // 数据列表
+	DataList   any   `json:"data_list"`             // 当前页数据
 }
 
 type UploadFile struct {
@@ -52,6 +52,8 @@ type UploadFile struct {
 	Buffer   *bytes.Buffer
 }
 
+// GetPage 校验并计算分页基础参数
+// maxPageSize：单页最大条数限制，防止前端传入超大pageSize拉全量
 func (p *PageModel) GetPage(maxPageSize int) *PageModel {
 	if maxPageSize <= 0 {
 		maxPageSize = 50
@@ -59,30 +61,74 @@ func (p *PageModel) GetPage(maxPageSize int) *PageModel {
 	if p.PageNow <= 0 {
 		p.PageNow = 1
 	}
-	if p.PageSize <= 0 {
-		p.PageSize = maxPageSize
-	}
-	if p.PageSize >= maxPageSize {
+	// 每页条数默认上限
+	if p.PageSize <= 0 || p.PageSize >= maxPageSize {
 		p.PageSize = maxPageSize
 	}
 
-	if p.Count > 0 {
+	total := int(p.Count)
+	if total > 0 {
 		// 计算整除的结果
-		quotient := int(p.Count) / p.PageSize
+		p.PageTotal = total / p.PageSize
 		// 计算余数
-		remainder := int(p.Count) % p.PageSize
-		if remainder == 0 {
-			p.PageTotal = quotient
-		} else {
-			p.PageTotal = quotient + 1
+		if total%p.PageSize > 0 {
+			p.PageTotal++
 		}
+
 		if p.PageNow > p.PageTotal {
 			p.PageNow = p.PageTotal
 		}
 	}
 	p.PageOffset = (p.PageNow - 1) * p.PageSize
 
+	// 计算前端友好的起始、结束序号（从1开始）
+	p.PageStart = uint(p.PageOffset) + 1
+	endIdx := p.PageOffset + p.PageSize
+	if endIdx > total {
+		endIdx = total
+	}
+	p.PageEnd = uint(endIdx)
+
 	return p
+}
+
+// SlicePaginate 内存切片通用分页（推荐替换原StaticPageList）
+// T 切片元素泛型
+// list：内存中已查询/排序完成的全量切片
+// page：分页请求参数结构体
+// maxPageSize：可选，限制单页最大条数，默认50
+func SlicePaginate[T any](list []T, page *PageModel, maxPageSize ...int) *PageModel {
+	if page == nil {
+		page = new(PageModel)
+	}
+
+	maxSize := 0
+	if len(maxPageSize) > 0 {
+		maxSize = maxPageSize[0]
+	}
+	page.Count = int64(len(list))
+	page = page.GetPage(maxSize)
+	if len(list) == 0 {
+		page.DataList = []T{}
+		return page
+	}
+	// 计算起始、结束下标
+	start := page.PageOffset
+	end := start + page.PageSize
+
+	// 边界保护
+	if start < 0 {
+		start = 0
+	}
+	total := int(page.Count)
+	if start > total {
+		start = total
+	}
+	if end > total {
+		end = total
+	}
+	page.DataList = list[start:end]
+	return page
 }
 
 // WithNowTime 获取通用的返回格式
