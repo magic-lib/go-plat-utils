@@ -8,6 +8,7 @@ import (
 	"github.com/magic-lib/go-plat-utils/conv"
 	jsoniterForNil "github.com/magic-lib/go-plat-utils/internal/jsoniter/go"
 	"github.com/magic-lib/go-plat-utils/utils"
+	"regexp"
 	"testing"
 	"time"
 )
@@ -209,6 +210,11 @@ func TestTimeToString(t *testing.T) {
 
 	aa := conv.String(name)
 	fmt.Println(aa)
+
+	resp := "aaaaaaaa 2026-06-22T17:09:41.47956+08:00 bbbbbb 2026-06-20T06:30:43+08:00"
+	re := regexp.MustCompile(`(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})[^\s"]*`)
+	resp = re.ReplaceAllString(resp, "$1 $2")
+	fmt.Println(resp)
 }
 
 //func TestString(t *testing.T) {
