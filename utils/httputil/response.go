@@ -32,6 +32,9 @@ type CommResponse struct {
 	Params      any    `json:"params,omitempty"`
 	Debug       any    `json:"debug,omitempty"`
 	Data        any    `json:"data"`
+
+	// 对原始响应字符串做二次处理的函数
+	ProcessResp func(response *CommResponse, resp string) (string, error) `json:"-"`
 }
 
 // PageModel 分页结构输出
@@ -149,6 +152,13 @@ func WriteCommResponse(w http.ResponseWriter, comm *CommResponse, code ...int) e
 	response := comm.withNowTime()
 
 	respStr := conv.String(response)
+	if comm.ProcessResp != nil {
+		respStrTemp, err := comm.ProcessResp(response, respStr)
+		if err == nil {
+			respStr = respStrTemp
+		}
+	}
+
 	{ //处理列表不要返回null的问题
 		dataList := gjson.Get(respStr, "data.data_list")
 		if dataList.Exists() && !dataList.IsArray() {
@@ -219,11 +229,19 @@ func WriteCommSuccess(ctx context.Context, w http.ResponseWriter, data any, msg 
 	if len(msg) > 0 {
 		retMsg = msg[0]
 	}
-
 	sucResp := &CommResponse{
 		Code:    0,
 		Message: retMsg,
 		Data:    data,
+	}
+
+	if oneData, ok := data.(CommResponse); ok {
+		sucResp = &oneData
+	} else if oneDataPtr, ok := data.(*CommResponse); ok {
+		sucResp = oneDataPtr
+	}
+	if sucResp.Message == "" {
+		sucResp.Message = retMsg
 	}
 
 	writeWithTrace(ctx, sucResp, func(span trace.Span) {

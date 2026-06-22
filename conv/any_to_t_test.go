@@ -2,9 +2,11 @@ package conv_test
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/cond"
 	"github.com/magic-lib/go-plat-utils/conv"
+	jsoniterForNil "github.com/magic-lib/go-plat-utils/internal/jsoniter/go"
 	"github.com/magic-lib/go-plat-utils/utils"
 	"testing"
 	"time"
@@ -181,6 +183,30 @@ func TestAnyToString(t *testing.T) {
 		String: "bbbbb",
 		Valid:  true,
 	}
+	aa := conv.String(name)
+	fmt.Println(aa)
+}
+
+type CollectionHistory struct {
+	AppointTime time.Time `db:"appoint_time" json:"appoint_time"` // 预约时间
+}
+
+func TestTimeToString(t *testing.T) {
+	name := time.Now() // 2026-06-20T06:30:43+08:00
+	bb, _ := json.Marshal(name)
+
+	// 2026-06-22T17:09:41.47956+08:00
+	fmt.Println(string(bb))
+
+	cc, _ := jsoniterForNil.MarshalToString(name)
+	fmt.Println(string(cc))
+
+	mm := &CollectionHistory{
+		AppointTime: time.Now(),
+	}
+
+	fmt.Println(conv.String(mm))
+
 	aa := conv.String(name)
 	fmt.Println(aa)
 }
