@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/cond"
+	"github.com/magic-lib/go-plat-utils/conf"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"reflect"
 	"regexp"
@@ -92,36 +93,36 @@ func toTimeFromNormal(v string) (time.Time, error) {
 	if tLen == 0 {
 		return time.Time{}, nil
 	} else if tLen == len(ShortDateForm08) {
-		return time.Parse(ShortDateForm08, v)
+		return timeParseWithZone(ShortDateForm08, v)
 		//return time.ParseInLocation(ShortDateForm08, v, time.Local)
 	} else if tLen == len(time.ANSIC) {
-		return time.Parse(time.ANSIC, v)
+		return timeParseWithZone(time.ANSIC, v)
 	} else if tLen == len(time.UnixDate) {
-		return time.Parse(time.UnixDate, v)
+		return timeParseWithZone(time.UnixDate, v)
 	} else if tLen == len(time.RubyDate) {
-		t, err := time.Parse(time.RFC850, v)
+		t, err := timeParseWithZone(time.RFC850, v)
 		if err != nil {
-			t, err = time.Parse(time.RubyDate, v)
+			t, err = timeParseWithZone(time.RubyDate, v)
 		}
 		return t, err
 	} else if tLen == len(time.RFC822Z) {
-		return time.Parse(time.RFC822Z, v)
+		return timeParseWithZone(time.RFC822Z, v)
 	} else if tLen == len(time.RFC1123) {
-		return time.Parse(time.RFC1123, v)
+		return timeParseWithZone(time.RFC1123, v)
 	} else if tLen == len(time.RFC1123Z) {
-		return time.Parse(time.RFC1123Z, v)
+		return timeParseWithZone(time.RFC1123Z, v)
 	} else if tLen == len(time.RFC3339) {
-		return time.Parse(time.RFC3339, v)
+		return timeParseWithZone(time.RFC3339, v)
 	} else if tLen == len(time.RFC3339Nano) {
-		return time.Parse(time.RFC3339Nano, v)
+		return timeParseWithZone(time.RFC3339Nano, v)
 	} else if tLen == len("2025-03-28T18:59:24") {
 		timeArray := strings.Split(v, "T")
 		if len(timeArray) == 2 {
-			return time.Parse(time.DateTime, timeArray[0]+" "+timeArray[1])
+			return timeParseWithZone(time.DateTime, timeArray[0]+" "+timeArray[1])
 		}
 		timeArray = strings.Split(v, " ")
 		if len(timeArray) == 2 {
-			return time.Parse(time.DateTime, v)
+			return timeParseWithZone(time.DateTime, v)
 		}
 	}
 
@@ -143,8 +144,7 @@ func toTimeFromString(v string) (time.Time, bool) {
 			err = nil
 			return t, true
 		}
-		t, err = time.Parse(time.DateOnly, v)
-		//t, err = time.ParseInLocation(FullDateForm, v, time.Local)
+		t, err = timeParseWithZone(time.DateOnly, v)
 	} else if tLen == len(String(milliTime())) { //毫秒
 		if cond.IsNumeric(v) {
 			mcTempStr := v[0 : len(v)-3]
@@ -154,27 +154,26 @@ func toTimeFromString(v string) (time.Time, bool) {
 			return t, true
 		}
 	} else if tLen == 19 { //毫秒
-		t, err = time.Parse(time.DateTime, v)
-		//t, err = time.ParseInLocation(fullTimeForm, v, time.Local)
+		t, err = timeParseWithZone(time.DateTime, v)
 		if err != nil {
-			t, err = time.Parse(time.RFC822, v)
+			t, err = timeParseWithZone(time.RFC822, v)
 		}
 	} else if tLen == len(ShortMonthForm112) || tLen == len(ShortMonthForm113) { //毫秒
 		tempArr := strings.Split(v, ".")
 		if len(tempArr) == 2 {
 			timeTemp := tempArr[0]
 			timeTemp = strings.Replace(timeTemp, "T", " ", 1)
-			t, err = time.Parse(time.DateTime, timeTemp)
+			t, err = timeParseWithZone(time.DateTime, timeTemp)
 			//t, err = time.ParseInLocation(fullTimeForm, timeTemp, time.Local)
 			if err != nil {
-				t, err = time.Parse(time.RFC822, v)
+				t, err = timeParseWithZone(time.RFC822, v)
 			}
 		}
 	} else if tLen == len(time.RFC3339) {
-		t, err = time.Parse(time.RFC3339, v)
+		t, err = timeParseWithZone(time.RFC3339, v)
 		if err != nil {
 			v2 := strings.Replace(v, "Z", "+", 1)
-			t, err = time.Parse(time.RFC3339, v2)
+			t, err = timeParseWithZone(time.RFC3339, v2)
 		}
 	} else {
 		if tLen > 19 {
@@ -182,14 +181,13 @@ func toTimeFromString(v string) (time.Time, bool) {
 			if len(tempArr) == 2 {
 				timeTemp := tempArr[0]
 				timeTemp = strings.Replace(timeTemp, "T", " ", 1)
-				t, err = time.Parse(time.DateTime, timeTemp)
-				//t, err = time.ParseInLocation(fullTimeForm, timeTemp, time.Local)
+				t, err = timeParseWithZone(time.DateTime, timeTemp)
 				if err == nil {
 					return t, true
 				}
 			}
 		}
-		t, err = time.Parse(time.RFC1123, v)
+		t, err = timeParseWithZone(time.RFC1123, v)
 	}
 
 	if err != nil {
@@ -231,7 +229,7 @@ func parseTime(v string) (time.Time, error) {
 
 	var lastErr error
 	for _, layout := range layoutList {
-		t, err := time.Parse(layout, v) // 显式指定本地时区
+		t, err := timeParseWithZone(layout, v) // 显式指定本地时区
 		if err == nil {
 			return t, nil
 		}
@@ -250,4 +248,13 @@ func getBySqlNullTime(src any) (time.Time, bool) {
 		return time.Time{}, true
 	}
 	return time.Time{}, false
+}
+
+// timeParseWithZone 统一时区，自动处理默认时区的问题
+func timeParseWithZone(layout, timeStr string) (time.Time, error) {
+	loc := conf.TimeLocation()
+	if loc != nil {
+		return time.ParseInLocation(layout, timeStr, loc)
+	}
+	return time.Parse(layout, timeStr)
 }

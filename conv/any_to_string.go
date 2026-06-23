@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/cond"
-	"github.com/magic-lib/go-plat-utils/conf"
 	jsoniterForNil "github.com/magic-lib/go-plat-utils/internal/jsoniter/go"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
@@ -359,14 +358,6 @@ func getByType(src any) (string, error) {
 	case time.Time:
 		{
 			oneTime := src.(time.Time)
-			//如果为空时间，则返回空字符串
-			if cond.IsTimeEmpty(oneTime) {
-				//return "", nil
-			}
-			if cst := conf.TimeLocation(); cst != nil {
-				// 将时间转换为字符串时，如果加了时区，则显示的结果和预期不一致了，所以这里不处理
-				//return oneTime.In(cst).Format(fullTimeForm), nil
-			}
 			return oneTime.Format(time.DateTime), nil
 		}
 	}
