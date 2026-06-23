@@ -12,13 +12,13 @@ import (
 )
 
 const (
-	fullTimeForm     = "2006-01-02 15:04:05"
-	FullDateForm     = "2006-01-02"
-	ShortTimeForm10  = "0102150405"
-	ShortTimeForm12  = "060102150405"
-	ShortTimeForm14  = "20060102150405"
-	ShortDateForm08  = "20060102"
-	ShortMonthForm06 = "200601"
+	ShortTimeForm10   = "0102150405"
+	ShortTimeForm12   = "060102150405"
+	ShortTimeForm14   = "20060102150405"
+	ShortDateForm08   = "20060102"
+	ShortMonthForm06  = "200601"
+	ShortMonthForm112 = "2019-12-10T11:18:18.979878"
+	ShortMonthForm113 = ShortMonthForm112 + "6"
 )
 
 // Time 转换为Time
@@ -72,8 +72,9 @@ func toTimeFromNormal(v string) (time.Time, error) {
 	tLen := len(v)
 	if tLen == 0 {
 		return time.Time{}, nil
-	} else if tLen == 8 {
-		return time.ParseInLocation(ShortDateForm08, v, time.Local)
+	} else if tLen == len(ShortDateForm08) {
+		return time.Parse(ShortDateForm08, v)
+		//return time.ParseInLocation(ShortDateForm08, v, time.Local)
 	} else if tLen == len(time.ANSIC) {
 		return time.Parse(time.ANSIC, v)
 	} else if tLen == len(time.UnixDate) {
@@ -123,7 +124,8 @@ func toTimeFromString(v string) (time.Time, bool) {
 			err = nil
 			return t, true
 		}
-		t, err = time.ParseInLocation(FullDateForm, v, time.Local)
+		t, err = time.Parse(time.DateOnly, v)
+		//t, err = time.ParseInLocation(FullDateForm, v, time.Local)
 	} else if tLen == len(String(milliTime())) { //毫秒
 		if cond.IsNumeric(v) {
 			mcTempStr := v[0 : len(v)-3]
@@ -133,17 +135,18 @@ func toTimeFromString(v string) (time.Time, bool) {
 			return t, true
 		}
 	} else if tLen == 19 { //毫秒
-		t, err = time.ParseInLocation(fullTimeForm, v, time.Local)
+		t, err = time.Parse(time.DateTime, v)
+		//t, err = time.ParseInLocation(fullTimeForm, v, time.Local)
 		if err != nil {
 			t, err = time.Parse(time.RFC822, v)
 		}
-	} else if tLen == len("2019-12-10T11:18:18.979878") ||
-		tLen == len("2019-12-10T11:18:18.9798786") { //毫秒
+	} else if tLen == len(ShortMonthForm112) || tLen == len(ShortMonthForm113) { //毫秒
 		tempArr := strings.Split(v, ".")
 		if len(tempArr) == 2 {
 			timeTemp := tempArr[0]
 			timeTemp = strings.Replace(timeTemp, "T", " ", 1)
-			t, err = time.ParseInLocation(fullTimeForm, timeTemp, time.Local)
+			t, err = time.Parse(time.DateTime, timeTemp)
+			//t, err = time.ParseInLocation(fullTimeForm, timeTemp, time.Local)
 			if err != nil {
 				t, err = time.Parse(time.RFC822, v)
 			}
@@ -160,7 +163,8 @@ func toTimeFromString(v string) (time.Time, bool) {
 			if len(tempArr) == 2 {
 				timeTemp := tempArr[0]
 				timeTemp = strings.Replace(timeTemp, "T", " ", 1)
-				t, err = time.ParseInLocation(fullTimeForm, timeTemp, time.Local)
+				t, err = time.Parse(time.DateTime, timeTemp)
+				//t, err = time.ParseInLocation(fullTimeForm, timeTemp, time.Local)
 				if err == nil {
 					return t, true
 				}
