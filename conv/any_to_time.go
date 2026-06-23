@@ -14,11 +14,30 @@ import (
 const (
 	ShortTimeForm10   = "0102150405"
 	ShortTimeForm12   = "060102150405"
-	ShortTimeForm14   = "20060102150405"
 	ShortDateForm08   = "20060102"
-	ShortMonthForm06  = "200601"
 	ShortMonthForm112 = "2019-12-10T11:18:18.979878"
 	ShortMonthForm113 = ShortMonthForm112 + "6"
+)
+
+var (
+	layoutList = []string{
+		"200601",
+		"2006-01",
+		"20060102150405",
+		"2006-1-2 15:04:05",
+		"2006/1/2 15:04",
+		"02/01/2006",
+		"02/1/2006",
+		"2006/1/2",
+		"02/1/2006 15:04:05",
+		"2006/1/02 15:04:05",
+		"2006.01",
+		"2006/1/02",
+		"02-Jan-2006",
+		"2-Jan-2006",
+		"2006/1/02 15:04:05:00",
+		"Jan 02, 2006",
+	}
 )
 
 // Time 转换为Time
@@ -208,24 +227,6 @@ func parseTime(v string) (time.Time, error) {
 	v = strings.TrimSpace(v)
 	if v == "" {
 		return time.Time{}, fmt.Errorf("time string is empty")
-	}
-
-	layoutList := []string{
-		"200601",
-		"2006-01",
-		"2006-1-2 15:04:05",
-		"2006/1/2 15:04",
-		"02/01/2006",
-		"02/1/2006",
-		"2006/1/2",
-		"02/1/2006 15:04:05",
-		"2006/1/02 15:04:05",
-		"2006.01",
-		"2006/1/02",
-		"02-Jan-2006",
-		"2-Jan-2006",
-		"2006/1/02 15:04:05:00",
-		"Jan 02, 2006",
 	}
 
 	var lastErr error
