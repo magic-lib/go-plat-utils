@@ -283,6 +283,9 @@ func (ml *mysqlLogger) parseSingleMessage(msg any) *logs.LogData {
 		extends := make(map[string]any)
 		_ = conv.Unmarshal(msg, &extends)
 		logData.Extends = extends
+		if _, ok := msg.(string); ok {
+			logData.Message = []any{msg}
+		}
 	} else {
 		logData.Message = []any{msg}
 	}
@@ -302,6 +305,9 @@ func (ml *mysqlLogger) parseMultipleMessages(msg []any) *logs.LogData {
 			_ = conv.Unmarshal(v, &tempMap)
 			if len(tempMap) > 0 {
 				allMap = lo.Assign(allMap, tempMap)
+			}
+			if _, ok := v.(string); ok {
+				textMsg = append(textMsg, v)
 			}
 		} else {
 			textMsg = append(textMsg, v)

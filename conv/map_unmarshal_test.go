@@ -8,6 +8,7 @@ import (
 	"github.com/magic-lib/go-plat-utils/utils/httputil"
 	"github.com/shopspring/decimal"
 	"golang.org/x/text/language"
+	"google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	"gopkg.in/yaml.v3"
 	"log"
@@ -421,4 +422,75 @@ func TestFormatConv1(t *testing.T) {
 	}
 
 	fmt.Println(updateMap)
+}
+
+// 账户状态枚举（对应Status字段）
+type AccountStatus int32
+
+const (
+	AccountStatus_ACCOUNT_STATUS_INVALID              AccountStatus = 0 // 0-无效
+	AccountStatus_ACCOUNT_STATUS_VALID                AccountStatus = 1 // 1-有效
+	AccountStatus_ACCOUNT_STATUS_NAME_PENDING_CONFIRM AccountStatus = 2 // 2-姓名待确认
+	AccountStatus_ACCOUNT_STATUS_NEED_DOCUMENT        AccountStatus = 3 // 3-需提供证件
+	AccountStatus_ACCOUNT_STATUS_NEED_CREDIT          AccountStatus = 4 // 4-待审核
+)
+
+type Account struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// 账户ID
+	AccountId int64 `protobuf:"varint,1,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	// 关联member表id
+	WhiteMemberId int64 `protobuf:"varint,2,opt,name=white_member_id,json=whiteMemberId,proto3" json:"white_member_id,omitempty"` // 这个白名单导入的会填入，其他进入暂时为空，暂时不返回，数据库依旧保留
+	// 用户唯一标识nid
+	ApiNid string `protobuf:"bytes,3,opt,name=api_nid,json=apiNid,proto3" json:"api_nid,omitempty"` // 这个是通过用户mobile调用api接口查询出来的nid,可能为空，注释不返回
+	// 关联提供商provide表id
+	ProvideId int64 `protobuf:"varint,4,opt,name=provide_id,json=provideId,proto3" json:"provide_id,omitempty"`
+	// 姓-api查询
+	Surname string `protobuf:"bytes,5,opt,name=surname,proto3" json:"surname,omitempty"`
+	// 名-api查询
+	Firstname string `protobuf:"bytes,6,opt,name=firstname,proto3" json:"firstname,omitempty"`
+	// 账号具体的值
+	AccountNo string `protobuf:"bytes,7,opt,name=account_no,json=accountNo,proto3" json:"account_no,omitempty"`
+	// 账户来源0-未确定，1-白名单 2-自绑定，3-KYC获取，4-信审客服添加
+	// 同一个provider的不同卡类型：0-未确定，1-电子钱包，2-银行卡
+	// 状态(0无效 1有效 2姓名待确认 3需提供证件)
+	Status AccountStatus `protobuf:"varint,12,opt,name=status,proto3,enum=account.AccountStatus" json:"status,omitempty"`
+	// 是否属于自己的账号
+	IsSelf bool `protobuf:"varint,10,opt,name=is_self,json=isSelf,proto3" json:"is_self,omitempty"`
+	// 是否默认收款号码
+	IsDefault bool `protobuf:"varint,11,opt,name=is_default,json=isDefault,proto3" json:"is_default,omitempty"`
+	// 状态(0无效 1有效 2姓名待确认 3需提供证件)
+	// 创建时间
+	CreateTime *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+	// 更新时间
+	UpdateTime       *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
+	ExtendProperties string                 `protobuf:"bytes,15,opt,name=extend_properties,json=extendProperties,proto3" json:"extend_properties,omitempty"`
+	// 收款方式的详细信息， is_default 为 true 时返回
+	// optional SingleMember   member_info = 19;
+	AccountNoMask string `protobuf:"bytes,20,opt,name=account_no_mask,json=accountNoMask,proto3" json:"account_no_mask,omitempty"`
+	BranchCode    string `protobuf:"bytes,21,opt,name=branch_code,json=branchCode,proto3" json:"branch_code,omitempty"` // 如果是银行卡类型，需要方向查询白名单出分行号
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func TestFormatConvString(t *testing.T) {
+	aa := &Account{
+		Status: AccountStatus_ACCOUNT_STATUS_NAME_PENDING_CONFIRM,
+		//AccountId:        123,
+		//WhiteMemberId:    456,
+		//ApiNid:           "789",
+		//ProvideId:        789,
+		//Surname:          "surname",
+		//Firstname:        "firstname",
+		//AccountNo:        "account_no",
+		//IsSelf:           true,
+		//IsDefault:        false,
+		//CreateTime:       timestamppb.Now(),
+		//UpdateTime:       timestamppb.Now(),
+		//ExtendProperties: "extend_properties",
+	}
+
+	mm := conv.String(aa)
+	fmt.Println(mm)
+
 }
