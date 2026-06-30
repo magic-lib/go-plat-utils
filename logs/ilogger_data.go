@@ -68,7 +68,7 @@ func NewLogData(logCommData ...*LogCommData) *LogData {
 func (l *LogData) Init() {
 	l.LogCommData.Init()
 	if l.CostDuration == 0 {
-		l.CostDuration = time.Now().Sub(l.LogTime).Milliseconds()
+		//l.CostDuration = time.Now().Sub(l.LogTime).Milliseconds()
 	}
 	if l.Ip == "" {
 		l.Ip = param.MachineCode()
