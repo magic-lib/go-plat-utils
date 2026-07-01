@@ -471,6 +471,7 @@ type Account struct {
 	BranchCode    string `protobuf:"bytes,21,opt,name=branch_code,json=branchCode,proto3" json:"branch_code,omitempty"` // 如果是银行卡类型，需要方向查询白名单出分行号
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
+	CheckInfo     sql.NullString
 }
 
 func TestFormatConvString(t *testing.T) {
@@ -488,9 +489,23 @@ func TestFormatConvString(t *testing.T) {
 		//CreateTime:       timestamppb.Now(),
 		//UpdateTime:       timestamppb.Now(),
 		//ExtendProperties: "extend_properties",
+		CheckInfo: sql.NullString{
+			String: "123",
+			Valid:  true,
+		},
 	}
 
 	mm := conv.String(aa)
 	fmt.Println(mm)
 
+	kk := map[string]any{
+		"CheckInfo": "4545",
+	}
+	bb := &Account{}
+	conv.Unmarshal(kk, bb)
+	fmt.Println(bb)
+
+	cc := sql.NullString{}
+	conv.Unmarshal(`"123"`, &cc)
+	fmt.Println(cc)
 }

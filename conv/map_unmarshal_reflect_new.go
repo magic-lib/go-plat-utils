@@ -1,6 +1,7 @@
 package conv
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/jinzhu/copier"
 	"github.com/magic-lib/go-plat-utils/cond"
@@ -647,6 +648,10 @@ func (c *getNewService) changeValueToDstByDstType(srcValue reflect.Value, dstTyp
 			}
 			return nil, true
 		}
+		// sql.Null* 类型：从字符串/数字转换为对应的 Null* 类型
+		if retData, ok := c.changeValueToSqlNull(srcValue, dstType); ok {
+			return retData, ok
+		}
 	}
 	if dstType.Kind() == reflect.Slice {
 		if dstTypeString == "[]string" {
@@ -661,6 +666,89 @@ func (c *getNewService) changeValueToDstByDstType(srcValue reflect.Value, dstTyp
 	//log.Println("changeValueToDstByDstType error:", dstType.String())
 
 	return nil, false
+}
+
+// changeValueToSqlNull 将 srcValue 转换为 sql.Null* 类型
+// 支持的 dstType: sql.NullString, sql.NullInt64, sql.NullInt32, sql.NullInt16,
+// sql.NullFloat64, sql.NullBool, sql.NullTime
+func (c *getNewService) changeValueToSqlNull(srcValue reflect.Value, dstType reflect.Type) (any, bool) {
+	srcInterface := srcValue.Interface()
+
+	switch {
+	case dstType == reflect.TypeOf(sql.NullString{}):
+		if srcInterface == nil {
+			return sql.NullString{}, true
+		}
+		s := asString(srcInterface)
+		return sql.NullString{String: s, Valid: s != ""}, true
+
+	case dstType == reflect.TypeOf(sql.NullInt64{}):
+		if srcInterface == nil {
+			return sql.NullInt64{}, true
+		}
+		s := asString(srcInterface)
+		i64, err := strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			return sql.NullInt64{}, true
+		}
+		return sql.NullInt64{Int64: i64, Valid: true}, true
+
+	case dstType == reflect.TypeOf(sql.NullInt32{}):
+		if srcInterface == nil {
+			return sql.NullInt32{}, true
+		}
+		s := asString(srcInterface)
+		i32, err := strconv.ParseInt(s, 10, 32)
+		if err != nil {
+			return sql.NullInt32{}, true
+		}
+		return sql.NullInt32{Int32: int32(i32), Valid: true}, true
+
+	case dstType == reflect.TypeOf(sql.NullInt16{}):
+		if srcInterface == nil {
+			return sql.NullInt16{}, true
+		}
+		s := asString(srcInterface)
+		i16, err := strconv.ParseInt(s, 10, 16)
+		if err != nil {
+			return sql.NullInt16{}, true
+		}
+		return sql.NullInt16{Int16: int16(i16), Valid: true}, true
+
+	case dstType == reflect.TypeOf(sql.NullFloat64{}):
+		if srcInterface == nil {
+			return sql.NullFloat64{}, true
+		}
+		s := asString(srcInterface)
+		f64, err := strconv.ParseFloat(s, 64)
+		if err != nil {
+			return sql.NullFloat64{}, true
+		}
+		return sql.NullFloat64{Float64: f64, Valid: true}, true
+
+	case dstType == reflect.TypeOf(sql.NullBool{}):
+		if srcInterface == nil {
+			return sql.NullBool{}, true
+		}
+		b, ok := c.changeValueToBool(srcValue)
+		if !ok {
+			return sql.NullBool{}, true
+		}
+		return sql.NullBool{Bool: b, Valid: true}, true
+
+	case dstType == reflect.TypeOf(sql.NullTime{}):
+		if srcInterface == nil {
+			return sql.NullTime{}, true
+		}
+		t, ok := c.changeValueToTime(srcValue)
+		if !ok {
+			return sql.NullTime{}, true
+		}
+		return sql.NullTime{Time: t, Valid: true}, true
+
+	default:
+		return nil, false
+	}
 }
 
 func asString(src any) string {
