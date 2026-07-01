@@ -7,7 +7,7 @@ import (
 )
 
 // HttpBuildQuery 将map转换为a=1&b=2
-func HttpBuildQuery(paramData map[string]any) string {
+func HttpBuildQuery[T any](paramData map[string]T) string {
 	params := url.Values{}
 	keyList := make([]string, 0)
 	for key := range paramData {
