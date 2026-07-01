@@ -4,30 +4,32 @@ import (
 	"reflect"
 )
 
-func Pointer(v any) any {
+func Pointer[E any](v any) *E {
 	if v == nil {
 		return nil
 	}
-	vType := reflect.TypeOf(v)
-	if vType.Kind() == reflect.Ptr {
-		return v
+	if p, ok := v.(*E); ok {
+		return p
 	}
 
-	switch val := v.(type) {
-	case int:
-		return &val
-	case string:
-		return &val
-	case bool:
-		return &val
-	case float64:
-		return &val
-	case struct{}:
-		return &val
+	vType := reflect.TypeOf(v)
+	if vType.Kind() == reflect.Ptr {
+		return v.(*E) // 已经是指针，直接转型
+	}
+
+	ptr := new(E)
+	switch val := any(ptr).(type) {
+	case *int:
+		*val = v.(int)
+	case *string:
+		*val = v.(string)
+	case *bool:
+		*val = v.(bool)
+	case *float64:
+		*val = v.(float64)
 	default:
 		rv := reflect.ValueOf(v)
-		ptr := reflect.New(rv.Type())
-		ptr.Elem().Set(rv)
-		return ptr.Interface()
+		reflect.ValueOf(ptr).Elem().Set(rv)
 	}
+	return ptr
 }
