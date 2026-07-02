@@ -471,7 +471,7 @@ func unwrapSqlTypes(src any) any {
 		}
 		rv = rv.Elem()
 		inner := rv.Interface()
-		if unwrapped := unwrapSqlTypes(inner); unwrapped != inner || rv.Kind() == reflect.Ptr {
+		if unwrapped := unwrapSqlTypes(inner); !reflect.DeepEqual(unwrapped, inner) || rv.Kind() == reflect.Ptr {
 			return unwrapped
 		}
 		return src // 没有 sql.Null* 类型，返回原值
@@ -516,7 +516,7 @@ func unwrapSqlTypes(src any) any {
 			fieldVal := rv.Field(i).Interface()
 			unwrapped := unwrapSqlTypes(fieldVal)
 			newMap[name] = unwrapped
-			if unwrapped != fieldVal {
+			if !reflect.DeepEqual(unwrapped, fieldVal) {
 				hasNullField = true
 			}
 		}
