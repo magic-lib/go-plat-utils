@@ -20,16 +20,41 @@ func Pointer[E any](v any) *E {
 	ptr := new(E)
 	switch val := any(ptr).(type) {
 	case *int:
-		*val = v.(int)
+		if intV, ok := toInt(v); ok {
+			*val = intV
+		}
+	case *int32:
+		if int32V, ok := toInt32(v); ok {
+			*val = int32V
+		}
+	case *int64:
+		if int64V, ok := Int64(v); ok {
+			*val = int64V
+		}
 	case *string:
-		*val = v.(string)
+		*val = String(v)
 	case *bool:
-		*val = v.(bool)
+		if boolV, ok := Bool(v); ok {
+			*val = boolV
+		}
 	case *float64:
-		*val = v.(float64)
+		if floatV, ok := toFloat64(v); ok {
+			*val = floatV
+		}
 	default:
 		rv := reflect.ValueOf(v)
-		reflect.ValueOf(ptr).Elem().Set(rv)
+		target := reflect.ValueOf(ptr).Elem()
+		if rv.Type() != target.Type() {
+			toElem, err := Convert[E](v)
+			if err == nil {
+				rv = reflect.ValueOf(toElem)
+			} else if rv.CanConvert(target.Type()) {
+				rv = rv.Convert(target.Type())
+			}
+		}
+		if rv.Type() == target.Type() {
+			target.Set(rv)
+		}
 	}
 	return ptr
 }
