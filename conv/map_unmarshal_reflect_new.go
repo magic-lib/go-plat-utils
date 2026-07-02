@@ -649,9 +649,9 @@ func (c *getNewService) changeValueToDstByDstType(srcValue reflect.Value, dstTyp
 			return nil, true
 		}
 		// sql.Null* 类型：从字符串/数字转换为对应的 Null* 类型
-		if retData, ok := c.changeValueToSqlNull(srcValue, dstType); ok {
-			return retData, ok
-		}
+		//if retData, ok := c.changeValueToSqlNull(srcValue, dstType); ok {
+		//	return retData, ok
+		//}
 	}
 	if dstType.Kind() == reflect.Slice {
 		if dstTypeString == "[]string" {
