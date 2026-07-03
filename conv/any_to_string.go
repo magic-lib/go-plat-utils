@@ -411,7 +411,61 @@ func getByCopy(src any) (string, error) {
 	return "", fmt.Errorf("copy error")
 }
 
+// unwrapSqlTypes 递归展开 sql.Null* 类型为底层值，解决嵌套在 struct/map/slice 中
+// 时 JSON 序列化为 {"String":"...","Valid":true} 而非实际值的问题
+func unwrapSqlTypes(src any) any {
+	if src == nil {
+		return nil
+	}
+
+	// 直接处理各类 sql.Null* 类型
+	switch v := src.(type) {
+	case sql.NullString:
+		if v.Valid {
+			return v.String
+		}
+		return ""
+	case sql.NullInt64:
+		if v.Valid {
+			return v.Int64
+		}
+		return int64(0)
+	case sql.NullFloat64:
+		if v.Valid {
+			return v.Float64
+		}
+		return float64(0)
+	case sql.NullBool:
+		if v.Valid {
+			return v.Bool
+		}
+		return false
+	case sql.NullInt32:
+		if v.Valid {
+			return v.Int32
+		}
+		return int32(0)
+	case sql.NullInt16:
+		if v.Valid {
+			return v.Int16
+		}
+		return int16(0)
+	case sql.NullByte:
+		if v.Valid {
+			return v.Byte
+		}
+		return byte(0)
+	case sql.NullTime:
+		if v.Valid {
+			return v.Time
+		}
+		return time.Time{}
+	}
+	return src
+}
+
 func getStringFromJson(src any) (string, error) {
+	src = unwrapSqlTypes(src)
 	json, err := jsoniterForNil.MarshalToString(src)
 	if err == nil {
 		if len(json) >= 2 { //解决返回字符串首位带"的问题
