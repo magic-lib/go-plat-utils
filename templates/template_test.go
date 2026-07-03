@@ -62,7 +62,7 @@ func TestTemplates1(t *testing.T) {
 		},
 	}
 
-	aa, err := templates.Template("{{ .aaa_aaa }} fdfdfsfd: {{.code.numMap.num}}", dataMap)
+	aa, err := templates.Template("{{ .aaa_aaa }} fdfdfsfd: {{.code.numMap.num}}： {{.code.numMap.numa:123}}", dataMap)
 	fmt.Println(aa, err)
 
 }

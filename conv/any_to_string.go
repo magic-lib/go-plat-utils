@@ -481,7 +481,18 @@ func unwrapSqlTypes(src any) any {
 	case reflect.Map:
 		newMap := reflect.MakeMap(rv.Type())
 		for _, key := range rv.MapKeys() {
-			newMap.SetMapIndex(key, reflect.ValueOf(unwrapSqlTypes(rv.MapIndex(key).Interface())))
+			elem := rv.MapIndex(key).Interface()
+			unwrapped := unwrapSqlTypes(elem)
+			unwrappedRv := reflect.ValueOf(unwrapped)
+			if !unwrappedRv.IsValid() {
+				// unwrapped 为 nil，用零值填充
+				newMap.SetMapIndex(key, reflect.Zero(rv.Type().Elem()))
+			} else if unwrappedRv.Type().AssignableTo(rv.Type().Elem()) {
+				newMap.SetMapIndex(key, unwrappedRv)
+			} else {
+				// 类型不匹配（如 sql.NullString -> string），保留原值避免 panic
+				newMap.SetMapIndex(key, rv.MapIndex(key))
+			}
 		}
 		return newMap.Interface()
 	case reflect.Slice:
@@ -489,11 +500,20 @@ func unwrapSqlTypes(src any) any {
 		if rv.Type().Elem().Kind() == reflect.Uint8 {
 			return src
 		}
-		newSlice := make([]any, rv.Len())
+		hasChange := false
+		newSlice := reflect.MakeSlice(rv.Type(), rv.Len(), rv.Cap())
 		for i := 0; i < rv.Len(); i++ {
-			newSlice[i] = unwrapSqlTypes(rv.Index(i).Interface())
+			elem := rv.Index(i).Interface()
+			unwrapped := unwrapSqlTypes(elem)
+			if !reflect.DeepEqual(elem, unwrapped) {
+				hasChange = true
+			}
+			newSlice.Index(i).Set(reflect.ValueOf(unwrapped))
 		}
-		return newSlice
+		if hasChange {
+			return newSlice.Interface()
+		}
+		return src
 	case reflect.Struct:
 		// struct 中的 sql.Null* 字段展开为底层值，其余字段不变
 		t := rv.Type()
