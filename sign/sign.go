@@ -3,6 +3,7 @@ package sign
 import (
 	"context"
 	"fmt"
+	"github.com/magic-lib/go-plat-utils/cond"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"net/http"
 	"time"
@@ -39,7 +40,7 @@ func checkNonce(ctx context.Context, appID, nonce string,
 	return false, nil
 }
 
-func checkTimestamp(ts string, window time.Duration) bool {
+func checkTimestamp(now time.Time, ts string, window time.Duration) bool {
 	if ts == "" {
 		return false
 	}
@@ -48,7 +49,10 @@ func checkTimestamp(ts string, window time.Duration) bool {
 		return false
 	}
 	t := time.Unix(sec, 0)
-	diff := time.Since(t)
+	if cond.IsTimeEmpty(now) {
+		now = time.Now()
+	}
+	diff := now.Sub(t)
 	if diff < 0 {
 		diff = -diff
 	}

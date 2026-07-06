@@ -3,6 +3,7 @@ package conv
 import (
 	"fmt"
 	"github.com/jinzhu/copier"
+	"github.com/magic-lib/go-plat-utils/cond"
 	"log"
 	"reflect"
 )
@@ -106,15 +107,8 @@ func Unmarshal(srcStruct any, dstPoint any) error {
 	return nil
 }
 
-var openLog = false
-
-// OpenUnmarshalLog 打开日志
-func OpenUnmarshalLog() {
-	openLog = true
-}
-
 func logDebug(str ...any) {
-	if !openLog {
+	if !cond.IsOpenLog() {
 		return
 	}
 	strArr := make([]any, 0)

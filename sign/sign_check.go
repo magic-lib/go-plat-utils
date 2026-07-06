@@ -29,6 +29,7 @@ type BaseSignCheck struct {
 	NonceUseTimes             int                                                                                //同一个nonce能使用次数                                                               // nonce缓存的过期时间
 	NonceTimeout              time.Duration                                                                      // nonce缓存的过期时间
 	TimestampTimeout          time.Duration                                                                      // 时间戳的过期时间，超过就不让访问了，默认为5分钟
+	NoCheckTimestamp          bool                                                                               // 是否不检查时间戳，默认false,需要检查，方便本地测试用
 }
 
 func New(bs *BaseSignCheck) (SingChecker, error) {
@@ -125,10 +126,13 @@ func (bs *BaseSignCheck) CheckSignature(ctx context.Context, header http.Header,
 		return false, err
 	}
 	// 首先检查timestamp
-	checkTime := checkTimestamp(baseSign.Timestamp, bs.TimestampTimeout)
-	if !checkTime {
-		return false, nil
+	if !bs.NoCheckTimestamp {
+		checkTime := checkTimestamp(time.Now(), baseSign.Timestamp, bs.TimestampTimeout)
+		if !checkTime {
+			return false, nil
+		}
 	}
+
 	// 检查nonce
 	checkNonceTemp, err := checkNonce(ctx, baseSign.AppId, baseSign.Nonce, bs.GetOrSetNonceFunc, bs.NonceTimeout, bs.NonceUseTimes)
 	if err != nil {

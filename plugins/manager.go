@@ -27,23 +27,33 @@ func (pm *PluginManager) Register(plugin Plugin) error {
 	if plugin == nil {
 		return fmt.Errorf("插件不能为空")
 	}
-	pluginKey := plugin.Name()
-	if pluginKey == "" {
+	pluginName := plugin.Name()
+	if pluginName == "" {
 		return fmt.Errorf("插件Key不能为空")
 	}
 	// 不能重复注册，避免覆盖
-	if pm.plugins.Has(pluginKey) {
-		return fmt.Errorf("PluginManager %s is already registered", pluginKey)
+	if pm.plugins.Has(pluginName) {
+		return fmt.Errorf("PluginManager %s is already registered", pluginName)
 	}
-	pm.plugins.Set(pluginKey, plugin)
+	pm.plugins.Set(pluginName, plugin)
 	return nil
+}
+func (pm *PluginManager) Unregister(pluginName string) {
+	if pluginName == "" {
+		return
+	}
+	if !pm.plugins.Has(pluginName) {
+		return
+	}
+	pm.plugins.Remove(pluginName)
+	return
 }
 
 // Load 加载插件
-func (pm *PluginManager) Load(name string) (Plugin, error) {
-	onePlugin, exists := pm.plugins.Get(name)
+func (pm *PluginManager) Load(pluginName string) (Plugin, error) {
+	onePlugin, exists := pm.plugins.Get(pluginName)
 	if !exists {
-		return nil, fmt.Errorf("插件 %s 未注册", name)
+		return nil, fmt.Errorf("插件 %s 未注册", pluginName)
 	}
 	return onePlugin, nil
 }
@@ -58,8 +68,8 @@ func (pm *PluginManager) LoadAll() []Plugin {
 }
 
 // Execute 执行插件
-func (pm *PluginManager) Execute(ctx context.Context, name string, args any) (any, error) {
-	onePlugin, err := pm.Load(name)
+func (pm *PluginManager) Execute(ctx context.Context, pluginName string, args any) (any, error) {
+	onePlugin, err := pm.Load(pluginName)
 	if err != nil {
 		return nil, err
 	}

@@ -16,54 +16,69 @@ func getNamespace(namespace string) string {
 	}
 	return namespace
 }
+func getOnePluginManagerFromComm(namespace string) (*PluginManager, error) {
+	namespace = getNamespace(namespace)
+	if !commPluginManager.Has(namespace) {
+		return nil, nil
+	}
+	onePluginManager, ok := commPluginManager.Get(namespace)
+	if !ok {
+		return nil, fmt.Errorf("插件管理器 %s 注册错误", namespace)
+	}
+	return onePluginManager, nil
+}
 
 func Register(namespace string, onePlugin Plugin) error {
-	namespace = getNamespace(namespace)
-	var onePluginManager *PluginManager
-	if !commPluginManager.Has(namespace) {
-		onePluginManager = NewPluginManager()
-	} else {
-		var ok bool
-		onePluginManager, ok = commPluginManager.Get(namespace)
-		if !ok {
-			return fmt.Errorf("插件管理器 %s 注册错误", namespace)
-		}
+	onePluginManager, err := getOnePluginManagerFromComm(namespace)
+	if err != nil {
+		return err
 	}
-
-	err := onePluginManager.Register(onePlugin)
+	if onePluginManager == nil {
+		onePluginManager = NewPluginManager()
+	}
+	err = onePluginManager.Register(onePlugin)
 	if err != nil {
 		return err
 	}
 	commPluginManager.Set(namespace, onePluginManager)
 	return nil
 }
+func Unregister(namespace string, pluginName string) error {
+	onePluginManager, err := getOnePluginManagerFromComm(namespace)
+	if err != nil {
+		return err
+	}
+	if onePluginManager == nil {
+		return nil
+	}
+	onePluginManager.Unregister(pluginName)
+	return nil
+}
 
-func Load(namespace string, pluginKey string) (Plugin, error) {
-	namespace = getNamespace(namespace)
-	if !commPluginManager.Has(namespace) {
+func Load(namespace string, pluginName string) (Plugin, error) {
+	onePluginManager, err := getOnePluginManagerFromComm(namespace)
+	if err != nil {
+		return nil, err
+	}
+	if onePluginManager == nil {
 		return nil, fmt.Errorf("插件管理器 %s 未注册", namespace)
 	}
-	onePluginManager, ok := commPluginManager.Get(namespace)
-	if !ok {
-		return nil, fmt.Errorf("插件管理器 %s 注册错误", namespace)
-	}
-	onePlugin, err := onePluginManager.Load(pluginKey)
+	onePlugin, err := onePluginManager.Load(pluginName)
 	if err != nil {
 		return nil, err
 	}
 	if onePlugin == nil {
-		return nil, fmt.Errorf("插件 %s 未注册", pluginKey)
+		return nil, fmt.Errorf("插件 %s / %s 未注册", namespace, pluginName)
 	}
 	return onePlugin, nil
 }
 func LoadAll(namespace string) ([]Plugin, error) {
-	namespace = getNamespace(namespace)
-	if !commPluginManager.Has(namespace) {
-		return nil, fmt.Errorf("插件管理器 %s 未注册", namespace)
+	onePluginManager, err := getOnePluginManagerFromComm(namespace)
+	if err != nil {
+		return nil, err
 	}
-	onePluginManager, ok := commPluginManager.Get(namespace)
-	if !ok {
-		return nil, fmt.Errorf("插件管理器 %s 注册错误", namespace)
+	if onePluginManager == nil {
+		return nil, fmt.Errorf("插件管理器 %s 未注册", namespace)
 	}
 	return onePluginManager.LoadAll(), nil
 }
