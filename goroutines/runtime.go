@@ -5,7 +5,7 @@ import (
 	"github.com/magic-lib/go-plat-utils/internal"
 	"github.com/panjf2000/ants/v2"
 	"github.com/timandy/routine"
-	_ "go.uber.org/automaxprocs"
+	"go.uber.org/automaxprocs/maxprocs"
 	"log"
 	"runtime"
 	"strings"
@@ -149,4 +149,8 @@ func GoAsyncTimeout[T any](timeout time.Duration, fun func(paramsIn ...any) (T, 
 	case <-time.After(timeout):
 		return t, fmt.Errorf("GoAsyncTimeout timeout: %d", timeout)
 	}
+}
+
+func init() {
+	_, _ = maxprocs.Set() // 手动设置，避免docker中会一直打印错误日志：maxprocs: Leaving GOMAXPROCS=4: CPU quota undefined
 }
