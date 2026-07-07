@@ -324,16 +324,16 @@ func (r *customerFunc) Min(args ...any) (any, error) {
 	return currentNum, nil
 }
 
-func (r *customerFunc) getDecimalBaseAndNum(args ...any) (decimal.Decimal, decimal.Decimal, error) {
-	var initBase, initNum float64 = 0, 0
-	initDecimalBase := decimal.NewFromFloat(initBase)
+func (r *customerFunc) getDecimalBaseAndNum(args ...any) (int64, decimal.Decimal, error) {
+	var initNum float64 = 0
+	var initBase int64 = 0
 	initDecimalNum := decimal.NewFromFloat(initNum)
 
 	var baseNum any = 10
 	var numDecimal any = 0
 
 	if len(args) == 0 {
-		return initDecimalBase, initDecimalNum, fmt.Errorf("参数数量不对，需要2个参数：位数和数字")
+		return initBase, initDecimalNum, fmt.Errorf("参数数量不对，需要2个参数：位数和数字")
 	} else if len(args) == 1 {
 		numDecimal = args[0]
 	} else if len(args) == 2 {
@@ -342,33 +342,33 @@ func (r *customerFunc) getDecimalBaseAndNum(args ...any) (decimal.Decimal, decim
 	}
 
 	// 获取基数参数（10, 100, 1000等）
-	base, err := conv.Convert[float64](baseNum)
+	base, err := conv.Convert[int64](baseNum)
 	if err != nil {
-		return initDecimalBase, initDecimalNum, fmt.Errorf("基数参数转换失败：%v", baseNum)
+		return initBase, initDecimalNum, fmt.Errorf("基数参数转换失败：%v", baseNum)
 	}
 
 	// 验证基数是否为10的幂次方
 	if !isValidBase(base) {
-		return initDecimalBase, initDecimalNum, fmt.Errorf("基数必须是10的幂次方（1, 10, 100, 1000...），当前值：%v", base)
+		return initBase, initDecimalNum, fmt.Errorf("基数必须是10的幂次方（1, 10, 100, 1000...），当前值：%v", base)
 	}
 
 	// 获取数字参数
 	num, err := conv.Convert[float64](numDecimal)
 	if err != nil {
-		return initDecimalBase, initDecimalNum, fmt.Errorf("数字参数转换失败：%v", numDecimal)
+		return initBase, initDecimalNum, fmt.Errorf("数字参数转换失败：%v", numDecimal)
 	}
 
-	return decimal.NewFromFloat(base), decimal.NewFromFloat(num), nil
+	return base, decimal.NewFromFloat(num), nil
 }
 
 // CeilToDigit 指定位数向上取整，默认是10进位
 func (r *customerFunc) CeilToDigit(args ...any) (any, error) {
-	decimalBase, decimalNum, err := r.getDecimalBaseAndNum(args...)
+	intBase, decimalNum, err := r.getDecimalBaseAndNum(args...)
 	if err != nil {
 		return 0, err
 	}
 
-	// 除以基数，向上取整，再乘以基数
+	decimalBase := decimal.NewFromInt(intBase)
 	result := decimalNum.Div(decimalBase).Ceil().Mul(decimalBase)
 
 	return result.InexactFloat64(), nil
@@ -376,10 +376,12 @@ func (r *customerFunc) CeilToDigit(args ...any) (any, error) {
 
 // FloorToDigit 指定位数向下取整，默认是10进位
 func (r *customerFunc) FloorToDigit(args ...any) (any, error) {
-	decimalBase, decimalNum, err := r.getDecimalBaseAndNum(args...)
+	intBase, decimalNum, err := r.getDecimalBaseAndNum(args...)
 	if err != nil {
 		return 0, err
 	}
+
+	decimalBase := decimal.NewFromInt(intBase)
 
 	// 除以基数，向上取整，再乘以基数
 	result := decimalNum.Div(decimalBase).Floor().Mul(decimalBase)
@@ -388,7 +390,7 @@ func (r *customerFunc) FloorToDigit(args ...any) (any, error) {
 }
 
 // isValidBase 验证基数是否为10的幂次方（1, 10, 100, 1000...）
-func isValidBase(base float64) bool {
+func isValidBase(base int64) bool {
 	if base <= 0 {
 		return false
 	}
