@@ -41,13 +41,14 @@ func NewEngineLogic() *EngineLogic {
 	// 内置方法
 	ruleLogic.functions = map[string]govaluate.ExpressionFunction{
 		// 数字相关
-		"Add":         ruleLogicFunc.Add,
-		"Sub":         ruleLogicFunc.Sub,
-		"Mul":         ruleLogicFunc.Mul,
-		"Div":         ruleLogicFunc.Div,
-		"Max":         ruleLogicFunc.Max,
-		"Min":         ruleLogicFunc.Min,
-		"CeilToDigit": ruleLogicFunc.CeilToDigit,
+		"Add":          ruleLogicFunc.Add,
+		"Sub":          ruleLogicFunc.Sub,
+		"Mul":          ruleLogicFunc.Mul,
+		"Div":          ruleLogicFunc.Div,
+		"Max":          ruleLogicFunc.Max,
+		"Min":          ruleLogicFunc.Min,
+		"CeilToDigit":  ruleLogicFunc.CeilToDigit,
+		"FloorToDigit": ruleLogicFunc.FloorToDigit,
 		// 数组相关
 		"Has": ruleLogicFunc.Has,
 		"In":  ruleLogicFunc.In,

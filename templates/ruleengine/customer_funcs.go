@@ -324,12 +324,16 @@ func (r *customerFunc) Min(args ...any) (any, error) {
 	return currentNum, nil
 }
 
-// CeilToDigit 指定位数向上取整，默认是10进位
-func (r *customerFunc) CeilToDigit(args ...any) (any, error) {
+func (r *customerFunc) getDecimalBaseAndNum(args ...any) (decimal.Decimal, decimal.Decimal, error) {
+	var initBase, initNum float64 = 0, 0
+	initDecimalBase := decimal.NewFromFloat(initBase)
+	initDecimalNum := decimal.NewFromFloat(initNum)
+
 	var baseNum any = 10
 	var numDecimal any = 0
+
 	if len(args) == 0 {
-		return 0, fmt.Errorf("参数数量不对，需要2个参数：位数和数字")
+		return initDecimalBase, initDecimalNum, fmt.Errorf("参数数量不对，需要2个参数：位数和数字")
 	} else if len(args) == 1 {
 		numDecimal = args[0]
 	} else if len(args) == 2 {
@@ -340,25 +344,45 @@ func (r *customerFunc) CeilToDigit(args ...any) (any, error) {
 	// 获取基数参数（10, 100, 1000等）
 	base, err := conv.Convert[float64](baseNum)
 	if err != nil {
-		return 0, fmt.Errorf("基数参数转换失败：%v", baseNum)
+		return initDecimalBase, initDecimalNum, fmt.Errorf("基数参数转换失败：%v", baseNum)
 	}
 
 	// 验证基数是否为10的幂次方
 	if !isValidBase(base) {
-		return 0, fmt.Errorf("基数必须是10的幂次方（1, 10, 100, 1000...），当前值：%v", base)
+		return initDecimalBase, initDecimalNum, fmt.Errorf("基数必须是10的幂次方（1, 10, 100, 1000...），当前值：%v", base)
 	}
 
 	// 获取数字参数
 	num, err := conv.Convert[float64](numDecimal)
 	if err != nil {
-		return 0, fmt.Errorf("数字参数转换失败：%v", numDecimal)
+		return initDecimalBase, initDecimalNum, fmt.Errorf("数字参数转换失败：%v", numDecimal)
 	}
 
-	decimalBase := decimal.NewFromFloat(base)
-	decimalNum := decimal.NewFromFloat(num)
+	return decimal.NewFromFloat(base), decimal.NewFromFloat(num), nil
+}
+
+// CeilToDigit 指定位数向上取整，默认是10进位
+func (r *customerFunc) CeilToDigit(args ...any) (any, error) {
+	decimalBase, decimalNum, err := r.getDecimalBaseAndNum(args...)
+	if err != nil {
+		return 0, err
+	}
 
 	// 除以基数，向上取整，再乘以基数
 	result := decimalNum.Div(decimalBase).Ceil().Mul(decimalBase)
+
+	return result.InexactFloat64(), nil
+}
+
+// FloorToDigit 指定位数向下取整，默认是10进位
+func (r *customerFunc) FloorToDigit(args ...any) (any, error) {
+	decimalBase, decimalNum, err := r.getDecimalBaseAndNum(args...)
+	if err != nil {
+		return 0, err
+	}
+
+	// 除以基数，向上取整，再乘以基数
+	result := decimalNum.Div(decimalBase).Floor().Mul(decimalBase)
 
 	return result.InexactFloat64(), nil
 }
