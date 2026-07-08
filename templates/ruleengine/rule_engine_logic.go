@@ -3,7 +3,7 @@ package ruleengine
 import (
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/conv"
-	govaluate "github.com/magic-lib/go-plat-utils/internal/govaluate-3.0.0"
+	"github.com/magic-lib/go-plat-utils/internal/govaluate-3.0.0"
 	"github.com/magic-lib/go-plat-utils/utils"
 	"github.com/shopspring/decimal"
 	"strings"
@@ -49,9 +49,10 @@ func NewEngineLogic() *EngineLogic {
 		"Min":          ruleLogicFunc.Min,
 		"CeilToDigit":  ruleLogicFunc.CeilToDigit,
 		"FloorToDigit": ruleLogicFunc.FloorToDigit,
-		// 数组相关
-		"Has": ruleLogicFunc.Has,
-		"In":  ruleLogicFunc.In,
+		// 数组区间相关
+		"Has":     ruleLogicFunc.Has,
+		"In":      ruleLogicFunc.In,
+		"Between": ruleLogicFunc.Between, // 新增区间判断
 		// 类型相关
 		"Is": ruleLogicFunc.Is,
 		"As": ruleLogicFunc.As,

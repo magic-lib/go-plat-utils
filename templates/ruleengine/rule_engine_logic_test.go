@@ -3,8 +3,10 @@ package ruleengine_test
 import (
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/templates/ruleengine"
+	"github.com/magic-lib/go-plat-utils/utils"
 	"github.com/samber/lo"
 	"github.com/shopspring/decimal"
+	"log"
 	"regexp"
 	"testing"
 )
@@ -423,4 +425,30 @@ func TestJoin(t *testing.T) {
 	}
 	fmt.Println(customList)
 	return
+}
+
+func TestBetween(t *testing.T) {
+	testCases := []*utils.TestStruct{
+		{"-1.4 (-∞,3]", []any{-1.4, "(-∞,3]"}, []any{true}, nil},
+		{"4 (-∞,3]", []any{4, "(-∞,3]"}, []any{false}, nil},
+		{"2 (2,7]", []any{2, "(2,7]"}, []any{false}, nil},
+		{"2 [2,7]", []any{2, "[2,7]"}, []any{true}, nil},
+		{"4 [2,7]", []any{4, "[2,7]"}, []any{true}, nil},
+		{"7 [2,7]", []any{7, "[2,7]"}, []any{true}, nil},
+		{"8 [2,7]", []any{8, "[2,7]"}, []any{false}, nil},
+		{"7 (2,7)", []any{7, "(2,7)"}, []any{false}, nil},
+		{"7  ( 2 , 7 ] ", []any{7, " ( 2 , 7 ] "}, []any{true}, nil},
+	}
+	utils.TestFunction(t, testCases, func(num float64, rangeStr string) (bool, error) {
+		condTypeCustomVarPattern := `Between(Number, Value)`
+		ruleLogic := ruleengine.NewEngineLogic()
+		in, err := ruleLogic.RunString(condTypeCustomVarPattern, map[string]any{
+			"Number": num,
+			"Value":  rangeStr,
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+		return in.(bool), err
+	})
 }

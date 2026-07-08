@@ -117,6 +117,28 @@ func (r *customerFunc) In(args ...any) (any, error) {
 	return r.Has(args[1], args[0])
 }
 
+// Between 是否在某个范围内
+func (r *customerFunc) Between(args ...any) (any, error) {
+	if len(args) != 2 {
+		return false, fmt.Errorf("参数数量不对：%v", args)
+	}
+	rangeTemplate := conv.String(args[1])
+	rangeTemplate = strings.Join(strings.Fields(rangeTemplate), "")
+
+	rangeData, err := parseRange(rangeTemplate)
+	if err != nil {
+		return false, err
+	}
+	if rangeData == nil {
+		return false, nil
+	}
+	num, err := conv.Convert[float64](args[0])
+	if err != nil {
+		return false, err
+	}
+	return rangeData.match(num), nil
+}
+
 // Is 是否是某一个类型
 func (r *customerFunc) Is(args ...any) (any, error) {
 	if len(args) <= 1 {
