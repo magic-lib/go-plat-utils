@@ -57,7 +57,9 @@ func NewEngineLogic() *EngineLogic {
 		"Is": ruleLogicFunc.Is,
 		"As": ruleLogicFunc.As,
 		// 逻辑判断
-		"If": ruleLogicFunc.If,
+		"If":         ruleLogicFunc.If,
+		"Switch":     ruleLogicFunc.Switch,
+		"SwitchExpr": ruleLogicFunc.SwitchExpr,
 		// 字符串相关
 		"Replace":  ruleLogicFunc.Replace,
 		"Split":    ruleLogicFunc.Split,
@@ -149,7 +151,19 @@ func (r *EngineLogic) runOneRuleString(ruleString string, parameters map[string]
 	//需要对parameters里的Decimal类型特殊处理
 	parameters = r.convertParameters(parameters)
 
-	return expression.Evaluate(parameters)
+	retVal, err := expression.Evaluate(parameters)
+	if err != nil {
+		//有可能对象里存在key深层嵌套的情况
+		if strings.Contains(err.Error(), "No parameter") {
+			newParameters := conv.KeyListFromMap(parameters)
+			retVal1, err1 := expression.Evaluate(newParameters)
+			if err1 == nil {
+				return retVal1, nil
+			}
+		}
+	}
+
+	return retVal, err
 }
 func (r *EngineLogic) convertParameters(parameters map[string]any) map[string]any {
 	newParameters := make(map[string]any)
@@ -225,9 +239,10 @@ func (r *EngineLogic) RunString(ruleString string, parameters map[string]any) (a
 	if err != nil {
 		errHasOccurred := ""
 		if strings.Contains(ruleString, ".") {
-			errHasOccurred = "如果有'.'符号，则需要用[]将条件变量包括起来，或者用\\\\进行转义，不要使用{{}}括起来，这样会被替换掉该变量"
+			errHasOccurred = fmt.Sprintf("如果有'.'符号，则需要用[]将条件变量包括起来，或者用\\\\进行转义，不要使用{{}}括起来，这样会被替换掉该变量: %s, %s",
+				ruleString, conv.String(parameters))
 		}
-		return nil, fmt.Errorf("err: %w, RunString: %s %s", err, ruleString, errHasOccurred)
+		return nil, fmt.Errorf("err: %w, RunString: %s", err, errHasOccurred)
 	}
 	return retVal, nil
 }

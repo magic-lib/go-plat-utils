@@ -12,12 +12,12 @@ import (
 )
 
 // VariableType snake 和 camel 类型
-type VariableType string
+type VariableType internal.VariableType
 
 const (
-	Snake  = VariableType(internal.Snake)
-	Camel  = VariableType(internal.Camel)
-	Pascal = VariableType(internal.Pascal)
+	Snake  = VariableType(internal.Snake)  // name_type
+	Camel  = VariableType(internal.Camel)  // aaBbCc
+	Pascal = VariableType(internal.Pascal) // AaBbCc
 	Lower  = VariableType(internal.Lower)
 	Upper  = VariableType(internal.Upper)
 )

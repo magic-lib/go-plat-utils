@@ -16,17 +16,44 @@ import (
 type (
 	// Activity 单个 task 配置
 	Activity struct {
-		Id              string              `yaml:"id" json:"id,omitempty"` // 唯一标识，用于区分多个相同的action
-		ActionNamespace string              `yaml:"action_namespace" json:"action_namespace,omitempty"`
-		ActionName      string              `yaml:"action_name" json:"action_name,omitempty"`
-		Arguments       []*param.BindConfig `yaml:"arguments" json:"arguments,omitempty"`
-		ArgTemplate     string              `yaml:"arg_template" json:"arg_template,omitempty"` // 如果参数直接是数字的话，则这里需要改为获取数字类型
-		Responses       map[string]any      `yaml:"responses" json:"responses"`                 // 返回的参数map，可以自定义添加内容，比如命名转换
-		DependsOn       []*Activity         `yaml:"depends_on" json:"depends_on,omitempty"`     // 依赖别的activity的Id
-		Hooks           LifecycleHooks      `yaml:"hooks" json:"hooks,omitempty"`               // activity执行时的钩子程序
-		Control         ActivityControl     `yaml:"control" json:"control,omitempty"`           // 该activity的控制面板
+		Id           string              `yaml:"id" json:"id,omitempty"`                       // 唯一标识，用于区分多个相同的action
+		ActivityType string              `yaml:"activity_type" json:"activity_type,omitempty"` // 该activity的类型，用于区分不同类型的activity
+		ActNamespace string              `yaml:"act_namespace" json:"act_namespace,omitempty"`
+		ActName      string              `yaml:"act_name" json:"act_name,omitempty"`
+		Arguments    []*param.BindConfig `yaml:"arguments" json:"arguments,omitempty"`
+		ArgTemplate  string              `yaml:"arg_template" json:"arg_template,omitempty"` // 如果参数直接是数字的话，则这里需要改为获取数字类型
+		Responses    map[string]any      `yaml:"responses" json:"responses"`                 // 返回的参数map，可以自定义添加内容，比如命名转换
+		DependsOn    []*Activity         `yaml:"depends_on" json:"depends_on,omitempty"`     // 依赖别的activity的Id
+		Hooks        LifecycleHooks      `yaml:"hooks" json:"hooks,omitempty"`               // activity执行时的钩子程序
+		Control      ActivityControl     `yaml:"control" json:"control,omitempty"`           // 该activity的控制面板
 	}
 )
+
+func (ac *Activity) Type() string {
+	if ac.ActivityType != "" {
+		return ac.ActivityType
+	}
+	actionFun, err := action.GetAction(ac.ActNamespace,
+		ac.ActName)
+	if err != nil {
+		return ""
+	}
+	return actionFun.MetaData().FullName()
+}
+func (ac *Activity) Clone(oldList ...*Activity) *Activity {
+	old := ac
+	if len(oldList) > 0 && oldList[0] == nil {
+		old = oldList[0]
+	}
+	newAct := new(Activity)
+	_ = conv.Unmarshal(old, newAct)
+	newAct.Id = old.Id
+	newAct.ActivityType = old.ActivityType
+	newAct.ActNamespace = old.ActNamespace
+	newAct.ActName = old.ActName
+	newAct.ArgTemplate = old.ArgTemplate
+	return newAct
+}
 
 func (ac *Activity) executeAllDependencies(ctx context.Context, args map[string]any) (map[string]any, error) {
 	var retErr error
@@ -56,10 +83,10 @@ func (ac *Activity) getActionParam(inputParams map[string]any) any {
 
 func (ac *Activity) getResponseStoreKey(keyPrefix string, linkChar string) string {
 	activityName := ""
-	if ac.ActionNamespace == "" {
-		activityName = ac.ActionName
+	if ac.ActNamespace == "" {
+		activityName = ac.ActName
 	} else {
-		activityName = ac.ActionNamespace + linkChar + ac.ActionName
+		activityName = ac.ActNamespace + linkChar + ac.ActName
 	}
 	return keyPrefix + activityName
 }
@@ -70,7 +97,7 @@ func (ac *Activity) mergeResponseWithId(keyPrefix string, resultMap map[string]a
 	}
 
 	if actionFun != nil {
-		newParam, err := conv.ConvertForType(actionFun.ActMeta().ArgumentType, requestParams)
+		newParam, err := conv.ConvertForType(actionFun.MetaData().ArgumentType, requestParams)
 		if err == nil {
 			requestParams = newParam
 		}
@@ -199,11 +226,11 @@ func (ac *Activity) execThisAction(execCtx context.Context, keyPrefix, linkChar 
 		}
 	}
 
-	if ac.ActionName == "" { // 当前不用执行该Activity
+	if ac.ActName == "" { // 当前不用执行该Activity
 		return inputParams, nil
 	}
 
-	actionFun, err := action.GetAction(ac.ActionNamespace, ac.ActionName)
+	actionFun, err := action.GetAction(ac.ActNamespace, ac.ActName)
 	if err != nil {
 		return inputParams, err
 	}
@@ -329,25 +356,25 @@ func (ac *Activity) ExtendActivity(originActivity *Activity, replaceActivity *Ac
 	}
 
 	result := &Activity{
-		Id:              originActivity.Id,
-		ActionNamespace: originActivity.ActionNamespace,
-		ActionName:      originActivity.ActionName,
-		Arguments:       originActivity.Arguments,
-		ArgTemplate:     originActivity.ArgTemplate,
-		Responses:       originActivity.Responses,
-		DependsOn:       originActivity.DependsOn,
-		Hooks:           originActivity.Hooks,
-		Control:         originActivity.Control,
+		Id:           originActivity.Id,
+		ActNamespace: originActivity.ActNamespace,
+		ActName:      originActivity.ActName,
+		Arguments:    originActivity.Arguments,
+		ArgTemplate:  originActivity.ArgTemplate,
+		Responses:    originActivity.Responses,
+		DependsOn:    originActivity.DependsOn,
+		Hooks:        originActivity.Hooks,
+		Control:      originActivity.Control,
 	}
 
 	if result.Id == "" && replaceActivity.Id != "" {
 		result.Id = replaceActivity.Id
 	}
-	if result.ActionNamespace == "" && replaceActivity.ActionNamespace != "" {
-		result.ActionNamespace = replaceActivity.ActionNamespace
+	if result.ActNamespace == "" && replaceActivity.ActNamespace != "" {
+		result.ActNamespace = replaceActivity.ActNamespace
 	}
-	if result.ActionName == "" && replaceActivity.ActionName != "" {
-		result.ActionName = replaceActivity.ActionName
+	if result.ActName == "" && replaceActivity.ActName != "" {
+		result.ActName = replaceActivity.ActName
 	}
 
 	newArguments := make([]*param.BindConfig, 0)

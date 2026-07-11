@@ -13,9 +13,9 @@ import (
 
 func TestActivityExecute(t *testing.T) {
 	oneAct := activity.Activity{
-		Id:              "",
-		ActionNamespace: "",
-		ActionName:      "",
+		Id:           "",
+		ActNamespace: "",
+		ActName:      "",
 		Arguments: []*param.BindConfig{
 			{
 				Key:   "name",
@@ -70,7 +70,7 @@ func LoggerMethod(_ context.Context, req map[string]any) (bool, error) {
 
 func registerTestActions() {
 	// action 1: add
-	addActor, err := action.MethodToActor[*AddReq, int](AddMethod, &action.ActionMeta{
+	addActor, err := action.MethodToActor[*AddReq, int](AddMethod, &action.ActMetaData{
 		Namespace:    "test",
 		Action:       "add",
 		Desc:         "加法计算",
@@ -80,7 +80,7 @@ func registerTestActions() {
 		panic(err)
 	}
 	// action 2: concat
-	concatActor, err := action.MethodToActor[*ConcatReq, string](ConcatMethod, &action.ActionMeta{
+	concatActor, err := action.MethodToActor[*ConcatReq, string](ConcatMethod, &action.ActMetaData{
 		Namespace:    "test",
 		Action:       "concat",
 		Desc:         "字符串拼接",
@@ -90,7 +90,7 @@ func registerTestActions() {
 		panic(err)
 	}
 	// action 3: logger
-	loggerActor, err := action.MethodToActor[map[string]any, bool](LoggerMethod, &action.ActionMeta{
+	loggerActor, err := action.MethodToActor[map[string]any, bool](LoggerMethod, &action.ActMetaData{
 		Namespace: "test",
 		Action:    "logger",
 		Desc:      "日志打印",
@@ -100,7 +100,7 @@ func registerTestActions() {
 	}
 
 	for _, a := range []action.Actor{addActor, concatActor, loggerActor} {
-		if err := action.RegisterAction(a); err != nil {
+		if err := action.Register(a); err != nil {
 			panic(err)
 		}
 	}
@@ -112,9 +112,9 @@ func TestActivityExecuteDemo(t *testing.T) {
 
 	// ---------- Activity 1: add（使用 Arguments 绑定参数）----------
 	addAct := &activity.Activity{
-		Id:              "add1",
-		ActionNamespace: "test",
-		ActionName:      "add",
+		Id:           "add1",
+		ActNamespace: "test",
+		ActName:      "add",
 		Arguments: []*param.BindConfig{
 			{Key: "a", Value: 3, Policy: param.KeyPolicyDefaultOnly},
 			{Key: "b", Value: 5, Policy: param.KeyPolicyDefaultOnly},
@@ -134,9 +134,9 @@ func TestActivityExecuteDemo(t *testing.T) {
 
 	// ---------- Activity 2: concat（使用 ArgTemplate 动态取依赖结果）----------
 	concatAct := &activity.Activity{
-		Id:              "concat1",
-		ActionNamespace: "test",
-		ActionName:      "concat",
+		Id:           "concat1",
+		ActNamespace: "test",
+		ActName:      "concat",
 		// 从 add1 的返回值中取 sum，转成字符串作为 s1
 		ArgTemplate: `{"s1":"{{add1.responses}}","s2":"!"}`,
 		DependsOn: []*activity.Activity{
@@ -151,9 +151,9 @@ func TestActivityExecuteDemo(t *testing.T) {
 
 	// ---------- Activity 3: logger（使用 Hooks + When 条件）----------
 	loggerAct := &activity.Activity{
-		Id:              "log1",
-		ActionNamespace: "test",
-		ActionName:      "logger",
+		Id:           "log1",
+		ActNamespace: "test",
+		ActName:      "logger",
 		// 仅当 add1 的 sum > 5 时才执行
 		Control: activity.ActivityControl{
 			When: `{{add1.responses}} > 5`,
@@ -168,13 +168,13 @@ func TestActivityExecuteDemo(t *testing.T) {
 
 	// ---------- Activity 4: 使用 Hooks（OnStart 钩子，自身不绑定 Action）----------
 	hookAct := &activity.Activity{
-		Id:              "hook_log",
-		ActionNamespace: "test",
-		ActionName:      "concat",
+		Id:           "hook_log",
+		ActNamespace: "test",
+		ActName:      "concat",
 		Hooks: activity.LifecycleHooks{
 			activity.LifecycleEventOnStart: &activity.Activity{
-				ActionNamespace: "test",
-				ActionName:      "logger",
+				ActNamespace: "test",
+				ActName:      "logger",
 				Arguments: []*param.BindConfig{
 					{Key: "msg", Value: "on start hook triggered", Policy: param.KeyPolicyDefaultOnly},
 				},
@@ -188,9 +188,9 @@ func TestActivityExecuteDemo(t *testing.T) {
 
 	// ---------- Activity 5: DelayDuration 异步执行（不阻塞）----------
 	asyncAct := &activity.Activity{
-		Id:              "async1",
-		ActionNamespace: "test",
-		ActionName:      "logger",
+		Id:           "async1",
+		ActNamespace: "test",
+		ActName:      "logger",
 		Control: activity.ActivityControl{
 			DelayDuration: -1, // <0 异步执行
 		},

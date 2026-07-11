@@ -117,7 +117,7 @@ func (r *customerFunc) In(args ...any) (any, error) {
 	return r.Has(args[1], args[0])
 }
 
-// Between 是否在某个范围内
+// Between 是否在某个范围内 Between(num, "[3,6]")
 func (r *customerFunc) Between(args ...any) (any, error) {
 	if len(args) != 2 {
 		return false, fmt.Errorf("参数数量不对：%v", args)
@@ -242,6 +242,7 @@ func (r *customerFunc) JsonGet(args ...any) (any, error) {
 }
 
 // Join 连接字符串，第一个字符为连接符
+// Join("/", "a", "b", "c")
 func (r *customerFunc) Join(args ...any) (any, error) {
 	sep := ""
 	var dataList []any
@@ -287,6 +288,49 @@ func (r *customerFunc) If(args ...any) (any, error) {
 		return args[1], nil
 	}
 	return args[2], nil
+}
+
+// Switch 多分支选择，避免多重嵌套 If。
+// 用法: Switch(value, case1, result1, case2, result2, ..., defaultValue)
+//   - args[0]         : 待匹配的值
+//   - 后续成对        : (候选值, 命中返回值)
+//   - 最后一个参数     : 都不命中时的默认值
+//
+// 例: Switch(status, "A", "苹果", "B", "香蕉", "未知")
+func (r *customerFunc) Switch(args ...any) (any, error) {
+	if len(args) < 3 {
+		return nil, fmt.Errorf("switch requires at least 3 arguments: value, [candidate, result]..., defaultValue")
+	}
+	if (len(args)-1)%2 == 0 {
+		return nil, fmt.Errorf("switch arguments must be value, then pairs of (candidate, result), then a defaultValue")
+	}
+	value := args[0]
+	// 逐对比较（用 conv.Equal 做跨类型宽松相等，如 "1" 与 1）
+	for i := 1; i < len(args)-1; i += 2 {
+		if cond.IsEqual(value, args[i]) {
+			return args[i+1], nil
+		}
+	}
+	// 全部未命中，返回默认值
+	return args[len(args)-1], nil
+}
+
+// SwitchExpr 按布尔条件分支：SwitchExpr(cond1, res1, cond2, res2, ..., defaultValue)
+// 例: SwitchExpr(score >= 90, "优", score >= 80, "良", "及格")
+func (r *customerFunc) SwitchExpr(args ...any) (any, error) {
+	if len(args) < 3 || (len(args)-1)%2 != 0 {
+		return nil, fmt.Errorf("switchExpr requires value-less pairs: (condition, result)..., defaultValue")
+	}
+	for i := 0; i < len(args)-1; i += 2 {
+		condBool, ok := args[i].(bool)
+		if !ok {
+			return nil, fmt.Errorf("switchExpr condition at position %d must be bool", i)
+		}
+		if condBool {
+			return args[i+1], nil
+		}
+	}
+	return args[len(args)-1], nil
 }
 
 func (r *customerFunc) Max(args ...any) (any, error) {

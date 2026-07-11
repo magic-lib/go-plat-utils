@@ -7,7 +7,7 @@ import (
 )
 
 // MethodToActor 转换为Actor
-func MethodToActor[I, O any](method any, ac *ActionMeta) (Actor, error) {
+func MethodToActor[I, O any](method any, ac *ActMetaData) (Actor, error) {
 	if ac == nil || method == nil {
 		return nil, fmt.Errorf("data or method is nil")
 	}

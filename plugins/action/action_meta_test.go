@@ -60,7 +60,7 @@ func registerAction() {
 	orderModel := &Order{
 		Name: "tianlin999777",
 	}
-	getOrderNameInterface, err := action.MethodToActor[int, string](orderModel.GetOrderName, &action.ActionMeta{
+	getOrderNameInterface, err := action.MethodToActor[int, string](orderModel.GetOrderName, &action.ActMetaData{
 		Namespace:    ns,
 		Action:       "GetOrderName",
 		Desc:         "获取订单名称",
@@ -72,7 +72,7 @@ func registerAction() {
 		return
 	}
 
-	getMemberGroupInterface, err := action.MethodToActor[int, string](orderModel.GetMemberGroup, &action.ActionMeta{
+	getMemberGroupInterface, err := action.MethodToActor[int, string](orderModel.GetMemberGroup, &action.ActMetaData{
 		Namespace:    ns,
 		Action:       "GetMemberGroup",
 		Desc:         "获取用户客群",
@@ -84,7 +84,7 @@ func registerAction() {
 		return
 	}
 
-	setOrderInfoInterface, err := action.MethodToActor[string, bool](orderModel.SetOrderInfo, &action.ActionMeta{
+	setOrderInfoInterface, err := action.MethodToActor[string, bool](orderModel.SetOrderInfo, &action.ActMetaData{
 		Namespace:    ns,
 		Action:       "SetOrderInfo",
 		Desc:         "设置订单信息",
@@ -96,7 +96,7 @@ func registerAction() {
 		return
 	}
 
-	getOrderInfoInterface, err := action.MethodToActor[*Order, *Order](orderModel.GetOrderInfo, &action.ActionMeta{
+	getOrderInfoInterface, err := action.MethodToActor[*Order, *Order](orderModel.GetOrderInfo, &action.ActMetaData{
 		Namespace:    ns,
 		Action:       "GetOrderInfo",
 		Desc:         "获取订单信息",
@@ -108,7 +108,7 @@ func registerAction() {
 		return
 	}
 
-	getLoggerInterface, err := action.MethodToActor[*Order, bool](orderModel.Logger, &action.ActionMeta{
+	getLoggerInterface, err := action.MethodToActor[*Order, bool](orderModel.Logger, &action.ActMetaData{
 		Action: "Log",
 		Desc:   "日志",
 	})
@@ -132,7 +132,7 @@ func registerAction() {
 	}
 
 	lo.ForEach(actionList, func(item action.Actor, _ int) {
-		err = action.RegisterAction(item)
+		err = action.Register(item)
 		if err != nil {
 			fmt.Println(err)
 			return

@@ -452,3 +452,15 @@ func TestBetween(t *testing.T) {
 		return in.(bool), err
 	})
 }
+
+func TestRuleString(t *testing.T) {
+	ruleEngine := ruleengine.NewEngineLogic()
+
+	retVal, err := ruleEngine.RunString("Switch([variables.age], 10, 'Age10', 15, 'Age15', 'Default')", map[string]any{
+		"variables": map[string]any{
+			"age": 10,
+		},
+	})
+	fmt.Println(retVal, err)
+	return
+}

@@ -5,33 +5,33 @@ import (
 	"github.com/magic-lib/go-plat-utils/plugins"
 )
 
-// RegisterAction 注册全局Action方法
-func RegisterAction(ai Actor) error {
+// Register 注册全局Action方法
+func Register(ai Actor) error {
 	if ai == nil {
 		return fmt.Errorf("actor is nil")
 	}
-	am := ai.ActMeta()
+	am := ai.MetaData()
 	if am == nil || am.Name() == "" {
 		return fmt.Errorf("activity name is empty")
 	}
 	return plugins.Register(am.Namespace, ai)
 }
 
-// UnregisterAction 注销全局Action方法
-func UnregisterAction(ns string, action string) error {
+// Unregister 注销全局Action方法
+func Unregister(ns string, action string) error {
 	return plugins.Unregister(ns, action) // 假设 plugins 包有 Unregister
 }
 
 // ListActions 列出指定命名空间下所有已注册的Action
-func ListActions(ns string) ([]*ActionMeta, error) {
+func ListActions(ns string) ([]*ActMetaData, error) {
 	list, err := plugins.LoadAll(ns)
 	if err != nil {
 		return nil, err
 	}
-	result := make([]*ActionMeta, 0, len(list))
+	result := make([]*ActMetaData, 0, len(list))
 	for _, p := range list {
 		if a, ok := p.(Actor); ok {
-			result = append(result, a.ActMeta())
+			result = append(result, a.MetaData())
 		}
 	}
 	return result, nil

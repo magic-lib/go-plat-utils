@@ -71,17 +71,17 @@ func (ac *Activity) getAllDependencies() []*Activity {
 }
 
 func (ac *Activity) getActionParamKeyId(inputParams map[string]any) (string, error) {
-	if ac.ActionName == "" {
+	if ac.ActName == "" {
 		return "", nil
 	}
-	actionFun, err := action.GetAction(ac.ActionNamespace, ac.ActionName)
+	actionFun, err := action.GetAction(ac.ActNamespace, ac.ActName)
 	if err != nil {
 		return "", err
 	}
 
 	actionParam := ac.getActionParam(inputParams)
 
-	actData := actionFun.ActMeta()
+	actData := actionFun.MetaData()
 	if actData.ArgumentType != nil {
 		var data any
 		var err1 error

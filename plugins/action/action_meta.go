@@ -17,17 +17,17 @@ import (
 type (
 	Actor interface {
 		plugins.Plugin
-		ActMeta() *ActionMeta //定义具体的动作属性
+		MetaData() *ActMetaData //定义具体的动作属性
 	}
 )
 
 const (
-	namespaceLinkNameChar = "." // 命名之间的默认连接字符
+	namespaceLinkNameChar = "/" // 命名之间的默认连接字符
 )
 
 type (
-	// ActionMeta 动作的元数据配置（集中管理所有描述性字段）
-	ActionMeta struct {
+	// ActMetaData 动作的元数据配置（集中管理所有描述性字段）
+	ActMetaData struct {
 		Namespace    string                  `yaml:"namespace" json:"namespace,omitempty"` // 避免相同的activity名称冲突，默认为空，则为顶级方法
 		Action       string                  `yaml:"action" json:"action"`                 // 活动名,对应执行的相应方法,可以自定义名
 		Desc         string                  `yaml:"desc" json:"desc"`                     // 动作描述
@@ -40,7 +40,7 @@ type (
 )
 
 // 检查输入参数是否符合要求
-func (am *ActionMeta) checkArguments(arguments any) error {
+func (am *ActMetaData) checkArguments(arguments any) error {
 	if am.Name() == "" {
 		return errors.New("action name cannot be empty")
 	}
@@ -65,7 +65,7 @@ func (am *ActionMeta) checkArguments(arguments any) error {
 }
 
 // 检查返回数据是否符合要求
-func (am *ActionMeta) checkResponses(retData any) error {
+func (am *ActMetaData) checkResponses(retData any) error {
 	if len(am.RequiredResp) == 0 {
 		return nil
 	}
@@ -77,13 +77,13 @@ func (am *ActionMeta) checkResponses(retData any) error {
 	return nil
 }
 
-func (am *ActionMeta) Name() string {
+func (am *ActMetaData) Name() string {
 	return am.Action
 }
-func (am *ActionMeta) ActMeta() *ActionMeta {
+func (am *ActMetaData) MetaData() *ActMetaData {
 	return am
 }
-func (am *ActionMeta) FullName() string {
+func (am *ActMetaData) FullName() string {
 	if am.Namespace == "" {
 		return am.Name()
 	}
@@ -92,17 +92,17 @@ func (am *ActionMeta) FullName() string {
 	}
 	return am.Namespace + am.linkChar + am.Name()
 }
-func (am *ActionMeta) SetMethod(mt utils.ContextAnyHandler) *ActionMeta {
+func (am *ActMetaData) SetMethod(mt utils.ContextAnyHandler) *ActMetaData {
 	am.actionMethod = mt
 	return am
 }
-func (am *ActionMeta) SetLinkChar(linkChar string) *ActionMeta {
+func (am *ActMetaData) SetLinkChar(linkChar string) *ActMetaData {
 	am.linkChar = linkChar
 	return am
 }
 
 // Execute 执行动作并返回结果
-func (am *ActionMeta) Execute(ctx context.Context, arguments any) (any, error) {
+func (am *ActMetaData) Execute(ctx context.Context, arguments any) (any, error) {
 	// 1. 验证输入参数
 	if err := am.checkArguments(arguments); err != nil {
 		return nil, fmt.Errorf("%s invalid arguments: %w", am.FullName(), err)
@@ -128,7 +128,7 @@ func (am *ActionMeta) Execute(ctx context.Context, arguments any) (any, error) {
 }
 
 // 执行动作的内部方法，处理参数转换
-func (am *ActionMeta) executeAction(ctx context.Context, action utils.ContextAnyHandler, arguments any) (any, error) {
+func (am *ActMetaData) executeAction(ctx context.Context, action utils.ContextAnyHandler, arguments any) (any, error) {
 	// 如果指定了参数类型且可以转换，则使用转换后的参数
 	if am.ArgumentType != nil {
 		if convertedArgs, err := conv.ConvertForType(am.ArgumentType, arguments); err == nil {
@@ -140,12 +140,12 @@ func (am *ActionMeta) executeAction(ctx context.Context, action utils.ContextAny
 }
 
 // 查找缺失的必填参数
-func (am *ActionMeta) findMissingRequiredArgs(arguments any) []string {
+func (am *ActMetaData) findMissingRequiredArgs(arguments any) []string {
 	return findMissingRequiredFields(arguments, am.RequiredArgs)
 }
 
 // 查找缺失的必填返回字段
-func (am *ActionMeta) findMissingRequiredFields(retData any) []string {
+func (am *ActMetaData) findMissingRequiredFields(retData any) []string {
 	return findMissingRequiredFields(retData, am.RequiredResp)
 }
 func findMissingRequiredFields(retData any, requiredList []string) []string {

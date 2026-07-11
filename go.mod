@@ -58,7 +58,7 @@ require (
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/xid v1.6.0
-	github.com/rulego/rulego v0.29.0
+	github.com/rulego/rulego v0.36.0
 	github.com/s8sg/goflow v0.1.4
 	github.com/samber/lo v1.52.0
 	github.com/serenize/snaker v0.0.0-20201027110005-a7ad2135616e
@@ -116,7 +116,7 @@ require (
 	github.com/dlclark/regexp2 v1.10.0 // indirect
 	github.com/dop251/goja v0.0.0-20231024180952-594410467bc6 // indirect
 	github.com/eclipse/paho.mqtt.golang v1.5.1 // indirect
-	github.com/expr-lang/expr v1.17.7 // indirect
+	github.com/expr-lang/expr v1.17.8 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.11 // indirect
 	github.com/gin-contrib/sse v1.1.0 // indirect

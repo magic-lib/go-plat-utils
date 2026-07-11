@@ -1,7 +1,10 @@
 package cond
 
 import (
+	"fmt"
+	"math"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -134,4 +137,90 @@ func IsError(val any) bool {
 		return true
 	}
 	return false
+}
+
+// IsEqual 宽松相等判断，支持跨类型比较，适用于规则引擎中的值匹配场景：
+//   - 类型相同：使用 reflect.DeepEqual
+//   - 均为数值或可解析为数值的字符串：统一转为 float64 后比较
+//     （如 int64(1) 与 float64(1)、字符串 "1" 与数字 1 均视为相等）
+//   - 一边为字符串、另一边为布尔：按 "true"/"false" 比较
+//   - 其余类型不同的情况：退回字符串形态比较（如 decimal 的 String() 表示）
+//
+// 注意：浮点数比较使用误差容差，避免 1.0 与 1.0000000001 误判不等。
+func IsEqual(a, b any) bool {
+	if a == nil || b == nil {
+		return a == nil && b == nil
+	}
+
+	// 1) 同类型直接 DeepEqual（最快，覆盖 struct/map/slice/同类型数值等）
+	if reflect.TypeOf(a) == reflect.TypeOf(b) {
+		return reflect.DeepEqual(a, b)
+	}
+
+	// 2) 数值 / 数字字符串 → 转 float64 比较
+	af, aOk := toFloatValue(a)
+	bf, bOk := toFloatValue(b)
+	if aOk && bOk {
+		return math.Abs(af-bf) < 1e-9
+	}
+
+	// 3) 一边字符串、一边布尔
+	if bs, ok := b.(string); ok {
+		if ab, ok2 := a.(bool); ok2 {
+			return strings.EqualFold(bs, strconv.FormatBool(ab))
+		}
+	}
+	if as, ok := a.(string); ok {
+		if bb, ok2 := b.(bool); ok2 {
+			return strings.EqualFold(as, strconv.FormatBool(bb))
+		}
+	}
+
+	// 4) 退回字符串形态比较（覆盖 decimal、"1.0" 与 1 等已在上步处理外的其余情况）
+	return fmt.Sprintf("%v", a) == fmt.Sprintf("%v", b)
+}
+
+// toFloatValue 将数值或可解析的数字字符串转为 float64。
+// 返回 (value, true)；无法转换时返回 (0, false)。
+func toFloatValue(v any) (float64, bool) {
+	switch n := v.(type) {
+	case int:
+		return float64(n), true
+	case int8:
+		return float64(n), true
+	case int16:
+		return float64(n), true
+	case int32:
+		return float64(n), true
+	case int64:
+		return float64(n), true
+	case uint:
+		return float64(n), true
+	case uint8:
+		return float64(n), true
+	case uint16:
+		return float64(n), true
+	case uint32:
+		return float64(n), true
+	case uint64:
+		return float64(n), true
+	case float32:
+		return float64(n), true
+	case float64:
+		return n, true
+	case string:
+		s := strings.TrimSpace(n)
+		if s == "" {
+			return 0, false
+		}
+		// 复用 IsNumeric 判断，再用 strconv 解析
+		if IsNumeric(s) {
+			if f, err := strconv.ParseFloat(s, 64); err == nil {
+				return f, true
+			}
+		}
+		return 0, false
+	default:
+		return 0, false
+	}
 }
