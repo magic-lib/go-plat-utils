@@ -379,8 +379,6 @@ func getByType(src any) (string, error) {
 		return strconv.FormatFloat(v, 'f', -1, 64), nil
 	case []byte:
 		return string(v), nil
-	case fmt.Stringer:
-		return v.String(), nil
 	case error:
 		return v.Error(), nil
 	case time.Time:
