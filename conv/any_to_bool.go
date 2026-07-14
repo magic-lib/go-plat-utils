@@ -16,6 +16,9 @@ func Bool(i any) (bool, bool) {
 	if b, ok := i.(bool); ok {
 		return b, true
 	}
+	if b, ok := toBool(i); ok {
+		return b, true
+	}
 	if b, err := toConvert[int64](i); err == nil {
 		if b == 0 {
 			return false, true
@@ -47,21 +50,7 @@ func Bool(i any) (bool, bool) {
 	case reflect.Complex64, reflect.Complex128:
 		return v.Complex() != 0, true
 	case reflect.String:
-		val := strings.ToLower(v.String())
-		if val == "true" || val == "yes" {
-			return true, true
-		} else if val == "false" || val == "no" {
-			return false, true
-		}
-		boolValue, err := strconv.ParseBool(val)
-		if err != nil {
-			if val == "" {
-				return false, true
-			}
-			//别的字符都会报false，表示转换失败，需要传正确的字符串
-			return true, false
-		}
-		return boolValue, true
+		return toBool(v.String())
 	case reflect.Slice, reflect.Array: //数组只要里面含有元素就表示为true
 		length := v.Len()
 		if length == 0 {
@@ -81,4 +70,33 @@ func getBySqlNullBool(src any) (bool, bool) {
 		return false, true
 	}
 	return false, false
+}
+
+func toBool(val any) (bool, bool) {
+	switch v := val.(type) {
+	case bool:
+		return v, true
+	case string:
+		v = strings.TrimSpace(v)
+		if v == "" {
+			return false, true
+		}
+		valLower := strings.ToLower(v)
+		if valLower == "true" || valLower == "yes" {
+			return true, true
+		} else if valLower == "false" || valLower == "no" {
+			return false, true
+		}
+		boolValue, err := strconv.ParseBool(valLower)
+		if err != nil {
+			return false, false
+		}
+		return boolValue, true
+	case int, int8, int16, int32, int64:
+		return v != 0, true
+	case float32, float64:
+		return v != 0, true
+	default:
+		return false, false
+	}
 }

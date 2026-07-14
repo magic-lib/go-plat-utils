@@ -47,7 +47,7 @@ func LoggerMethod(_ context.Context, req map[string]any) (bool, error) {
 
 func registerTestActions() {
 	// action 1: add
-	addActor, err := action.MethodToActor[*AddReq, int](AddMethod, &action.ActMetaData{
+	err := action.RegisterActor[*AddReq, int](AddMethod, &action.ActMetaData{
 		Namespace:    "test",
 		Action:       "add",
 		Desc:         "加法计算",
@@ -57,7 +57,7 @@ func registerTestActions() {
 		panic(err)
 	}
 	// action 2: concat
-	concatActor, err := action.MethodToActor[*ConcatReq, string](ConcatMethod, &action.ActMetaData{
+	err = action.RegisterActor[*ConcatReq, string](ConcatMethod, &action.ActMetaData{
 		Namespace: "test",
 		Action:    "concat",
 		Desc:      "字符串拼接",
@@ -66,19 +66,13 @@ func registerTestActions() {
 		panic(err)
 	}
 	// action 3: logger
-	loggerActor, err := action.MethodToActor[map[string]any, bool](LoggerMethod, &action.ActMetaData{
+	err = action.RegisterActor[map[string]any, bool](LoggerMethod, &action.ActMetaData{
 		Namespace: "test",
 		Action:    "logger",
 		Desc:      "日志打印",
 	})
 	if err != nil {
 		panic(err)
-	}
-
-	for _, a := range []action.Actor{addActor, concatActor, loggerActor} {
-		if err := action.Register(a); err != nil {
-			panic(err)
-		}
 	}
 
 	// ---------- Activity 1: add（使用 Arguments 绑定参数）----------
@@ -135,7 +129,15 @@ func TestRuleGoActivityNode(t *testing.T) {
 	  { 
 		"id": "testAdd1", 
 		"type": "test/add", 
-		"name": "数字相加"
+		"name": "数字相加",
+		"configuration": {
+			"arguments": {
+				"a": 55
+			},
+			"responses": {
+				"ctx_cacheable": true
+			}
+		}
 	  },
 { 
 		"id": "testConcat1", 
@@ -172,7 +174,7 @@ func TestRuleGoActivityNode(t *testing.T) {
 	err := rulegox.StartActivityFlow(&rulegox.ActivityFlowConfig{
 		ChainConfig: chainConfig,
 		ChainId:     "activity_flow_01",
-		InputVariables: map[string]any{
+		Variables: map[string]any{
 			"age": 20,
 			"a":   4,
 			"b":   7,

@@ -15,6 +15,11 @@ func MethodToActor[I, O any](method any, ac *ActMetaData) (Actor, error) {
 		return nil, fmt.Errorf("action name is empty")
 	}
 
+	methodType := reflect.TypeOf(method)
+	if methodType == nil || methodType.Kind() != reflect.Func {
+		return nil, fmt.Errorf("method must be a callable function/method, got %T", method)
+	}
+
 	newMethod, err := utils.ContextMethodToAnyHandler[I, O](method)
 	if err != nil {
 		return nil, err
@@ -25,4 +30,13 @@ func MethodToActor[I, O any](method any, ac *ActMetaData) (Actor, error) {
 	}
 	ac.actionMethod = newMethod
 	return ac, nil
+}
+
+// RegisterActor 初始化完直接注册，这样方便，避免重复操作。
+func RegisterActor[I, O any](method any, ac *ActMetaData) error {
+	actor, err := MethodToActor[I, O](method, ac)
+	if err != nil {
+		return err
+	}
+	return Register(actor)
 }

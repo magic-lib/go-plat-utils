@@ -17,7 +17,22 @@
 package commnode
 
 import (
+	"github.com/rulego/rulego"
 	"github.com/rulego/rulego/api/types"
+	"go.uber.org/multierr"
 )
 
 var Registry = &types.SafeComponentSlice{}
+
+func RegisterNodes(nodes ...types.Node) error {
+	if len(nodes) == 0 {
+		return nil
+	}
+	var retErr error
+	for _, node := range nodes {
+		if err := rulego.Registry.Register(node); err != nil {
+			retErr = multierr.Append(retErr, err)
+		}
+	}
+	return retErr
+}

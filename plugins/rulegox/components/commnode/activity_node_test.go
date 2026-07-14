@@ -7,7 +7,6 @@ import (
 	"github.com/magic-lib/go-plat-utils/plugins/action"
 	"github.com/magic-lib/go-plat-utils/plugins/activity"
 	"github.com/magic-lib/go-plat-utils/plugins/rulegox/components/commnode"
-	"github.com/magic-lib/go-plat-utils/utils/httputil/param"
 	"testing"
 
 	"github.com/rulego/rulego"
@@ -73,46 +72,87 @@ func registerTestActions() {
 		panic(err)
 	}
 
-	for _, a := range []action.Actor{addActor, concatActor, loggerActor} {
-		if err := action.Register(a); err != nil {
-			panic(err)
+	err = action.Register(addActor, concatActor, loggerActor)
+	if err != nil {
+		panic(err)
+	}
+
+	activityList := `[
+  {
+	"activity_type": "test/add",
+    "act_namespace": "test",
+    "act_name": "add",
+    "arguments": [
+      {"key": "a", "value": 3, "policy": "default"},
+      {"key": "b", "value": 5}
+    ],
+    "control": {"ctx_cacheable": true}
+  },
+  {
+    "activity_type": "test/concat",
+    "act_namespace": "test",
+    "act_name": "concat",
+    "arg_template": "{\"s1\":\"{{add1.responses}}\",\"s2\":\"!\"}",
+    "depends_on": [
+      {"id": "add1", "act_namespace": "test", "act_name": "add"}
+    ]
+  },
+  {
+    "activity_type": "test/logger",
+    "act_namespace": "test",
+    "act_name": "logger",
+    "control": {"when": "{{add1.responses}} > 5"},
+    "depends_on": [
+      {
+		"id": "add1",
+		"act_namespace": "test",
+		"act_name": "add"
 		}
+    ]
+  }
+]`
+	activityDBList := make([]*activity.Activity, 0)
+	err = conv.Unmarshal(activityList, &activityDBList)
+	if err != nil {
+		panic(err)
 	}
 
-	// ---------- Activity 1: add（使用 Arguments 绑定参数）----------
-	addAct := &activity.Activity{
-		ActNamespace: "test",
-		ActName:      "add",
-		Arguments: []*param.BindConfig{
-			{Key: "a", Value: 3, Policy: param.KeyPolicyDefaultOnly},
-			{Key: "b", Value: 5},
-		},
-		Control: activity.ActivityControl{
-			CtxCacheable: true, // 启用流程级缓存
-		},
-	}
-
-	// ---------- Activity 2: concat（使用 ArgTemplate 动态取依赖结果）----------
-	concatAct := &activity.Activity{
-		ActNamespace: "test",
-		ActName:      "concat",
-		ArgTemplate:  `{"s1":"{{add1.responses}}","s2":"!"}`,
-		DependsOn: []*activity.Activity{
-			addAct,
-		},
-	}
-
-	// ---------- Activity 3: logger（使用 Hooks + When 条件）----------
-	loggerAct := &activity.Activity{
-		ActNamespace: "test",
-		ActName:      "logger",
-		// 仅当 add1 的 sum > 5 时才执行
-		Control: activity.ActivityControl{
-			When: `{{add1.responses}} > 5`,
-		},
-		DependsOn: []*activity.Activity{addAct},
-	}
-	err = commnode.RegisterActivityNodes(addAct, concatAct, loggerAct)
+	fmt.Println(activityDBList)
+	//
+	//// ---------- Activity 1: add（使用 Arguments 绑定参数）----------
+	//addAct := &activity.Activity{
+	//	ActNamespace: "test",
+	//	ActName:      "add",
+	//	Arguments: []*param.BindConfig{
+	//		{Key: "a", Value: 3, Policy: param.KeyPolicyDefaultOnly},
+	//		{Key: "b", Value: 5},
+	//	},
+	//	Control: activity.ActivityControl{
+	//		CtxCacheable: true, // 启用流程级缓存
+	//	},
+	//}
+	//
+	//// ---------- Activity 2: concat（使用 ArgTemplate 动态取依赖结果）----------
+	//concatAct := &activity.Activity{
+	//	ActNamespace: "test",
+	//	ActName:      "concat",
+	//	ArgTemplate:  `{"s1":"{{add1.responses}}","s2":"!"}`,
+	//	DependsOn: []*activity.Activity{
+	//		addAct,
+	//	},
+	//}
+	//
+	//// ---------- Activity 3: logger（使用 Hooks + When 条件）----------
+	//loggerAct := &activity.Activity{
+	//	ActNamespace: "test",
+	//	ActName:      "logger",
+	//	// 仅当 add1 的 sum > 5 时才执行
+	//	Control: activity.ActivityControl{
+	//		When: `{{add1.responses}} > 5`,
+	//	},
+	//	DependsOn: []*activity.Activity{addAct},
+	//}
+	err = commnode.RegisterActivityNodes(activityDBList...)
 	if err != nil {
 		panic(err)
 	}
@@ -121,9 +161,10 @@ func registerTestActions() {
 func TestRuleGoActivityNode(t *testing.T) {
 	registerTestActions()
 
-	rulego.Registry.Register(&HandleAge10Node{})
-	rulego.Registry.Register(&HandleAge15Node{})
-	rulego.Registry.Register(&HandleAgeDefaultNode{})
+	err := commnode.RegisterNodes(&HandleAge10Node{}, &HandleAge15Node{}, &HandleAgeDefaultNode{})
+	if err != nil {
+		panic(err)
+	}
 
 	var chainConfig = `{
   "ruleChain": {

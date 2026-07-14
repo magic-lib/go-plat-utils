@@ -1,7 +1,6 @@
 package conv
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/jinzhu/copier"
 	"github.com/magic-lib/go-plat-utils/cond"
@@ -327,10 +326,12 @@ func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (new
 			logDebug("GetByDstAll end 324:")
 
 			logDebug("getByDstStruct1:", dstColumnField.Name, dstColumnField.Type.String())
-			logDebug("getByDstStruct2:", newDataValue.Interface())
+			if newDataValue.IsValid() {
+				logDebug("getByDstStruct2:", newDataValue.Interface())
+				logDebug("getByDstStruct 312:", dstColumnValue.Type().String(), newDataValue.Interface())
+			}
 
 			if newDataValue.IsValid() {
-				logDebug("getByDstStruct 312:", dstColumnValue.Type().String(), newDataValue.Interface())
 				if dstColumnValue.CanSet() {
 					dstColumnValue.Set(newDataValue)
 					isSetStruct = true
@@ -378,7 +379,9 @@ func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (new
 
 	//正常设置
 	if isSetStruct {
-		logDebug("getByDstStruct: ", dstStructValue.Interface(), dstStructValue.Type().String())
+		if dstStructValue.IsValid() {
+			logDebug("getByDstStruct: ", dstStructValue.Interface(), dstStructValue.Type().String())
+		}
 		return dstStructValue, err
 	}
 
@@ -581,7 +584,7 @@ func (c *getNewService) changeValueToDstByDstType(srcValue reflect.Value, dstTyp
 		if srcInterface == nil {
 			return nil, true
 		}
-		s := asString(srcInterface)
+		s := mustBaseAsString(srcInterface)
 		i64, err := strconv.ParseInt(s, 10, dstType.Bits())
 		if err != nil {
 			return nil, false
@@ -591,7 +594,7 @@ func (c *getNewService) changeValueToDstByDstType(srcValue reflect.Value, dstTyp
 		if srcInterface == nil {
 			return nil, true
 		}
-		s := asString(srcInterface)
+		s := mustBaseAsString(srcInterface)
 		u64, err := strconv.ParseUint(s, 10, dstType.Bits())
 		if err != nil {
 			return nil, false
@@ -601,7 +604,7 @@ func (c *getNewService) changeValueToDstByDstType(srcValue reflect.Value, dstTyp
 		if srcInterface == nil {
 			return nil, true
 		}
-		s := asString(srcInterface)
+		s := mustBaseAsString(srcInterface)
 		f64, err := strconv.ParseFloat(s, dstType.Bits())
 		if err != nil {
 			return nil, false
@@ -668,112 +671,88 @@ func (c *getNewService) changeValueToDstByDstType(srcValue reflect.Value, dstTyp
 	return nil, false
 }
 
-// changeValueToSqlNull 将 srcValue 转换为 sql.Null* 类型
-// 支持的 dstType: sql.NullString, sql.NullInt64, sql.NullInt32, sql.NullInt16,
-// sql.NullFloat64, sql.NullBool, sql.NullTime
-func (c *getNewService) changeValueToSqlNull(srcValue reflect.Value, dstType reflect.Type) (any, bool) {
-	srcInterface := srcValue.Interface()
-
-	switch {
-	case dstType == reflect.TypeOf(sql.NullString{}):
-		if srcInterface == nil {
-			return sql.NullString{}, true
-		}
-		s := asString(srcInterface)
-		return sql.NullString{String: s, Valid: s != ""}, true
-
-	case dstType == reflect.TypeOf(sql.NullInt64{}):
-		if srcInterface == nil {
-			return sql.NullInt64{}, true
-		}
-		s := asString(srcInterface)
-		i64, err := strconv.ParseInt(s, 10, 64)
-		if err != nil {
-			return sql.NullInt64{}, true
-		}
-		return sql.NullInt64{Int64: i64, Valid: true}, true
-
-	case dstType == reflect.TypeOf(sql.NullInt32{}):
-		if srcInterface == nil {
-			return sql.NullInt32{}, true
-		}
-		s := asString(srcInterface)
-		i32, err := strconv.ParseInt(s, 10, 32)
-		if err != nil {
-			return sql.NullInt32{}, true
-		}
-		return sql.NullInt32{Int32: int32(i32), Valid: true}, true
-
-	case dstType == reflect.TypeOf(sql.NullInt16{}):
-		if srcInterface == nil {
-			return sql.NullInt16{}, true
-		}
-		s := asString(srcInterface)
-		i16, err := strconv.ParseInt(s, 10, 16)
-		if err != nil {
-			return sql.NullInt16{}, true
-		}
-		return sql.NullInt16{Int16: int16(i16), Valid: true}, true
-
-	case dstType == reflect.TypeOf(sql.NullFloat64{}):
-		if srcInterface == nil {
-			return sql.NullFloat64{}, true
-		}
-		s := asString(srcInterface)
-		f64, err := strconv.ParseFloat(s, 64)
-		if err != nil {
-			return sql.NullFloat64{}, true
-		}
-		return sql.NullFloat64{Float64: f64, Valid: true}, true
-
-	case dstType == reflect.TypeOf(sql.NullBool{}):
-		if srcInterface == nil {
-			return sql.NullBool{}, true
-		}
-		b, ok := c.changeValueToBool(srcValue)
-		if !ok {
-			return sql.NullBool{}, true
-		}
-		return sql.NullBool{Bool: b, Valid: true}, true
-
-	case dstType == reflect.TypeOf(sql.NullTime{}):
-		if srcInterface == nil {
-			return sql.NullTime{}, true
-		}
-		t, ok := c.changeValueToTime(srcValue)
-		if !ok {
-			return sql.NullTime{}, true
-		}
-		return sql.NullTime{Time: t, Valid: true}, true
-
-	default:
-		return nil, false
-	}
-}
-
-func asString(src any) string {
-	switch v := src.(type) {
-	case string:
-		return v
-	case []byte:
-		return string(v)
-	}
-	rv := reflect.ValueOf(src)
-	switch rv.Kind() {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return strconv.FormatInt(rv.Int(), 10)
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return strconv.FormatUint(rv.Uint(), 10)
-	case reflect.Float64:
-		return strconv.FormatFloat(rv.Float(), 'g', -1, 64)
-	case reflect.Float32:
-		return strconv.FormatFloat(rv.Float(), 'g', -1, 32)
-	case reflect.Bool:
-		return strconv.FormatBool(rv.Bool())
-	default:
-		return fmt.Sprintf("%v", src)
-	}
-}
+//// changeValueToSqlNull 将 srcValue 转换为 sql.Null* 类型
+//// 支持的 dstType: sql.NullString, sql.NullInt64, sql.NullInt32, sql.NullInt16,
+//// sql.NullFloat64, sql.NullBool, sql.NullTime
+//func (c *getNewService) changeValueToSqlNull(srcValue reflect.Value, dstType reflect.Type) (any, bool) {
+//	srcInterface := srcValue.Interface()
+//
+//	switch {
+//	case dstType == reflect.TypeOf(sql.NullString{}):
+//		if srcInterface == nil {
+//			return sql.NullString{}, true
+//		}
+//		s := asString(srcInterface)
+//		return sql.NullString{String: s, Valid: s != ""}, true
+//
+//	case dstType == reflect.TypeOf(sql.NullInt64{}):
+//		if srcInterface == nil {
+//			return sql.NullInt64{}, true
+//		}
+//		s := asString(srcInterface)
+//		i64, err := strconv.ParseInt(s, 10, 64)
+//		if err != nil {
+//			return sql.NullInt64{}, true
+//		}
+//		return sql.NullInt64{Int64: i64, Valid: true}, true
+//
+//	case dstType == reflect.TypeOf(sql.NullInt32{}):
+//		if srcInterface == nil {
+//			return sql.NullInt32{}, true
+//		}
+//		s := asString(srcInterface)
+//		i32, err := strconv.ParseInt(s, 10, 32)
+//		if err != nil {
+//			return sql.NullInt32{}, true
+//		}
+//		return sql.NullInt32{Int32: int32(i32), Valid: true}, true
+//
+//	case dstType == reflect.TypeOf(sql.NullInt16{}):
+//		if srcInterface == nil {
+//			return sql.NullInt16{}, true
+//		}
+//		s := asString(srcInterface)
+//		i16, err := strconv.ParseInt(s, 10, 16)
+//		if err != nil {
+//			return sql.NullInt16{}, true
+//		}
+//		return sql.NullInt16{Int16: int16(i16), Valid: true}, true
+//
+//	case dstType == reflect.TypeOf(sql.NullFloat64{}):
+//		if srcInterface == nil {
+//			return sql.NullFloat64{}, true
+//		}
+//		s := asString(srcInterface)
+//		f64, err := strconv.ParseFloat(s, 64)
+//		if err != nil {
+//			return sql.NullFloat64{}, true
+//		}
+//		return sql.NullFloat64{Float64: f64, Valid: true}, true
+//
+//	case dstType == reflect.TypeOf(sql.NullBool{}):
+//		if srcInterface == nil {
+//			return sql.NullBool{}, true
+//		}
+//		b, ok := c.changeValueToBool(srcValue)
+//		if !ok {
+//			return sql.NullBool{}, true
+//		}
+//		return sql.NullBool{Bool: b, Valid: true}, true
+//
+//	case dstType == reflect.TypeOf(sql.NullTime{}):
+//		if srcInterface == nil {
+//			return sql.NullTime{}, true
+//		}
+//		t, ok := c.changeValueToTime(srcValue)
+//		if !ok {
+//			return sql.NullTime{}, true
+//		}
+//		return sql.NullTime{Time: t, Valid: true}, true
+//
+//	default:
+//		return nil, false
+//	}
+//}
 
 func (c *getNewService) changeValueToString(srcValue reflect.Value) (string, bool) {
 	srcTypeName := srcValue.Type().Name()

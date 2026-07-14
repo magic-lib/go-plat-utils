@@ -231,6 +231,8 @@ func (r *EngineLogic) Vars(ruleString string) ([]string, error) {
 //}
 
 // RunString 一个规则，返回规则的结果
+// Deprecated: 请使用 ruleExpr := templates.NewRuleExprEngine();
+// newArgs, _ := ruleExpr.RunString(ac.ArgTemplate, inputParams)
 func (r *EngineLogic) RunString(ruleString string, parameters map[string]any) (any, error) {
 	if ruleString == "" {
 		return nil, nil

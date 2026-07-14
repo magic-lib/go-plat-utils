@@ -57,9 +57,8 @@ func (e *RuleExprEngine) RunString(expr string, args any) (any, error) {
 		return nil, fmt.Errorf("expr: %s, %v", newExpr, err)
 	}
 	ruleEngine := ruleengine.NewEngineLogic()
-	runStringArg := conv.KeyListFromMap(args)
 	newWhenString := conv.String(newWhen)
-	retVal, err := ruleEngine.RunString(newWhenString, runStringArg)
+	retVal, err := ruleEngine.RunString(newWhenString, argMap)
 	if err != nil {
 		if cond.IsJson(newWhenString) { //如果错误是json格式，则直接返回即可，证明不是表达式
 			return newWhen, nil

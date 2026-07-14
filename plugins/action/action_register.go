@@ -3,10 +3,21 @@ package action
 import (
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/plugins"
+	"go.uber.org/multierr"
 )
 
 // Register 注册全局Action方法
-func Register(ai Actor) error {
+func Register(ai ...Actor) error {
+	var retErr error
+	for _, a := range ai {
+		if err := oneRegister(a); err != nil {
+			retErr = multierr.Append(retErr, err)
+		}
+	}
+	return retErr
+}
+
+func oneRegister(ai Actor) error {
 	if ai == nil {
 		return fmt.Errorf("actor is nil")
 	}

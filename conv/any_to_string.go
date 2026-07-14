@@ -28,29 +28,14 @@ func String(src any) string {
 		return src.(error).Error()
 	}
 
-	if pb, ok := src.(proto.Message); ok {
-		if !hasCustomJSONTag(pb) {
-			b, err := protojson.Marshal(pb)
-			if err == nil {
-				return string(b)
-			}
-		}
+	retStr, err := baseAsString(src)
+	if err == nil {
+		return retStr
 	}
 
-	var retStr string
 	var ok bool
 	src, retStr, ok = getBySpecialType(src)
 	if ok {
-		return retStr
-	}
-
-	retStr, err := getByKind(src)
-	if err == nil {
-		return retStr
-	}
-
-	retStr, err = getByType(src)
-	if err == nil {
 		return retStr
 	}
 
@@ -75,6 +60,26 @@ func String(src any) string {
 
 	fmt.Printf("jsoniter.Marshal error:%s", err.Error())
 	return toolbox.AsString(src)
+}
+
+func baseAsString(src any) (string, error) {
+	retStr, err := getByType(src)
+	if err == nil {
+		return retStr, nil
+	}
+	retStr, err = getByKind(src)
+	if err == nil {
+		return retStr, nil
+	}
+	return "", err
+}
+
+func mustBaseAsString(src any) string {
+	retStr, err := baseAsString(src)
+	if err == nil {
+		return retStr
+	}
+	return fmt.Sprintf("%v", src)
 }
 
 func getBySpecialType(src any) (any, string, bool) {
@@ -339,28 +344,71 @@ func getByKind(i any) (string, error) {
 }
 
 func getByType(src any) (string, error) {
-	switch src.(type) {
-	case []byte:
-		return string(src.([]byte)), nil
-	case byte:
-		return string(src.(byte)), nil
+	if src == nil {
+		return "", nil
+	}
+
+	switch v := src.(type) {
 	case string:
-		return src.(string), nil
+		return v, nil
+	case bool:
+		return strconv.FormatBool(v), nil
 	case int:
-		return strconv.Itoa(src.(int)), nil
+		return strconv.Itoa(v), nil
+	case int8:
+		return strconv.Itoa(int(v)), nil
+	case int16:
+		return strconv.Itoa(int(v)), nil
+	case int32:
+		return strconv.Itoa(int(v)), nil
 	case int64:
-		return strconv.FormatInt(src.(int64), 10), nil
+		return strconv.FormatInt(v, 10), nil
+	case uint:
+		return strconv.FormatUint(uint64(v), 10), nil
+	case uint8:
+		return strconv.FormatUint(uint64(v), 10), nil
+	case uint16:
+		return strconv.FormatUint(uint64(v), 10), nil
+	case uint32:
+		return strconv.FormatUint(uint64(v), 10), nil
+	case uint64:
+		return strconv.FormatUint(v, 10), nil
+	case float32:
+		return strconv.FormatFloat(float64(v), 'f', -1, 32), nil
+	case float64:
+		return strconv.FormatFloat(v, 'f', -1, 64), nil
+	case []byte:
+		return string(v), nil
+	case fmt.Stringer:
+		return v.String(), nil
 	case error:
-		err, _ := src.(error)
-		return err.Error(), nil
-	//case float64:
-	//	return strconv.FormatFloat(str.(float64), 'g', -1, 64)
+		return v.Error(), nil
 	case time.Time:
 		{
-			oneTime := src.(time.Time)
-			return oneTime.Format(time.DateTime), nil
+			return v.Format(time.DateTime), nil
+		}
+	case proto.Message:
+		{
+			if !hasCustomJSONTag(v) {
+				b, err := protojson.Marshal(v)
+				if err == nil {
+					return string(b), nil
+				}
+			}
+		}
+	case map[any]any:
+		// 直接创建临时map进行类型转换
+		stringMap := make(map[string]any)
+		for key, value := range v {
+			stringMap[String(key)] = value
+		}
+		if data, err := jsoniterForNil.Marshal(stringMap); err == nil {
+			return string(data), nil
+		} else {
+			return "", err
 		}
 	}
+
 	return "", fmt.Errorf("type error")
 }
 func getBySqlType(src any) (string, error) {

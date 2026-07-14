@@ -14,7 +14,9 @@ import (
 )
 
 type ActivityNode struct {
-	Activity *activity.Activity `json:"activity"`
+	Activity  *activity.Activity `json:"activity"`
+	Arguments map[string]any     `json:"arguments"` //参数直接映射替换
+	Responses map[string]any     `json:"responses"` //参数直接映射替换
 }
 
 // RegisterActivityNodes 将传入的 Activity 动态注册为 rulego 节点。
@@ -91,12 +93,15 @@ func (x *ActivityNode) Init(ruleConfig types.Config, configuration types.Configu
 		return nil
 	}
 	ruleNode := base.NodeUtils.GetSelfDefinition(configuration.Copy())
-	newCond := ActivityNode{
-		Activity: &activity.Activity{},
+	newCond := ActivityNode{}
+	if err := conv.Unmarshal(ruleNode.Configuration, &newCond); err != nil {
+		return fmt.Errorf("activityNode error parsing newCond: %s, %v", conv.String(configuration), err)
 	}
-	if err := conv.Unmarshal(ruleNode.Configuration, newCond.Activity); err != nil {
+	newCond.Activity = &activity.Activity{}
+	if err := conv.Unmarshal(ruleNode, newCond.Activity); err != nil {
 		return fmt.Errorf("activityNode error parsing configuration: %s, %v", conv.String(configuration), err)
 	}
+
 	if newCond.Activity != nil && newCond.Activity.ActName != "" {
 		oldAct := x.Activity
 		x.Activity = newCond.Activity
@@ -109,6 +114,10 @@ func (x *ActivityNode) Init(ruleConfig types.Config, configuration types.Configu
 			x.Activity.ArgTemplate = oldAct.ArgTemplate
 		}
 	}
+
+	x.Arguments = newCond.Arguments
+	x.Responses = newCond.Responses
+
 	return nil
 }
 
@@ -139,13 +148,11 @@ func (x *ActivityNode) OnMsg(ctx types.RuleContext, msg types.RuleMsg) {
 		}
 	}
 
-	data := new(paramx.ParamCtx)
-	if err := conv.Unmarshal(msg.GetData(), &data); err != nil {
+	dataMap, data, err := x.getStepArguments(newAct.Id, msg)
+	if err != nil {
 		ctx.TellFailure(msg, err)
 		return
 	}
-
-	dataMap := data.ToOneMap(newAct.Id)
 
 	respData, err := newAct.Execute(ctx.GetContext(), dataMap)
 	if err != nil {
@@ -155,11 +162,33 @@ func (x *ActivityNode) OnMsg(ctx types.RuleContext, msg types.RuleMsg) {
 	if oneFuncData, ok := respData[newAct.Id]; ok {
 		oneFuncParam := new(paramx.ParamStruct)
 		_ = conv.Unmarshal(oneFuncData, oneFuncParam)
-		data.AllFuncParam[newAct.Id] = *oneFuncParam
+		data.Steps[newAct.Id] = *oneFuncParam
 	}
 
 	msg.SetData(conv.String(data))
 	ctx.TellSuccess(msg)
+}
+
+func (x *ActivityNode) getStepArguments(stepId string, msg types.RuleMsg) (map[string]any, *paramx.ParamCtx, error) {
+	data := new(paramx.ParamCtx)
+	if err := conv.Unmarshal(msg.GetData(), &data); err != nil {
+		return nil, nil, err
+	}
+
+	dataMap := data.StepMapsByStepId(stepId)
+	if len(x.Arguments) > 0 {
+		oneArgs, err := data.TemplateArguments(x.Arguments)
+		if err == nil {
+			for k, v := range oneArgs {
+				dataMap[k] = v
+			}
+		} else {
+			for k, v := range x.Arguments {
+				dataMap[k] = v
+			}
+		}
+	}
+	return dataMap, data, nil
 }
 
 // Desc returns the component description

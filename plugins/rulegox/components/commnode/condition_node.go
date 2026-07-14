@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/cond"
 	"github.com/magic-lib/go-plat-utils/conv"
-	"github.com/magic-lib/go-plat-utils/templates/ruleengine"
+	"github.com/magic-lib/go-plat-utils/templates"
 	"github.com/rulego/rulego"
 	"github.com/rulego/rulego/api/types"
 )
@@ -18,7 +18,7 @@ func init() {
 
 type CondRouterNode struct {
 	Condition string `json:"condition"`
-	ruleObj   *ruleengine.EngineLogic
+	ruleObj   *templates.RuleExprEngine
 }
 
 // Type 返回组件类型
@@ -42,7 +42,7 @@ func (x *CondRouterNode) Init(ruleConfig types.Config, configuration types.Confi
 		return fmt.Errorf("condRouter error parsing configuration: %s, %v", conv.String(configuration), err)
 	}
 	x.Condition = newCond.Condition
-	x.ruleObj = ruleengine.NewEngineLogic()
+	x.ruleObj = templates.NewRuleExprEngine()
 	return nil
 }
 

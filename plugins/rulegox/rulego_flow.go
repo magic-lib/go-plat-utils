@@ -10,12 +10,12 @@ import (
 )
 
 type ActivityFlowConfig struct {
-	ChainId        string
-	ChainConfig    string
-	InputVariables map[string]any
-	MsgType        string
-	IsAsync        bool
-	EndFunc        func(ctx context.Context, param *paramx.ParamCtx, err error)
+	ChainId     string
+	ChainConfig string
+	Variables   map[string]any
+	MsgType     string
+	IsAsync     bool
+	EndFunc     func(ctx context.Context, param *paramx.ParamCtx, err error)
 }
 
 func StartActivityFlow(actConfig *ActivityFlowConfig) error {
@@ -36,7 +36,7 @@ func StartActivityFlow(actConfig *ActivityFlowConfig) error {
 	if err != nil {
 		return err
 	}
-	paramInput := paramx.NewParamCtxFromVariables(actConfig.InputVariables)
+	paramInput := paramx.NewParamCtxFromVariables(actConfig.Variables)
 
 	if actConfig.MsgType == "" {
 		actConfig.MsgType = "ACTIVITY_EVENT"

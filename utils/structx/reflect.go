@@ -16,6 +16,5 @@ func NewInstance[T any]() T {
 		newSlice := reflect.MakeSlice(reflect.SliceOf(elemType), 0, 0)
 		t = newSlice.Interface().(T)
 	}
-
 	return t
 }
