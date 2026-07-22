@@ -6,6 +6,7 @@ import (
 	"github.com/go-dev-frame/sponge/pkg/krand"
 	gguid "github.com/google/uuid"
 	"github.com/lithammer/shortuuid/v3"
+	"github.com/magic-lib/go-plat-utils/cond"
 	"github.com/marspere/goencrypt"
 	gouuid "github.com/nu7hatch/gouuid"
 	"github.com/rs/xid"
@@ -117,6 +118,10 @@ func NewUUID() string {
 
 // GetUUID 获取uuid格式串
 func GetUUID(s string) string {
+	// 检测s是否已经是uuid格式
+	if cond.IsUUID(s) {
+		return s
+	}
 	uuidTemp, err := goencrypt.MD5(s)
 	if len(uuidTemp) != 32 || err != nil {
 		return ""

@@ -41,3 +41,10 @@ func TestIsJson(t *testing.T) {
 	patch, err := jsondiff.CompareJSON([]byte(a), []byte(b))
 	fmt.Println("相等？", len(patch) == 0, err) // true
 }
+
+func TestInsertIgnore2(t *testing.T) {
+	tt := time.Now()
+	mm := tt.String()
+	nn := cond.IsTime(mm)
+	fmt.Println(mm, nn)
+}

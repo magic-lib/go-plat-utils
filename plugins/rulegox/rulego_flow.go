@@ -44,13 +44,12 @@ func StartActivityFlow(actConfig *ActivityFlowConfig) error {
 
 	msg := types.NewMsg(0, actConfig.MsgType, types.JSON, types.NewMetadata(), conv.String(paramInput))
 	endOption := types.WithOnEnd(func(ctx types.RuleContext, msg types.RuleMsg, err error, relationType string) {
-		if err != nil {
-			actConfig.EndFunc(ctx.GetContext(), nil, err)
-			return
-		}
 		var resultParam = new(paramx.ParamCtx)
 		_ = conv.Unmarshal(msg.GetData(), resultParam)
-
+		if err != nil {
+			actConfig.EndFunc(ctx.GetContext(), resultParam, err)
+			return
+		}
 		actConfig.EndFunc(ctx.GetContext(), resultParam, nil)
 	})
 	if actConfig.IsAsync {
