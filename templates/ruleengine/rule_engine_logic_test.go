@@ -2,6 +2,8 @@ package ruleengine_test
 
 import (
 	"fmt"
+	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/templates"
 	"github.com/magic-lib/go-plat-utils/templates/ruleengine"
 	"github.com/magic-lib/go-plat-utils/utils"
 	"github.com/samber/lo"
@@ -11,19 +13,6 @@ import (
 	"testing"
 )
 
-func TestCheckOneRule(t *testing.T) {
-	dataMap := map[string]any{
-		"name": "jacky",
-		"age":  decimal.NewFromInt(20),
-		//"age": 20,
-	}
-
-	rule := "age>18"
-
-	ruleEngine := ruleengine.NewEngineLogic()
-	ok, err := ruleEngine.RunString(rule, dataMap)
-	fmt.Println(ok, err)
-}
 func TestCheckBoolRule(t *testing.T) {
 	ruleEngine := ruleengine.NewEngineLogic()
 	ok, err := ruleEngine.RunString("false", nil)
@@ -428,7 +417,7 @@ func TestJoin(t *testing.T) {
 }
 
 func TestBetween(t *testing.T) {
-	testCases := []*utils.TestStruct{
+	betweenTestCases := []*utils.TestStruct{
 		{"-1.4 (-∞,3]", []any{-1.4, "(-∞,3]"}, []any{true}, nil},
 		{"4 (-∞,3]", []any{4, "(-∞,3]"}, []any{false}, nil},
 		{"2 (2,7]", []any{2, "(2,7]"}, []any{false}, nil},
@@ -439,10 +428,10 @@ func TestBetween(t *testing.T) {
 		{"7 (2,7)", []any{7, "(2,7)"}, []any{false}, nil},
 		{"7  ( 2 , 7 ] ", []any{7, " ( 2 , 7 ] "}, []any{true}, nil},
 	}
-	utils.TestFunction(t, testCases, func(num float64, rangeStr string) (bool, error) {
+	utils.TestFunction(t, betweenTestCases, func(num float64, rangeStr string) (bool, error) {
 		condTypeCustomVarPattern := `Between(Number, Value)`
-		ruleLogic := ruleengine.NewEngineLogic()
-		in, err := ruleLogic.RunString(condTypeCustomVarPattern, map[string]any{
+		ruleEngine := templates.NewRuleExprEngine()
+		in, err := ruleEngine.RunString(condTypeCustomVarPattern, map[string]any{
 			"Number": num,
 			"Value":  rangeStr,
 		})
@@ -452,15 +441,45 @@ func TestBetween(t *testing.T) {
 		return in.(bool), err
 	})
 }
-
-func TestRuleString(t *testing.T) {
-	ruleEngine := ruleengine.NewEngineLogic()
-
-	retVal, err := ruleEngine.RunString("Switch([variables.age], 10, 'Age10', 15, 'Age15', 'Default')", map[string]any{
-		"variables": map[string]any{
-			"age": 10,
+func TestRuleEngineRunString(t *testing.T) {
+	param1 := map[string]any{
+		"name":     65,
+		"name2":    decimal.NewFromInt(20),
+		"name.age": 65,
+		"name4": map[string]any{
+			"name5": 34,
 		},
+	}
+
+	testCases := []*utils.TestStruct{
+		{"包含{{}}", []any{"{{name}}+5*3.4", param1}, []any{"82"}, nil},
+		{"正常变量", []any{"name+5*3.4", param1}, []any{"82"}, nil},
+		{"包含.变量", []any{"[name.age]+5*3.4", param1}, []any{"82"}, nil},
+		{"变量参数核实", []any{"name + [name.age]", param1}, []any{"130"}, nil},
+		{"包含.变量：错误", []any{"name.age+5*3.4", param1}, []any{"-200"}, nil},
+		{"格式错误:少括号", []any{"If(name>50, 10, 32", param1}, []any{"-200"}, nil},
+		{"变量少参数", []any{"name + [name.age] + age", param1}, []any{"name + [name.age] + age"}, nil},
+		{"Switch", []any{"Switch([name.age], 10, 55, 15, 66, 77)", param1}, []any{"77"}, nil},
+		{"If", []any{"If(name2>18, '5', '10')", param1}, []any{"5"}, nil},
+		{"true", []any{"name2>18", param1}, []any{"true"}, nil},
+		{"Max", []any{"Max('{{.name}}',2,3.4,Min(14,13),10.6)", param1}, []any{"65"}, nil},
+		{"Min", []any{"Min('{{.name}}',2,3.4,2.1,7.0,10.6)", param1}, []any{"2"}, nil},
+		{"变量替换含有.1", []any{"{{name4.name5}}==34", param1}, []any{"true"}, nil},
+		{"变量中括号含有.2", []any{"[name4.name5]==34", param1}, []any{"true"}, nil},
+		{"变量转义含有.3", []any{"name4\\.name5==34", param1}, []any{"true"}, nil},
+	}
+
+	utils.TestFunction(t, testCases, func(tempStr string, value map[string]any) string {
+		ruleEngine := templates.NewRuleExprEngine()
+		affordability2, err := ruleEngine.RunString(tempStr, value)
+		if err != nil {
+			return "-200"
+		}
+		kk, err := conv.Convert[string](affordability2)
+		if err != nil {
+			log.Println("TestRuleString2.1:", err)
+			return "-100"
+		}
+		return kk
 	})
-	fmt.Println(retVal, err)
-	return
 }

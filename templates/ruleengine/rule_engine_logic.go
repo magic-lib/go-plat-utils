@@ -125,7 +125,14 @@ func (r *EngineLogic) getExpressionByRuleString(ruleString string) (*govaluate.E
 	}
 
 	if err != nil {
-		return nil, err
+		errHasOccurred := "RunString: " + ruleString
+		if containsVariableDot(ruleString) {
+			errHasOccurred = fmt.Sprintf("如果变量含有'.'符号，则需要用[]将条件变量包括起来，或者用\\\\进行转义.符号，不要使用{{}}括起来，这样会被替换掉该变量: RunString: %s",
+				ruleString)
+		} else if err.Error() == "Unbalanced parenthesis" {
+			errHasOccurred = fmt.Sprintf("格式错误: 括号不匹配, RunString: %s", ruleString)
+		}
+		return nil, fmt.Errorf("err: 【%w】, 【%s】", err, errHasOccurred)
 	}
 
 	expressCache.Store(ruleString, expression)
@@ -195,7 +202,7 @@ func (r *EngineLogic) Vars(ruleString string) ([]string, error) {
 
 	exp, err := r.getExpressionByRuleString(ruleString)
 	if err != nil {
-		return nil, fmt.Errorf("ruleEngine ruleString: %s, error: %v", ruleString, err)
+		return nil, err
 	}
 
 	var varList []string
@@ -239,14 +246,48 @@ func (r *EngineLogic) RunString(ruleString string, parameters map[string]any) (a
 	}
 	retVal, err := r.runOneRuleString(ruleString, parameters)
 	if err != nil {
-		errHasOccurred := ""
-		if strings.Contains(ruleString, ".") {
-			errHasOccurred = fmt.Sprintf("如果有'.'符号，则需要用[]将条件变量包括起来，或者用\\\\进行转义，不要使用{{}}括起来，这样会被替换掉该变量: %s, %s",
-				ruleString, conv.String(parameters))
-		}
-		return nil, fmt.Errorf("err: %w, RunString: %s", err, errHasOccurred)
+		return nil, err
 	}
 	return retVal, nil
+}
+
+// containsVariableDot 判断字符串中是否存在“变量路径中的点”（而非小数点的点）。
+// 仅当 "." 前后均为数字时才视为小数点并忽略；其余情况（如 user.age、a.b.c）视为变量路径点。
+func containsVariableDot(s string) bool {
+	if !strings.Contains(s, ".") {
+		return false
+	}
+
+	bracketDepth := 0 // 同时统计 [ ] 与 { } 的包裹层数
+	for i := 0; i < len(s); i++ {
+		switch s[i] {
+		case '\\':
+			// 转义符：跳过其后一个字符（\. 或 \[），避免被误判
+			i++
+			continue
+		case '[':
+			bracketDepth++
+			continue
+		case ']':
+			if bracketDepth > 0 {
+				bracketDepth--
+			}
+			continue
+		case '.':
+			// 1) 小数点：前后均为数字，忽略
+			prevDigit := i > 0 && s[i-1] >= '0' && s[i-1] <= '9'
+			nextDigit := i+1 < len(s) && s[i+1] >= '0' && s[i+1] <= '9'
+			if prevDigit && nextDigit {
+				continue
+			}
+			// 2) 反斜杠转义（\.）或 3) 处于 []/{{}} 包裹内：已正确处理，忽略
+			if bracketDepth > 0 {
+				continue
+			}
+			return true // 裸写的变量路径点，需要提示
+		}
+	}
+	return false
 }
 
 // RunStringAny 一个规则，返回规则的结果

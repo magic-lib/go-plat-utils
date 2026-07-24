@@ -13,8 +13,9 @@ func IsUUID(uuid string) bool {
 		return false
 	}
 
-	// 正则表达式：匹配小写字母和数字，格式为 8-4-4-4-12
-	pattern := `^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`
+	// 正则：仅接受 全小写 或 全大写 的十六进制，不接受大小写混用；格式为 8-4-4-4-12
+	pattern := `^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12})$`
+
 	match, err := regexp.MatchString(pattern, uuid)
 	if err != nil {
 		return false

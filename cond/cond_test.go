@@ -8,10 +8,6 @@ import (
 	"time"
 )
 
-func TestIsUUID(t *testing.T) {
-	isUUID := cond.IsUUID("e4ff48d4-ea6b-45b6-9217-35bc23e8a57f")
-	fmt.Println(isUUID)
-}
 func TestIsZero(t *testing.T) {
 	timeStr := "0001-01-01 00:00:00"
 	layout := "2006-01-02 15:04:05"
@@ -47,4 +43,22 @@ func TestInsertIgnore2(t *testing.T) {
 	mm := tt.String()
 	nn := cond.IsTime(mm)
 	fmt.Println(mm, nn)
+}
+
+func TestIsUUID(t *testing.T) {
+	cases := []struct {
+		in   string
+		want bool
+	}{
+		{"e4ff48d4-ea6b-45b6-9217-35bc23e8a57f", true},  // 全小写
+		{"E4FF48D4-EA6B-45B6-9217-35BC23E8A57F", true},  // 全大写
+		{"e4ff48d4-ea6b-45b6-9217-35bc23E8a57f", false}, // 混用 -> 拒绝
+		{"E4FF48D4-EA6B-45B6-9217-35bc23e8a57f", false}, // 混用 -> 拒绝
+		{"e4ff48d4-ea6b-45b6-9217-35bc23e8a57", false},  // 长度不足
+	}
+	for _, c := range cases {
+		if got := cond.IsUUID(c.in); got != c.want {
+			t.Errorf("IsUUID(%q)=%v, want %v", c.in, got, c.want)
+		}
+	}
 }
