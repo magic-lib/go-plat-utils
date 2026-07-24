@@ -5,6 +5,7 @@ import (
 	"github.com/magic-lib/go-plat-utils/cond"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/templates/ruleengine"
+	"log"
 	"regexp"
 )
 
@@ -60,16 +61,18 @@ func (e *RuleExprEngine) RunString(expr string, args any) (any, error) {
 	newWhenString := conv.String(newWhen)
 	retVal, err := ruleEngine.RunString(newWhenString, argMap)
 	if err != nil {
-		if cond.IsJson(newWhenString) { //如果错误是json格式，则直接返回即可，证明不是表达式
+		//如果错误是json格式，则直接返回即可，证明不是表达式，可能只是进行变量替换而已
+		if cond.IsJson(newWhenString) {
 			return newWhen, nil
 		}
 		//err: No parameter 'tianlin0' found., RunString: tianlin0
 		if isParameterNotFoundError(err) {
+			log.Println("RunString:", err)
 			return newWhen, nil
 		}
 
 		// 有可能就没有变量，所以不需要去运行错误，比如一个字符串不加引号，就应该是正确的，如果有表达式，计算的话，就应该报错
-		fmt.Println("RuleExprEngine RunString expr:", expr, "return:", newWhenString, "args:", conv.String(args), "err:", err)
+		log.Println("RuleExprEngine RunString expr:", expr, "return:", newWhenString, "args:", conv.String(args), " RunStringErr:", err)
 		return newWhen, err
 	}
 	return retVal, nil

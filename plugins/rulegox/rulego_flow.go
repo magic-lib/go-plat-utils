@@ -7,15 +7,16 @@ import (
 	"github.com/magic-lib/go-plat-utils/plugins/paramx"
 	"github.com/rulego/rulego"
 	"github.com/rulego/rulego/api/types"
+	"log"
 )
 
 type ActivityFlowConfig struct {
-	ChainId     string
-	ChainConfig string
-	Variables   map[string]any
-	MsgType     string
-	IsAsync     bool
-	EndFunc     func(ctx context.Context, param *paramx.ParamCtx, err error)
+	RootChainDSL map[string][]byte
+	SubChainDSL  map[string][]byte
+	Variables    map[string]any
+	MsgType      string
+	IsAsync      bool
+	EndFunc      func(ctx context.Context, param *paramx.ParamCtx, err error)
 }
 
 func StartActivityFlow(actConfig *ActivityFlowConfig) error {
@@ -25,17 +26,40 @@ func StartActivityFlow(actConfig *ActivityFlowConfig) error {
 	if actConfig.EndFunc == nil {
 		actConfig.EndFunc = func(ctx context.Context, param *paramx.ParamCtx, err error) {
 			if err != nil {
-				fmt.Printf("工作流执行失败: %v\n", err)
+				log.Printf("工作流执行失败: %v", err)
 				return
 			}
-			fmt.Printf("工作流执行成功: %v\n", param)
+			log.Printf("工作流执行成功: %v\n", param)
 		}
 	}
 
-	engine, err := rulego.New(actConfig.ChainId, []byte(actConfig.ChainConfig))
-	if err != nil {
-		return err
+	if len(actConfig.RootChainDSL) != 1 {
+		return fmt.Errorf("主规则链DSL目前只能为1个")
 	}
+
+	// 全局配置
+	config := rulego.NewConfig()
+	if len(actConfig.SubChainDSL) > 0 {
+		for sudChainId, subChainDSL := range actConfig.SubChainDSL {
+			_, err := rulego.New(sudChainId, subChainDSL, rulego.WithConfig(config))
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var engine types.RuleEngine
+	for rootChainId, rootChainDSL := range actConfig.RootChainDSL {
+		var err error
+		engine, err = rulego.New(rootChainId, rootChainDSL, rulego.WithConfig(config))
+		if err != nil {
+			return err
+		}
+	}
+	if engine == nil {
+		return fmt.Errorf("规则引擎不能为空")
+	}
+
 	paramInput := paramx.NewParamCtxFromVariables(actConfig.Variables)
 
 	if actConfig.MsgType == "" {

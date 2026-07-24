@@ -45,7 +45,13 @@ func LoggerMethod(_ context.Context, req map[string]any) (bool, error) {
 	return true, nil
 }
 
+var testActionsRegistered bool
+
 func registerTestActions() {
+	if testActionsRegistered {
+		return
+	}
+	testActionsRegistered = true
 	// action 1: add
 	err := action.RegisterActor[*AddReq, int](AddMethod, &action.ActMetaData{
 		Namespace:    "test",
@@ -172,8 +178,9 @@ func TestRuleGoActivityNode(t *testing.T) {
   }
 }`
 	err := rulegox.StartActivityFlow(&rulegox.ActivityFlowConfig{
-		ChainConfig: chainConfig,
-		ChainId:     "activity_flow_01",
+		RootChainDSL: map[string][]byte{
+			"activity_flow_01": []byte(chainConfig),
+		},
 		Variables: map[string]any{
 			"age": 20,
 			"a":   4,
@@ -257,3 +264,69 @@ func (n *HandleAgeDefaultNode) OnMsg(ctx types.RuleContext, msg types.RuleMsg) {
 	ctx.TellNext(msg, types.Success)
 }
 func (n *HandleAgeDefaultNode) Destroy() {}
+
+// TestRuleGoSubChain 测试子规则链：主链通过 flow 节点（targetId）调用子链。
+// 关键点：子链与主链必须共用同一个 rulego.Config（即同一个引擎池），flow 节点才能按 targetId 解析到子链。
+func TestRuleGoSubChain(t *testing.T) {
+	registerTestActions()
+
+	// 1) 子规则链：复用已注册的 test/add、test/logger 节点
+	subChainDef := `{
+  "ruleChain": { "id": "sub_test_01", "name": "子规则链-加法与日志" },
+  "metadata": {
+    "nodes": [
+      { "id": "sub_add", "type": "test/add", "name": "子链加法" },
+      { "id": "sub_logger", "type": "test/logger", "name": "子链日志" }
+    ],
+    "connections": [
+      { "fromId": "sub_add", "toId": "sub_logger", "type": "Success" }
+    ]
+  }
+}`
+
+	// 2) 主规则链：通过 flow 节点（targetId）调用子链
+	rootDef := `{
+  "ruleChain": { "id": "root_sub_test", "name": "主链-调用子链" },
+  "metadata": {
+    "nodes": [
+      { "id": "root_add", "type": "test/add", "name": "主链加法" },
+      {
+        "id": "root_flow",
+        "type": "flow",
+        "name": "调用子规则链",
+        "configuration": { "targetId": "sub_test_01" }
+      }
+    ],
+    "connections": [
+      { "fromId": "root_add", "toId": "root_flow", "type": "Success" }
+    ]
+  }
+}`
+
+	config := rulego.NewConfig()
+	// 关键：子链与主链共用同一个 config（同一个引擎池），flow 才能解析 targetId
+	if _, err := rulego.New("sub_test_01", []byte(subChainDef), rulego.WithConfig(config)); err != nil {
+		t.Fatalf("register sub chain failed: %v", err)
+	}
+	engine, err := rulego.New("root_sub_test", []byte(rootDef), rulego.WithConfig(config))
+	if err != nil {
+		t.Fatalf("create main engine failed: %v", err)
+	}
+
+	paramInput := paramx.NewParamCtxFromVariables(map[string]any{"age": 20})
+	msg := types.NewMsg(0, "ACTIVITY_EVENT", types.JSON, types.NewMetadata(), conv.String(paramInput))
+
+	done := make(chan error, 1)
+	engine.OnMsgAndWait(msg, types.WithOnEnd(func(ctx types.RuleContext, msg types.RuleMsg, err error, relationType string) {
+		if err != nil {
+			fmt.Printf("子链流程执行失败: %v\n", err)
+			done <- err
+			return
+		}
+		fmt.Println("子链流程执行成功:", msg.GetData())
+		done <- nil
+	}))
+	if err := <-done; err != nil {
+		t.Fatalf("sub chain test failed: %v", err)
+	}
+}
