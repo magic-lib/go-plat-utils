@@ -89,7 +89,7 @@ func TestRuleGoCondNode(t *testing.T) {
 	"nodes": [
 	  { 
 		"id": "n_switch", 
-		"type": "condition", 
+		"type": "condSwitch", 
 		"name": "年龄条件分流器",
 		"configuration": {
 		  "condition": "Switch(age, 10, 'Age10', 15, 'Age15', 'Default')"

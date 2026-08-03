@@ -24,7 +24,7 @@ type CondRouterNode struct {
 // Type 返回组件类型
 // Type returns the component type identifier.
 func (x *CondRouterNode) Type() string {
-	return "condition"
+	return "condSwitch"
 }
 
 // New 创建新实例
