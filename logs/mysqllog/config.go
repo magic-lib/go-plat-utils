@@ -154,7 +154,7 @@ func (c *Config) buildCreateTableSQL(tableName string) string {
 	sb.WriteString("  `ip` VARCHAR(50) NOT NULL DEFAULT '' COMMENT 'Ip地址',\n")
 	sb.WriteString("  `env` VARCHAR(32) NOT NULL DEFAULT '' COMMENT '环境',\n")
 	sb.WriteString("  `path` VARCHAR(512) NOT NULL DEFAULT '' COMMENT '请求路径',\n")
-	sb.WriteString("  `method` VARCHAR(16) NOT NULL DEFAULT '' COMMENT '请求方法',\n")
+	sb.WriteString("  `method` VARCHAR(512) NOT NULL DEFAULT '' COMMENT '请求方法',\n")
 	sb.WriteString("  `file_name` VARCHAR(256) NOT NULL DEFAULT '' COMMENT '文件名',\n")
 	sb.WriteString("  `line` INT NOT NULL DEFAULT 0 COMMENT '行号',\n")
 	sb.WriteString("  `message` TEXT COMMENT '日志内容',\n")
