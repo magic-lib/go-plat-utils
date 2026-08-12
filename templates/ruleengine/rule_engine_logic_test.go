@@ -483,3 +483,22 @@ func TestRuleEngineRunString(t *testing.T) {
 		return kk
 	})
 }
+func TestRuleEngineRunString2(t *testing.T) {
+	testCases := []*utils.TestStruct{
+		{"包含数字", []any{"{\"name\":\"{{.}}\"}", 2}, []any{"{\"name\":\"2\"}"}, nil},
+	}
+
+	utils.TestFunction(t, testCases, func(tempStr string, value any) string {
+		ruleEngine := templates.NewRuleExprEngine()
+		affordability2, err := ruleEngine.RunString(tempStr, value)
+		if err != nil {
+			return "-200"
+		}
+		kk, err := conv.Convert[string](affordability2)
+		if err != nil {
+			log.Println("TestRuleString2.1:", err)
+			return "-100"
+		}
+		return kk
+	})
+}

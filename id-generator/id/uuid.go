@@ -2,6 +2,7 @@ package id
 
 import (
 	"fmt"
+	//alibabautils "github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
 	"github.com/bwmarrin/snowflake"
 	"github.com/go-dev-frame/sponge/pkg/krand"
 	gguid "github.com/google/uuid"
@@ -88,8 +89,6 @@ func NewUUID() string {
 			}
 			return uuids.String(), nil
 		},
-		func() (string, error) { return gguid.New().String(), nil }, // 版本4
-		func() (string, error) { return getUUIDv7(), nil },          // 使用gguid的另一个生成方法
 		func() (string, error) {
 			uuidTemp, err := gouuid.NewV4()
 			if err != nil {
@@ -97,6 +96,8 @@ func NewUUID() string {
 			}
 			return uuidTemp.String(), nil
 		}, // 使用gouuid生成UUID
+		func() (string, error) { return gguid.New().String(), nil }, // 版本4
+		func() (string, error) { return getUUIDv7(), nil },          // 使用gguid的另一个生成方法
 		func() (string, error) {
 			uuidTemp := GeneratorBase32()
 			if uuidTemp == "" {
@@ -104,6 +105,11 @@ func NewUUID() string {
 			}
 			return GetUUID(uuidTemp), nil
 		}, // 使用sonyflake生成UUID
+		//func() (string, error) {
+		//	uuidTemp := alibabautils.GetUUID()
+		//	return uuidTemp, nil
+		//}, // 使用alibaba
+
 	}
 
 	for _, generatorExec := range uuidGenerators { // 遍历每个UUID生成函数
@@ -122,9 +128,13 @@ func GetUUID(s string) string {
 	if cond.IsUUID(s) {
 		return s
 	}
+	if s == "" {
+		return NewUUID()
+	}
+
 	uuidTemp, err := goencrypt.MD5(s)
 	if len(uuidTemp) != 32 || err != nil {
-		return ""
+		return NewUUID()
 	}
 	return fmt.Sprintf("%s-%s-%s-%s-%s", uuidTemp[0:8], uuidTemp[8:12], uuidTemp[12:16], uuidTemp[16:20], uuidTemp[20:])
 }

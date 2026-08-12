@@ -44,14 +44,20 @@ func NewRuleExprEngine(fixString ...string) *RuleExprEngine {
 // 执行公式字符串：先替换变量，再计算表达式
 // 支持：${var}、四则运算、比较、逻辑、内置函数
 func (e *RuleExprEngine) RunString(expr string, args any) (any, error) {
+	var argAny any
+
 	argMap := make(map[string]any)
 	err := conv.Unmarshal(args, &argMap)
+	argAny = argMap
 	if err != nil {
 		fmt.Println("RuleExprEngine RunString Unmarshal expr:", expr, "args:", conv.String(args), "err:", err)
+		if !cond.IsJsonMap(conv.String(args)) {
+			argAny = args //如果不是json格式，就用原始格式
+		}
 	}
 
 	tmpl := NewTemplate(expr, e.prefix, e.suffix)
-	newExpr := tmpl.Replace(argMap)
+	newExpr := tmpl.Replace(argAny)
 
 	newWhen, err := e.jsonTemplate.Replace(newExpr, argMap)
 	if err != nil {
@@ -76,6 +82,25 @@ func (e *RuleExprEngine) RunString(expr string, args any) (any, error) {
 		return newWhen, err
 	}
 	return retVal, nil
+}
+
+// RenderObject 传入一个对象，通过 expr 模板表达式渲染后返回新的对象。
+// 若 expr 为空则原样返回 args；若结果可解析为 JSON map 则返回 map[string]any。
+// 主要用于处理方法参数或返回值中的模板替换场景。
+func (e *RuleExprEngine) RenderObject(expr string, args any) (any, error) {
+	if expr == "" {
+		return args, nil
+	}
+	newArgs, err := e.RunString(expr, args)
+	if err != nil {
+		return nil, err
+	}
+	if cond.IsJsonMap(conv.String(newArgs)) {
+		var argMap map[string]any
+		_ = conv.Unmarshal(newArgs, &argMap)
+		return argMap, nil
+	}
+	return newArgs, nil
 }
 
 // isParameterNotFoundError 判断错误是否是因为参数未找到（模板中使用了不存在的变量）

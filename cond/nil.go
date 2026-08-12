@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+const eps = 1e-9
+
 // IsNil 判断是否为空
 func IsNil(v any) bool {
 	if v == nil {
@@ -77,15 +79,20 @@ func IsZero(val any) bool {
 	//常用的类型，提高执行效率
 	switch val.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-	case float32, float64, complex64, complex128:
+	case complex64, complex128:
 		return val == 0
+	case float32, float64:
+		valFloat32, ok := val.(float32)
+		if ok {
+			return math.Abs(float64(valFloat32)) < eps
+		}
+		valFloat64, ok := val.(float64)
+		if ok {
+			return math.Abs(valFloat64) < eps
+		}
 	case bool:
 		return val == false
 	case string:
-		str, ok := val.(string)
-		if ok {
-			return strings.TrimSpace(str) == ""
-		}
 		return val == ""
 	case time.Time:
 		if valTime, ok := val.(time.Time); ok {
@@ -96,8 +103,6 @@ func IsZero(val any) bool {
 
 	rValue := reflect.ValueOf(val)
 	switch rValue.Kind() {
-	case reflect.String:
-		return rValue.Len() == 0
 	case reflect.Bool:
 		return !rValue.Bool()
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -108,6 +113,8 @@ func IsZero(val any) bool {
 		return rValue.Float() == 0
 	case reflect.Interface, reflect.Ptr:
 		return rValue.IsNil()
+	case reflect.Slice, reflect.Map, reflect.String:
+		return rValue.Len() == 0
 	default:
 	}
 

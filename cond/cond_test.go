@@ -38,6 +38,48 @@ func TestIsJson(t *testing.T) {
 	fmt.Println("相等？", len(patch) == 0, err) // true
 }
 
+func TestIsZero2(t *testing.T) {
+	type inner struct {
+		A int
+		B string
+	}
+	type testCase struct {
+		name string
+		in   any
+		want bool
+	}
+	cases := []testCase{
+		{"nil", nil, true},
+		{"空字符串", "", true},
+		{"空白字符串", "   ", false},
+		{"非空字符串", "abc", false},
+		{"int 0", 0, true},
+		{"int 非0", 1, false},
+		{"int64 0", int64(0), true},
+		{"uint 0", uint(0), true},
+		{"float 0", 0.0, true},
+		{"float 非0", 1.5, false},
+		{"bool false", false, true},
+		{"bool true", true, false},
+		{"nil 指针", (*int)(nil), true},
+		{"非 nil 指针", func() *int { p := new(int); return p }(), false},
+		{"空切片", []int{}, true},
+		{"非空切片", []int{1}, false},
+		{"nil 切片", []string(nil), true},
+		{"nil map", map[string]int(nil), true},
+		{"空 map", map[string]int{}, true},
+		{"零值 time.Time", time.Time{}, true},
+		{"非零 time.Time", time.Now(), false},
+		{"零值结构体", inner{}, true},
+		{"非零结构体", inner{A: 1}, false},
+	}
+	for _, c := range cases {
+		if got := cond.IsZero(c.in); got != c.want {
+			t.Errorf("%s IsZero(%v) = %v, want %v", c.name, c.in, got, c.want)
+		}
+	}
+}
+
 func TestInsertIgnore2(t *testing.T) {
 	tt := time.Now()
 	mm := tt.String()
