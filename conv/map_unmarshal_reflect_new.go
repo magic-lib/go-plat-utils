@@ -296,7 +296,7 @@ func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (new
 	defer func() {
 		errTemp := recover()
 		if !cond.IsNil(errTemp) {
-			log.Print("Unmarshal error:", errTemp)
+			log.Print("Unmarshal getByDstStruct recover error:", errTemp, " src:", String(srcStruct))
 			err = fmt.Errorf(errStrRecover2, errTemp)
 		}
 	}()

@@ -415,7 +415,6 @@ func TestFormatConv1(t *testing.T) {
 	dataKeys := "{}"
 
 	updateMap := make([]any, 0)
-	conv.OpenUnmarshalLog()
 	err := conv.Unmarshal(dataKeys, &updateMap)
 	if err != nil {
 		return

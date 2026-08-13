@@ -117,7 +117,7 @@ func Unmarshal(srcStruct any, dstPoint any) error {
 
 	err = toAssignTo(srcStruct, dstPoint)
 	if err != nil {
-		log.Println("Unmarshal error:", err)
+		log.Println("Unmarshal toAssignTo error:", err, "src:", String(srcStruct))
 		return errJson
 	}
 	return nil
