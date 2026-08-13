@@ -97,13 +97,31 @@ func ReplaceDynamicVariables(input string, startDelimiter, endDelimiter string, 
 	return output
 }
 
-// LeftPadding 字符串左侧补全
-func LeftPadding(length int, str string, complement rune) string {
-	if len(str) >= length {
-		return str
+// Pad 按【字符数量】补齐，兼容中文、emoji
+// targetLen 目标字符个数
+// padChar 填充单个字符
+// left true左补，false右补
+func Pad(s string, targetLen int, padChar rune, left bool) string {
+	rs := []rune(s)
+	if len(rs) >= targetLen {
+		return s
 	}
-	padding := strings.Repeat(string(complement), length-len(str))
-	return fmt.Sprintf("%s%s", padding, str)
+	addTemp := targetLen - len(rs)
+	padStr := strings.Repeat(string(padChar), addTemp)
+	if left {
+		return padStr + s
+	}
+	return s + padStr
+}
+
+// PadLeft 字符串左侧补全
+func PadLeft(s string, targetLen int, padChar rune) string {
+	return Pad(s, targetLen, padChar, true)
+}
+
+// PadRight 字符串右侧补全
+func PadRight(s string, targetLen int, padChar rune) string {
+	return Pad(s, targetLen, padChar, false)
 }
 
 // JaroWinklerSimilarity 字符串相似度，常用来检查名字
