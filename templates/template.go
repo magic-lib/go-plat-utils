@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	prefixDefault = "{{"
-	suffixDefault = "}}"
+	DefaultPrefix = "{{"
+	DefaultSuffix = "}}"
 )
 
 var (
@@ -41,8 +41,8 @@ func NewTemplate(s string, fix ...string) template {
 }
 
 func getPreAndSuffix(delis ...string) (string, string) {
-	startDelim := prefixDefault
-	endDelim := suffixDefault
+	startDelim := DefaultPrefix
+	endDelim := DefaultSuffix
 
 	switch len(delis) {
 	case 1:

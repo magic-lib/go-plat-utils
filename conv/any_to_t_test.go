@@ -8,6 +8,7 @@ import (
 	"github.com/magic-lib/go-plat-utils/conv"
 	jsoniterForNil "github.com/magic-lib/go-plat-utils/internal/jsoniter/go"
 	"github.com/magic-lib/go-plat-utils/utils"
+	"github.com/shopspring/decimal"
 	"regexp"
 	"testing"
 	"time"
@@ -122,6 +123,145 @@ func TestAnyToNumber(t *testing.T) {
 		{"int -5 to string", []any{-5}, []any{"-5"}, conv.Convert[string]},
 	}
 	utils.TestFunction(t, testCases, nil)
+}
+
+func TestConvertForTypeString(t *testing.T) {
+	// 类型为空：原样返回
+	if got, ok := conv.ConvertForTypeString("", "abc"); !ok || got != "abc" {
+		t.Errorf("ConvertForTypeString(\"\") = (%v, %v), want (abc, true)", got, ok)
+	}
+
+	cases := []struct {
+		name string
+		typ  string
+		raw  any
+		want any
+	}{
+		{"string", "string", 123, "123"},
+		{"bool", "bool", "true", true},
+		{"int", "int", "42", int(42)},
+		{"int8", "int8", "8", int8(8)},
+		{"int16", "int16", "16", int16(16)},
+		{"int32", "int32", "32", int32(32)},
+		{"int64", "int64", "64", int64(64)},
+		{"uint", "uint", "7", uint(7)},
+		{"uint8", "uint8", "8", uint8(8)},
+		{"uint16", "uint16", "16", uint16(16)},
+		{"uint32", "uint32", "32", uint32(32)},
+		{"uint64", "uint64", "64", uint64(64)},
+		{"float32", "float32", "3.5", float32(3.5)},
+		{"float64", "float64", "3.5", float64(3.5)},
+		{"decimal", "decimal", "1.23", decimal.RequireFromString("1.23")},
+		{"nil", "nil", 123, nil},
+		{"nil with case/space", "  NIL ", "abc", nil},
+	}
+	for _, c := range cases {
+		got, ok := conv.ConvertForTypeString(c.typ, c.raw)
+		if !ok {
+			t.Errorf("%s: ConvertForTypeString(%q, %v) ok = false, want true", c.name, c.typ, c.raw)
+			continue
+		}
+		// decimal.Decimal 需用 Equal 比较（内部为指针字段，== 不可用）
+		if dv, isDec := got.(decimal.Decimal); isDec {
+			wantD, ok := c.want.(decimal.Decimal)
+			if !ok || !dv.Equal(wantD) {
+				t.Errorf("%s: ConvertForTypeString(%q, %v) = %v (%T), want %v (%T)", c.name, c.typ, c.raw, got, got, c.want, c.want)
+			}
+			continue
+		}
+		if got != c.want {
+			t.Errorf("%s: ConvertForTypeString(%q, %v) = %v (%T), want %v (%T)", c.name, c.typ, c.raw, got, got, c.want, c.want)
+		}
+	}
+
+	// time / time.Time：只校验解析结果的时间字段（时区由 conf.TimeLocation 决定，不与固定位置比较）
+	for _, typ := range []string{"time"} {
+		got, ok := conv.ConvertForTypeString(typ, "2026-08-15 12:00:00")
+		if !ok {
+			t.Errorf("%s: ConvertForTypeString(%q) ok = false, want true", typ, typ)
+			continue
+		}
+		tv, ok := got.(time.Time)
+		if !ok {
+			t.Errorf("%s: ConvertForTypeString(%q) 返回 %T, want time.Time", typ, typ, got)
+			continue
+		}
+		if tv.Year() != 2026 || tv.Month() != 8 || tv.Day() != 15 || tv.Hour() != 12 {
+			t.Errorf("%s: ConvertForTypeString(%q) = %v, want 2026-08-15 12:00:00", typ, typ, tv)
+		}
+	}
+
+	// 转换失败：返回 (raw, false)
+	if got, ok := conv.ConvertForTypeString("int64", "abc"); ok || got != "abc" {
+		t.Errorf("ConvertForTypeString(int64, abc) = (%v, %v), want (abc, false)", got, ok)
+	}
+	// 未知类型：返回 (raw, false)
+	if got, ok := conv.ConvertForTypeString("unknown", 1); ok || got != 1 {
+		t.Errorf("ConvertForTypeString(unknown, 1) = (%v, %v), want (1, false)", got, ok)
+	}
+}
+
+func TestConvertForTypeJs(t *testing.T) {
+	// 类型为空：原样返回
+	if got, ok := conv.ConvertForTypeJs("", 123); !ok || got != 123 {
+		t.Errorf("ConvertForTypeJs(\"\") = (%v, %v), want (123, true)", got, ok)
+	}
+
+	cases := []struct {
+		name string
+		typ  string
+		raw  any
+		want any
+	}{
+		{"string", "string", 123, "123"},
+		{"boolean", "boolean", "true", true},
+		{"boolean with case", " BOOLEAN ", "false", false},
+		{"number int", "number", 42, int64(42)},
+		{"number float64 int", "number", float64(42), int64(42)},
+		{"number float64", "number", 42.5, float64(42.5)},
+		{"number string int", "number", "42", int64(42)},
+		{"number string float", "number", "3.14", float64(3.14)},
+		{"number string exponent", "number", "1e3", float64(1000)},
+		{"bigint", "bigint", "9007199254740993", int64(9007199254740993)},
+		{"null", "null", 123, nil},
+		{"undefined", "undefined", "abc", nil},
+		{"array", "array", `[1,2,3]`, []any{float64(1), float64(2), float64(3)}},
+		{"object", "object", `{"a":1}`, map[string]any{"a": float64(1)}},
+		{"date", "date", "2026-08-15 12:00:00", time.Time{}},
+	}
+	for _, c := range cases {
+		got, ok := conv.ConvertForTypeJs(c.typ, c.raw)
+		if !ok {
+			t.Errorf("%s: ConvertForTypeJs(%q, %v) ok = false, want true", c.name, c.typ, c.raw)
+			continue
+		}
+		switch want := c.want.(type) {
+		case time.Time:
+			// 时区由 conf.TimeLocation 决定，只校验字段
+			tv, isTime := got.(time.Time)
+			if !isTime || tv.Year() != 2026 || tv.Month() != 8 || tv.Day() != 15 || tv.Hour() != 12 {
+				t.Errorf("%s: ConvertForTypeJs(%q) = %v (%T), want 2026-08-15 12:00:00", c.name, c.typ, got, got)
+			}
+		case map[string]any:
+			gm, isMap := got.(map[string]any)
+			if !isMap {
+				t.Errorf("%s: ConvertForTypeJs(%q) = %T, want map[string]any", c.name, c.typ, got)
+				continue
+			}
+			if len(gm) != len(want) {
+				t.Errorf("%s: ConvertForTypeJs(%q) = %v, want %v", c.name, c.typ, got, want)
+			}
+		default:
+			if fmt.Sprintf("%v", got) != fmt.Sprintf("%v", c.want) {
+				t.Errorf("%s: ConvertForTypeJs(%q, %v) = %v (%T), want %v (%T)", c.name, c.typ, c.raw, got, got, c.want, c.want)
+			}
+		}
+	}
+
+	// 未知类型（symbol/function 等）：返回 (raw, false)
+	if got, ok := conv.ConvertForTypeJs("symbol", 1); ok || got != 1 {
+		t.Errorf("ConvertForTypeJs(symbol, 1) = (%v, %v), want (1, false)", got, ok)
+	}
 }
 
 type Table1 struct {

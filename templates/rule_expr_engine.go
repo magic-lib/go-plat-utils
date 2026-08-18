@@ -18,8 +18,8 @@ type RuleExprEngine struct {
 
 // NewRuleExprEngine 创建引擎实例
 func NewRuleExprEngine(fixString ...string) *RuleExprEngine {
-	prefix := prefixDefault
-	suffix := suffixDefault
+	prefix := DefaultPrefix
+	suffix := DefaultSuffix
 	if len(fixString) == 1 {
 		prefix = fixString[0]
 	} else if len(fixString) == 2 {
@@ -27,10 +27,10 @@ func NewRuleExprEngine(fixString ...string) *RuleExprEngine {
 		suffix = fixString[1]
 	}
 	if prefix == "" {
-		prefix = prefixDefault
+		prefix = DefaultPrefix
 	}
 	if suffix == "" {
-		suffix = suffixDefault
+		suffix = DefaultSuffix
 	}
 	jsonTemplate := NewJsonMapTemplate(prefix, suffix)
 	return &RuleExprEngine{
@@ -45,14 +45,20 @@ func NewRuleExprEngine(fixString ...string) *RuleExprEngine {
 // 支持：${var}、四则运算、比较、逻辑、内置函数
 func (e *RuleExprEngine) RunString(expr string, args any) (any, error) {
 	var argAny any
+	var argMap map[string]any
 
-	argMap := make(map[string]any)
-	err := conv.Unmarshal(args, &argMap)
-	argAny = argMap
-	if err != nil {
-		fmt.Println("RuleExprEngine RunString Unmarshal expr:", expr, "args:", conv.String(args), "err:", err)
-		if !cond.IsJsonMap(conv.String(args)) {
-			argAny = args //如果不是json格式，就用原始格式
+	if argMapTemp, ok := args.(map[string]any); ok {
+		argMap = argMapTemp
+		argAny = argMap
+	} else {
+		argMap = make(map[string]any)
+		err := conv.Unmarshal(args, &argMap)
+		argAny = argMap
+		if err != nil {
+			fmt.Println("RuleExprEngine RunString Unmarshal expr:", expr, "args:", conv.String(args), "err:", err)
+			if !cond.IsJsonMap(conv.String(args)) {
+				argAny = args //如果不是json格式，就用原始格式
+			}
 		}
 	}
 
@@ -63,9 +69,23 @@ func (e *RuleExprEngine) RunString(expr string, args any) (any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("expr: %s, %v", newExpr, err)
 	}
+	if cond.IsNumeric(newWhen) { //如果全是数字，则直接返回，解决"0123",执行后，会返回123的问题
+		return newWhen, nil
+	}
+	// 字符串只包含数字和算术运算符（如 "2026-08-14"、"1+2"）时直接返回原值，
+	// 避免日期、编号等被表达式引擎误算（如 "2026-08-14" 会被算成 2026-8-14=2004）
+	if _, ok := newWhen.(string); ok {
+		if isReplaceString(expr, e.prefix, e.suffix) {
+			return newWhen, nil
+		}
+		//if isPureNumericExpr(newWhenStr) && newWhenStr == expr {
+		//	return newWhen, nil
+		//}
+	}
+
 	ruleEngine := ruleengine.NewEngineLogic()
 	newWhenString := conv.String(newWhen)
-	retVal, err := ruleEngine.RunString(newWhenString, argMap)
+	retVal, err := ruleEngine.EvaluateString(newWhenString, argMap)
 	if err != nil {
 		//如果错误是json格式，则直接返回即可，证明不是表达式，可能只是进行变量替换而已
 		if cond.IsJson(newWhenString) {
@@ -112,4 +132,37 @@ func isParameterNotFoundError(err error) bool {
 	pattern := `No parameter '[^']*' found\.`
 	matched, _ := regexp.MatchString(pattern, errMsg)
 	return matched
+}
+
+// pureNumericExprRe 匹配只包含数字、小数点、算术运算符（+ - * / % ^ ( )）和空白的字符串
+var pureNumericExprRe = regexp.MustCompile(`^[0-9.+\-*/%^()\s]+$`)
+
+// isPureNumericExpr 判断字符串是否只由数字和算术符号组成（无字母、无变量占位符残留）。
+func isPureNumericExpr(s string) bool {
+	if s == "" {
+		return false
+	}
+	return pureNumericExprRe.MatchString(s)
+}
+
+// exprOperatorRe 匹配表达式运算符特征字符。
+// 占位符外的文本若包含这些字符，说明字符串需要表达式计算，而非纯变量替换。
+var exprOperatorRe = regexp.MustCompile(`[+\-*/%^()<>=!&|?;'",\[\]{}@#\\]`)
+
+// isReplaceString 判断字符串是否"仅仅只是需要替换变量"：
+// 整个字符串仅由模板占位符（prefix...suffix）和普通文本组成，占位符外不含任何
+// 表达式运算符（+ - * / % 等）。若为 true，说明变量替换完成后即可直接返回结果，
+// 无需再进入表达式引擎计算（避免替换出的日期、编号、纯文本被引擎误算或误报错，
+// 如 {{a}} 替换成 "2026-08-14" 后不再被算成 2004）。
+func isReplaceString(s, prefix, suffix string) bool {
+	if s == "" || prefix == "" || suffix == "" {
+		return false
+	}
+	pat := regexp.MustCompile(regexp.QuoteMeta(prefix) + `.*?` + regexp.QuoteMeta(suffix))
+	rest := pat.ReplaceAllString(s, "")
+	if rest == "" {
+		return true // 整个字符串就是占位符，如 {{a}}
+	}
+	// 占位符外的文本必须不含表达式运算符
+	return !exprOperatorRe.MatchString(rest)
 }

@@ -15,17 +15,17 @@ type JsonMapTemplate struct {
 }
 
 func NewJsonMapTemplate(fixString ...string) *JsonMapTemplate {
-	prefixString := prefixDefault
-	suffixString := suffixDefault
+	prefixString := DefaultPrefix
+	suffixString := DefaultSuffix
 	if len(fixString) > 1 {
 		prefixString = fixString[0]
 		suffixString = fixString[1]
 	}
 	if prefixString == "" {
-		prefixString = prefixDefault
+		prefixString = DefaultPrefix
 	}
 	if suffixString == "" {
-		suffixString = suffixDefault
+		suffixString = DefaultSuffix
 	}
 	return &JsonMapTemplate{
 		prefixString: prefixString,

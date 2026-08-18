@@ -216,31 +216,9 @@ func (r *EngineLogic) Vars(ruleString string) ([]string, error) {
 	return varList, nil
 }
 
-//func (r *EngineLogic) varCheckList(varString string) []string {
-//	varString = strings.TrimSpace(varString)
-//	//不包含"和'
-//	if !(strings.HasPrefix(varString, "\"") || strings.HasPrefix(varString, "'")) {
-//		return []string{varString}
-//	}
-//	//如果是单个字符串，而不是变量，则返回空
-//	oneVar := regexp.MustCompile(`^('([^']+)')$|^("([^"]+)")$`)
-//	isOneStr := oneVar.MatchString(varString)
-//	if isOneStr {
-//		return []string{}
-//	}
-//	varList := strings.Split(varString, ",")
-//	allVarList := make([]string, 0)
-//	for _, val := range varList {
-//		oneVarList := r.varCheckList(val)
-//		allVarList = append(allVarList, oneVarList...)
-//	}
-//	return allVarList
-//}
-
-// RunString 一个规则，返回规则的结果
-// Deprecated: 请使用 ruleExpr := templates.NewRuleExprEngine();
-// newArgs, _ := ruleExpr.RunString(ac.ArgTemplate, inputParams)
-func (r *EngineLogic) RunString(ruleString string, parameters map[string]any) (any, error) {
+// EvaluateString 执行一条规则，返回规则的结果
+// Deprecated: 请使用 ruleExpr := templates.NewRuleExprEngine(); newArgs, _ := ruleExpr.RunString(ac.ArgTemplate, inputParams)
+func (r *EngineLogic) EvaluateString(ruleString string, parameters map[string]any) (any, error) {
 	if ruleString == "" {
 		return nil, nil
 	}
@@ -310,7 +288,7 @@ func (r *EngineLogic) RunStringAny(ruleString string, parameters any) (any, erro
 		}
 	}
 
-	return r.RunString(ruleString, parameterMap)
+	return r.EvaluateString(ruleString, parameterMap)
 }
 
 // RunRuleList 一个规则组列表，返回所有规则的结果
@@ -380,7 +358,7 @@ func (r *EngineLogic) CheckAllRuleList(ruleList []*RuleInfo, operator string, al
 	}
 
 	checkRuleString := fmt.Sprintf("(%s)", strings.Join(checkRuleList, fmt.Sprintf(" %s ", operator)))
-	retVal, err := r.RunString(checkRuleString, allRetData)
+	retVal, err := r.EvaluateString(checkRuleString, allRetData)
 	if err != nil {
 		return false, err
 	}
