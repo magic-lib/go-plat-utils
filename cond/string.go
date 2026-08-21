@@ -1,6 +1,9 @@
 package cond
 
 import (
+	"fmt"
+	"github.com/google/go-cmp/cmp"
+	"github.com/json-iterator/go"
 	"regexp"
 	"strings"
 )
@@ -75,4 +78,27 @@ func IsStringEmpty(text string) bool {
 		return true
 	}
 	return false
+}
+
+var sortJson = jsoniter.ConfigCompatibleWithStandardLibrary
+
+// IsSameJson 判断两段JSON语义是否相等
+func IsSameJson(jsonStrA, jsonStrB string) bool {
+	var a any
+	var b any
+
+	if err := sortJson.Unmarshal([]byte(jsonStrA), &a); err != nil {
+		return false
+	}
+	if err := sortJson.Unmarshal([]byte(jsonStrB), &b); err != nil {
+		return false
+	}
+
+	diff := cmp.Diff(a, b)
+	if diff != "" {
+		fmt.Println(diff)
+		return false
+	}
+	return true
+	//return reflect.DeepEqual(a, b)
 }

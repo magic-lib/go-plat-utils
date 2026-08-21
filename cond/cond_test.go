@@ -104,3 +104,21 @@ func TestIsUUID(t *testing.T) {
 		}
 	}
 }
+func TestIsSameJSON(t *testing.T) {
+	cases := []struct {
+		jsonA string
+		jsonB string
+		want  bool
+	}{
+		{"1", "1.0", true},
+		{"1", "1", true},
+		{"{\"a\":1}", "{\"a\":1}", true},
+		{"{\"a\":2}", "{\"a\":1}", false},
+		{"{\"a\":1,\"b\":2, \"c\":[1,2,3]}", "{\"b\":2, \"a\":1, \"d\":[1,2,3]}", false},
+	}
+	for _, c := range cases {
+		if got := cond.IsSameJson(c.jsonA, c.jsonB); got != c.want {
+			t.Errorf("IsSameJSON(%q, %q)=%v, want %v", c.jsonA, c.jsonB, got, c.want)
+		}
+	}
+}

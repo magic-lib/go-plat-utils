@@ -43,7 +43,8 @@ func NewRuleExprEngine(fixString ...string) *RuleExprEngine {
 // RunString
 // 执行公式字符串：先替换变量，再计算表达式
 // 支持：${var}、四则运算、比较、逻辑、内置函数
-func (e *RuleExprEngine) RunString(expr string, args any) (any, error) {
+// noEvaluate 不计算，默认是需要计算的，如果不需要计算，则传true
+func (e *RuleExprEngine) RunString(expr string, args any, noEvaluate ...bool) (any, error) {
 	var argAny any
 	var argMap map[string]any
 
@@ -81,6 +82,13 @@ func (e *RuleExprEngine) RunString(expr string, args any) (any, error) {
 		//if isPureNumericExpr(newWhenStr) && newWhenStr == expr {
 		//	return newWhen, nil
 		//}
+	}
+	noUseEvaluate := false
+	if len(noEvaluate) > 0 {
+		noUseEvaluate = noEvaluate[0]
+	}
+	if noUseEvaluate {
+		return newWhen, nil
 	}
 
 	ruleEngine := ruleengine.NewEngineLogic()

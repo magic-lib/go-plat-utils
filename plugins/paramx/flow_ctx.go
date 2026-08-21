@@ -93,10 +93,24 @@ type FlowContext struct {
 	Steps     map[StepId]*Step `json:"steps,omitempty"` //每一步的配置，key是stepId
 }
 
-func NewFlowContext(flowId, instanceId string, globalParams map[string]any) *FlowContext {
+func NewFlowContext(flowId, instanceId string, globalArguments map[string]any, stepKeyFunc ...func(key string, val any) (any, bool)) *FlowContext {
 	// 拷贝一份，避免外部修改传入的 map 影响内部状态
-	args := make(map[string]any, len(globalParams))
-	for k, v := range globalParams {
+	args := make(map[string]any, len(globalArguments))
+	steps := make(map[StepId]*Step)
+	for k, v := range globalArguments {
+		if len(stepKeyFunc) > 0 {
+			if newVal, ok := stepKeyFunc[0](k, v); ok {
+				newV := make(map[string]any)
+				_ = conv.Unmarshal(newVal, &newV)
+				if len(newV) > 0 {
+					steps[StepId(k)] = &Step{
+						Arguments: newV,
+						Status:    StepStatusPending,
+					}
+					continue
+				}
+			}
+		}
 		args[k] = v
 	}
 	return &FlowContext{
@@ -107,7 +121,7 @@ func NewFlowContext(flowId, instanceId string, globalParams map[string]any) *Flo
 			CreateTimeMs: time.Now().UnixMilli(),
 		},
 		Arguments: args,
-		Steps:     make(map[StepId]*Step),
+		Steps:     steps,
 	}
 }
 
@@ -251,6 +265,7 @@ func (c *FlowContext) SetStepArguments(stepId StepId, params map[string]any) {
 	if !ok {
 		ps = &Step{
 			Arguments: make(map[string]any),
+			Status:    StepStatusPending,
 		}
 	}
 	if ps.Arguments == nil {
@@ -292,7 +307,9 @@ func (c *FlowContext) SetStepResponse(stepId StepId, resp any) {
 	}
 	ps, ok := c.Steps[stepId]
 	if !ok || ps == nil {
-		ps = &Step{}
+		ps = &Step{
+			Status: StepStatusPending,
+		}
 	}
 	ps.Responses = resp
 	c.Steps[stepId] = ps
@@ -312,7 +329,16 @@ func (c *FlowContext) GetStepResponse(stepId StepId) (any, bool) {
 // ToMaps 将参数转换为map
 func (c *FlowContext) ToMaps() (map[string]any, error) {
 	newMap := make(map[string]any)
-	err := conv.Unmarshal(c, &newMap)
+	// 深拷贝一个 c，避免并发错误（*c 浅拷贝仍会共享 Steps/Arguments 等内部 map）
+	newC := new(FlowContext)
+	c.mux.RLock()
+	err := conv.Unmarshal(c, newC)
+	c.mux.RUnlock()
+	if err != nil {
+		log.Print("ToMaps copy c err:", err.Error())
+		return newMap, err
+	}
+	err = conv.Unmarshal(newC, &newMap)
 	if err != nil {
 		log.Print("ToMaps conv.Unmarshal err:", err.Error())
 		return newMap, err
