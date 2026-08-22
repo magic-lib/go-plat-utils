@@ -7,6 +7,7 @@ import (
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/goroutines"
 	"github.com/samber/lo"
+	"reflect"
 	"sync"
 	"time"
 
@@ -328,7 +329,9 @@ func (ml *mysqlLogger) parseMultipleMessages(msg []any) *logs.LogData {
 		if len(logDataMap) > 0 {
 			for k, field := range logDataMap {
 				if oneData, ok := allMap[k]; ok {
-					if oneData == field {
+					// 注意：LogData 中存在 slice/map 等不可比较类型（如 Message []any、Extends any），
+					// 不能用 == 直接比较，否则会 panic（comparing uncomparable type []interface{}）。
+					if reflect.DeepEqual(oneData, field) {
 						delete(allMap, k)
 					}
 				}

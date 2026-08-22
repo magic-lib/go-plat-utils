@@ -58,7 +58,7 @@ func DefaultConfig() *Config {
 	return &Config{
 		TablePrefix:    "log",
 		RetentionDays:  10,
-		PreCreateDays:  2,
+		PreCreateDays:  1,
 		CleanCronSpec:  "0 0 2 * * *",
 		CreateCronSpec: "0 0 0 * * *",
 		LogLevel:       logs.INFO, // INFO级别
