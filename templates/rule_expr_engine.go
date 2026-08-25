@@ -26,12 +26,6 @@ func NewRuleExprEngine(fixString ...string) *RuleExprEngine {
 		prefix = fixString[0]
 		suffix = fixString[1]
 	}
-	if prefix == "" {
-		prefix = DefaultPrefix
-	}
-	if suffix == "" {
-		suffix = DefaultSuffix
-	}
 	jsonTemplate := NewJsonMapTemplate(prefix, suffix)
 	return &RuleExprEngine{
 		prefix:       prefix,

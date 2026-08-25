@@ -1,6 +1,7 @@
 package templates_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/magic-lib/go-plat-utils/templates"
@@ -110,4 +111,10 @@ func TestRunStringRealExpr(t *testing.T) {
 	if got != "2+1" {
 		t.Errorf("RunString({{a}}+1) = %v, want 2+1", got)
 	}
+}
+func TestJsonMapTemplate(t *testing.T) {
+	aa := templates.NewJsonMapTemplate("*", "")
+	mm, err := aa.ReplacePath("/api/project/:project/env/*env/redis-config", map[string]any{"project": "123456", "env": "test"})
+	fmt.Print(mm)
+	fmt.Print(err)
 }

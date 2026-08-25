@@ -232,7 +232,7 @@ func TestRecursiveJSONGet(t *testing.T) {
 
 func TestReplaceVar(t *testing.T) {
 
-	jsonReplaceModel := templates.NewJsonMapTemplate("{{", "}}")
+	jsonReplaceModel := templates.NewJsonMapTemplate()
 
 	testCases := []*utils.TestStruct{
 		{"normal", []any{0}, []any{`{"age":"55","name":"zhangsan"}`}, func(n int) string {

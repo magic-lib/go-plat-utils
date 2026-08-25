@@ -2,16 +2,19 @@ package templates
 
 import (
 	"fmt"
+	"github.com/hashicorp/go-multierror"
 	"github.com/magic-lib/go-plat-utils/cond"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/samber/lo"
 	"reflect"
 	"regexp"
+	"strings"
 )
 
 type JsonMapTemplate struct {
 	prefixString string
 	suffixString string
+	PathSplitter string // 路径分割符，默认是 /
 }
 
 func NewJsonMapTemplate(fixString ...string) *JsonMapTemplate {
@@ -21,15 +24,10 @@ func NewJsonMapTemplate(fixString ...string) *JsonMapTemplate {
 		prefixString = fixString[0]
 		suffixString = fixString[1]
 	}
-	if prefixString == "" {
-		prefixString = DefaultPrefix
-	}
-	if suffixString == "" {
-		suffixString = DefaultSuffix
-	}
 	return &JsonMapTemplate{
 		prefixString: prefixString,
 		suffixString: suffixString,
+		PathSplitter: "/",
 	}
 }
 
@@ -63,6 +61,35 @@ func (j *JsonMapTemplate) Replace(args any, bindings ...map[string]any) (any, er
 		return retInfo, nil
 	}
 	return args, nil
+}
+
+// ReplacePath 替换路径
+// 路径变量替换：把 /api/project/:project/env/:env/redis-config 中的变量替换为实际值
+// 支持 :name（单段）和 *name（通配）
+func (j *JsonMapTemplate) ReplacePath(path string, params map[string]any) (string, error) {
+	segs := strings.Split(path, j.PathSplitter)
+	var err error
+	for i, seg := range segs {
+		if len(seg) > 1 {
+			oneSeg := trimTemplateSpaces(j.prefixString, j.suffixString, seg)
+			if !hasTemplatePatternStrict(j.prefixString, j.suffixString, oneSeg) {
+				continue
+			}
+			isFind := false
+			for k, v := range params {
+				newKey := fmt.Sprintf("%s%s%s", j.prefixString, k, j.suffixString)
+				if newKey == oneSeg {
+					segs[i] = conv.String(v)
+					isFind = true
+					break
+				}
+			}
+			if !isFind {
+				err = multierror.Append(err, fmt.Errorf("path: %s, param: %s not found", path, seg))
+			}
+		}
+	}
+	return strings.Join(segs, j.PathSplitter), err
 }
 
 // trimTemplateSpaces 去除{{后的空格和}}前的空格
