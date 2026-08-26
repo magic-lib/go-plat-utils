@@ -41,9 +41,16 @@ func Unmarshal(srcStruct any, dstPoint any) error {
 		return fmt.Errorf("unmarshal DstPoint is nil")
 	}
 
+	dstType := reflect.TypeOf(dstPoint)
+	if (srcType.Kind() == reflect.Ptr || srcType.Kind() == reflect.Struct) &&
+		dstType.Kind() == reflect.Ptr {
+		if dstType.Elem().Kind() == reflect.Map {
+			return Unmarshal(String(srcStruct), dstPoint)
+		}
+	}
+
 	// 解决 map[string]any 相互转换会存在any类型丢失后，类型不同的问题
 	if srcType.Kind() == reflect.Map {
-		dstType := reflect.TypeOf(dstPoint)
 		if srcType.String() == dstType.Elem().String() {
 			if newMap, ok := cloneSrcAnyMap(srcStruct); ok {
 				if dstPtr, ok2 := dstPoint.(*map[string]any); ok2 {
@@ -58,7 +65,6 @@ func Unmarshal(srcStruct any, dstPoint any) error {
 	}
 
 	// 1、首先看能否直接赋值
-	dstType := reflect.TypeOf(dstPoint)
 	if srcType == dstType {
 		if srcType.Kind() != reflect.Ptr &&
 			srcType.Kind() != reflect.Struct &&
