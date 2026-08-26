@@ -6,6 +6,7 @@ import (
 	"math"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 // toFloat32 将给定的值转换为float32
@@ -43,6 +44,21 @@ func toFloat64(i any) (float64, bool) {
 		i = v.Interface()
 		if i == nil {
 			return 0, false
+		}
+	}
+
+	// 如果是字符串，需要判断是不是无穷
+	if numStr, ok := i.(string); ok {
+		numStr = strings.ToLower(strings.TrimSpace(numStr))
+		if numStr == "+inf" ||
+			numStr == "inf" ||
+			numStr == "infinity" ||
+			numStr == "+infinity" {
+			return math.Inf(1), true
+		}
+		if numStr == "-inf" ||
+			numStr == "-infinity" {
+			return math.Inf(-1), true
 		}
 	}
 
