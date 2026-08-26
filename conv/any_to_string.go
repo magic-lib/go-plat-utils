@@ -523,9 +523,54 @@ func getStringFromJson(src any) (string, error) {
 			}
 		}
 		//解决 & 会转换成 \u0026 的问题
-		return strFix(json), nil
+		retAll := strFix(json)
+		v := reflect.ValueOf(src)
+		if v.Kind() == reflect.Struct {
+			newMap := getStringFromStruct(src, nil)
+			retAll, err = jsoniterForNil.MarshalToString(newMap)
+			return retAll, err
+		}
+		return retAll, nil
 	}
 	return "", fmt.Errorf(errStrGetStringFromJson, err)
+}
+
+// 解决src为struct时，存在json里有 omitempty 时，会隐藏不输出的问题
+func getStringFromStruct(obj any, newMap map[string]any) map[string]any {
+	if newMap == nil {
+		newMap = make(map[string]any)
+	}
+	if obj == nil {
+		return newMap
+	}
+	v := reflect.ValueOf(obj)
+	if v.Kind() != reflect.Struct {
+		return newMap
+	}
+	t := v.Type()
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		if field.PkgPath != "" { // 非导出字段跳过
+			continue
+		}
+		jsonTag := field.Tag.Get("json")
+		if jsonTag == "-" {
+			continue
+		}
+		key := jsonTag
+		if idx := strings.Index(key, ","); idx >= 0 {
+			key = key[:idx] // 去掉 ,omitempty 等后缀
+		}
+		if key == "" {
+			key = field.Name // 无 json name 时回退用字段名
+		}
+		if _, exists := newMap[key]; exists {
+			continue // 已存在则不覆盖
+		}
+		fv := v.Field(i)
+		newMap[key] = fv.Interface()
+	}
+	return newMap
 }
 
 func strFix(s string) string {
