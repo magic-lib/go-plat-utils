@@ -548,6 +548,22 @@ func getStringFromStruct(obj any, newMap map[string]any) map[string]any {
 		return newMap
 	}
 	t := v.Type()
+	// 遍历所有字段，先解决匿名嵌入的字段，因为外层的优先级更高一些，所有后面再次覆盖
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		if field.PkgPath != "" { // 非导出字段跳过
+			continue
+		}
+		// 判断是否是匿名嵌入的对象
+		if !field.Anonymous {
+			continue
+		}
+		newMapTemp := make(map[string]any)
+		newMapTemp = getStringFromStruct(v.Field(i).Interface(), newMapTemp)
+		for k, v := range newMapTemp {
+			newMap[k] = v
+		}
+	}
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 		if field.PkgPath != "" { // 非导出字段跳过
@@ -566,6 +582,10 @@ func getStringFromStruct(obj any, newMap map[string]any) map[string]any {
 		}
 		if _, exists := newMap[key]; exists {
 			continue // 已存在则不覆盖
+		}
+		// 判断是否是匿名嵌入的对象
+		if field.Anonymous {
+			continue
 		}
 		fv := v.Field(i)
 		newMap[key] = fv.Interface()

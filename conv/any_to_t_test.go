@@ -372,3 +372,20 @@ func TestTimeToString(t *testing.T) {
 //	str := conv.String(lastFinishedOrder)
 //	fmt.Println(str)
 //}
+
+type BotReviewReq struct {
+	ChangeOrderStatusParam
+	IsAutoPayment bool `json:"is_auto_payment"`
+}
+
+// ChangeOrderStatusParam 改变订单状态参数
+type ChangeOrderStatusParam struct {
+	AuditOrderId int64 `json:"audit_order_id"`
+	OrderId      int64 `json:"order_id"`
+}
+
+func TestStructToString(t *testing.T) {
+	aa := new(BotReviewReq)
+	mm := conv.String(aa)
+	fmt.Println(mm)
+}
