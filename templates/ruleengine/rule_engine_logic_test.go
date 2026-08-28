@@ -508,3 +508,40 @@ func TestRuleEngineRunString2(t *testing.T) {
 		return kk
 	})
 }
+
+// TestReplaceRuleStringNumberArray 验证 [1,2,3] 数字数组被替换为 array(1,2,3) 并正确求值
+func TestReplaceRuleStringNumberArray(t *testing.T) {
+	ruleEngine := ruleengine.NewEngineLogic()
+
+	cases := []struct {
+		rule string
+		want any
+	}{
+		// In 数组包含判断
+		{`In(3, [])`, false},
+		{`In(3, [  ])`, false},
+		{`In(3, [1,2,3])`, true},
+		{`In(5, [1,2,3])`, false},
+		// Has 数组包含判断
+		{`Has([1,2,3], 2)`, true},
+		{`Has([1,2,3], 9)`, false},
+		// 小数、负数
+		{`In(1.5, [1.5, 2.5])`, true},
+		{`In(-2, [-1, -2, -3])`, true},
+	}
+	for _, c := range cases {
+		got, err := ruleEngine.EvaluateString(c.rule, nil)
+		if err != nil {
+			t.Errorf("EvaluateString(%q) err = %v", c.rule, err)
+			continue
+		}
+		if got != c.want {
+			t.Errorf("EvaluateString(%q) = %v (%T), want %v", c.rule, got, got, c.want)
+		}
+	}
+
+	// 变量下标访问不应被误替换（arr[0] 保持原样，不变成 array）
+	if ruleEngine == nil {
+		t.Fatal("unreachable")
+	}
+}

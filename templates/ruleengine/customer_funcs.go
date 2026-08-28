@@ -228,6 +228,12 @@ func (r *customerFunc) Contains(args ...any) (any, error) {
 	}
 	return strings.Contains(conv.String(args[0]), conv.String(args[1])), nil
 }
+
+// Array 将动态参数组成一个数组，供 Array(1,2,3) 使用
+func (r *customerFunc) Array(args ...any) (any, error) {
+	return args, nil
+}
+
 func (r *customerFunc) JsonGet(args ...any) (any, error) {
 	if len(args) != 2 {
 		return false, fmt.Errorf("参数数量不对：%v", args)

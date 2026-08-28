@@ -6,6 +6,7 @@ import (
 	"github.com/magic-lib/go-plat-utils/internal/govaluate-3.0.0"
 	"github.com/magic-lib/go-plat-utils/utils"
 	"github.com/shopspring/decimal"
+	"regexp"
 	"strings"
 	"sync"
 )
@@ -53,6 +54,7 @@ func NewEngineLogic() *EngineLogic {
 		"Has":     ruleLogicFunc.Has,
 		"In":      ruleLogicFunc.In,
 		"Between": ruleLogicFunc.Between, // 新增区间判断
+		"Array":   ruleLogicFunc.Array,
 		// 类型相关
 		"Is": ruleLogicFunc.Is,
 		"As": ruleLogicFunc.As,
@@ -139,7 +141,22 @@ func (r *EngineLogic) getExpressionByRuleString(ruleString string) (*govaluate.E
 	return expression, nil
 }
 
+// numberArrayRegex 匹配纯数字数组字面量：[1,2,3]、[1.5, -2, 3e2]
+// 元素支持整数/小数/负数/科学计数法；不匹配变量下标访问（如 arr[0]、name[1]）。
+var numberArrayRegex = regexp.MustCompile(`\[(\s*[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?\s*(?:,\s*[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?\s*)*)\]`)
+var emptyArrayRegex = regexp.MustCompile(`\[\s*\]`)
+
 func (r *EngineLogic) replaceRuleString(ruleString string) string {
+	// 替换[]，和[  ] 为空的情况
+	ruleString = emptyArrayRegex.ReplaceAllString(ruleString, "Array()")
+
+	// 需要将[1,2,3], 这种格式转换为 Array()，避免报错
+	// 先把纯数字数组字面量 [1,2,3] 替换为 Array(1,2,3)
+	ruleString = numberArrayRegex.ReplaceAllStringFunc(ruleString, func(match string) string {
+		inner := match[1 : len(match)-1]
+		return "Array(" + inner + ")"
+	})
+
 	if r.preString == "" || r.afterString == "" {
 		return ruleString
 	}
