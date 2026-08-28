@@ -149,6 +149,10 @@ func (comm *CommResponse) withTraceId(traceId string) *CommResponse {
 
 // WriteCommResponse 将通用返回设置到response，输出到客户端
 func WriteCommResponse(w http.ResponseWriter, comm *CommResponse, code ...int) error {
+	if w == nil {
+		return fmt.Errorf("http.ResponseWriter is nil")
+	}
+
 	response := comm.withNowTime()
 
 	respStr := conv.String(response)
@@ -172,7 +176,10 @@ func WriteCommResponse(w http.ResponseWriter, comm *CommResponse, code ...int) e
 		}
 	}
 
-	w.Header().Set("Content-Type", jsonContentType)
+	respHeader := w.Header()
+	if respHeader != nil {
+		w.Header().Set("Content-Type", jsonContentType)
+	}
 	respByte := []byte(respStr)
 
 	oneStatusCode := http.StatusOK
