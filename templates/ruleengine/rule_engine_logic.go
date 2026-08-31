@@ -146,6 +146,10 @@ func (r *EngineLogic) getExpressionByRuleString(ruleString string) (*govaluate.E
 var numberArrayRegex = regexp.MustCompile(`\[(\s*[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?\s*(?:,\s*[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?\s*)*)\]`)
 var emptyArrayRegex = regexp.MustCompile(`\[\s*\]`)
 
+// stringArrayRegex 匹配字符串数组字面量：["AIRTEL","PP"]、['ARM','B']、["AIRTEL"]、['ARM']
+// 元素为单引号或双引号包裹的字符串，逗号分隔。
+var stringArrayRegex = regexp.MustCompile(`\[(\s*['"][^'"]*['"]\s*(?:,\s*['"][^'"]*['"]\s*)*)\]`)
+
 func (r *EngineLogic) replaceRuleString(ruleString string) string {
 	// 替换[]，和[  ] 为空的情况
 	ruleString = emptyArrayRegex.ReplaceAllString(ruleString, "Array()")
@@ -154,6 +158,14 @@ func (r *EngineLogic) replaceRuleString(ruleString string) string {
 	// 先把纯数字数组字面量 [1,2,3] 替换为 Array(1,2,3)
 	ruleString = numberArrayRegex.ReplaceAllStringFunc(ruleString, func(match string) string {
 		inner := match[1 : len(match)-1]
+		return "Array(" + inner + ")"
+	})
+
+	// 字符串数组 ["AIRTEL","PP"]  ['ARM','B']  ["AIRTEL"]  ['ARM'] 也转为 Array(...)
+	// govaluate 的字符串字面量用单引号，故将内部双引号统一转为单引号
+	ruleString = stringArrayRegex.ReplaceAllStringFunc(ruleString, func(match string) string {
+		inner := match[1 : len(match)-1]
+		inner = strings.ReplaceAll(inner, `"`, `'`)
 		return "Array(" + inner + ")"
 	})
 

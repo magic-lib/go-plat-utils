@@ -325,6 +325,29 @@ func (c *FlowContext) GetStepResponse(stepId StepId) (any, bool) {
 	}
 	return ps.Responses, true
 }
+func (c *FlowContext) StepMaps(stepId StepId) (map[string]any, bool) {
+	c.mux.RLock()
+	defer c.mux.RUnlock()
+	ps, ok := c.Steps[stepId]
+	if !ok || ps == nil {
+		return nil, false
+	}
+	stepMap, err := ps.toMaps()
+	if err != nil {
+		log.Print("GetStepMap ToMaps err:", err.Error())
+		return stepMap, false
+	}
+	return stepMap, true
+}
+func (s *Step) toMaps() (map[string]any, error) {
+	newMap := make(map[string]any)
+	err := conv.Unmarshal(s, &newMap)
+	if err != nil {
+		log.Print("ToMaps copy c err:", err.Error())
+		return newMap, err
+	}
+	return newMap, nil
+}
 
 // ToMaps 将参数转换为map
 func (c *FlowContext) ToMaps() (map[string]any, error) {

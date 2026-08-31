@@ -511,7 +511,7 @@ func TestRuleEngineRunString2(t *testing.T) {
 
 // TestReplaceRuleStringNumberArray 验证 [1,2,3] 数字数组被替换为 array(1,2,3) 并正确求值
 func TestReplaceRuleStringNumberArray(t *testing.T) {
-	ruleEngine := ruleengine.NewEngineLogic()
+	ruleExpr := templates.NewRuleExprEngine()
 
 	cases := []struct {
 		rule string
@@ -519,6 +519,11 @@ func TestReplaceRuleStringNumberArray(t *testing.T) {
 	}{
 		// In 数组包含判断
 		{`In(3, [])`, false},
+		{`(In('AIRTEL', ["AIRTEL","PP"]) || In('MTN', ["AIRTEL", "OO"])) && false && 113>=9`, false},
+		{`(In('AIRTEL', ['AIRTEL','PP']) || In('MTN', ['AIRTEL'])) && true && 113>=9`, true},
+		{`In('ARM', ['ARM','B'])`, true},
+		{`In('ARM', ['ARM'])`, true},
+		{`In('AIRTEL', ["AIRTEL"])`, true},
 		{`In(3, [  ])`, false},
 		{`In(3, [1,2,3])`, true},
 		{`In(5, [1,2,3])`, false},
@@ -530,7 +535,7 @@ func TestReplaceRuleStringNumberArray(t *testing.T) {
 		{`In(-2, [-1, -2, -3])`, true},
 	}
 	for _, c := range cases {
-		got, err := ruleEngine.EvaluateString(c.rule, nil)
+		got, err := ruleExpr.RunString(c.rule, nil)
 		if err != nil {
 			t.Errorf("EvaluateString(%q) err = %v", c.rule, err)
 			continue
@@ -541,7 +546,7 @@ func TestReplaceRuleStringNumberArray(t *testing.T) {
 	}
 
 	// 变量下标访问不应被误替换（arr[0] 保持原样，不变成 array）
-	if ruleEngine == nil {
+	if ruleExpr == nil {
 		t.Fatal("unreachable")
 	}
 }
