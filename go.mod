@@ -4,6 +4,12 @@ go 1.24.2
 
 toolchain go1.24.6
 
+retract (
+	v1.20260210.1
+	v1.20251105.1
+	v1.20250721.2
+)
+
 require (
 	github.com/Knetic/govaluate v3.0.0+incompatible
 	github.com/Masterminds/sprig/v3 v3.2.3
@@ -55,6 +61,7 @@ require (
 	github.com/panjf2000/ants/v2 v2.11.2
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pelletier/go-toml/v2 v2.2.4
+	github.com/petermattis/goid v0.0.0-20260820044319-269ab09b5261
 	github.com/redis/go-redis/v9 v9.14.0
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/robfig/cron/v3 v3.0.1

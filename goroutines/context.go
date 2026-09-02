@@ -3,17 +3,19 @@ package goroutines
 import (
 	"context"
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/conv"
 	gocache "github.com/patrickmn/go-cache"
+	"github.com/petermattis/goid"
+
 	//"github.com/petermattis/goid"
 	"github.com/timandy/routine"
-	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
+
+// https://github.com/sonnt85/gosystem/blob/main/gosystem.go
 
 var (
 	expiration      = 20 * time.Minute //一个ctx的最长时间，避免长时间占用内存
@@ -39,29 +41,53 @@ func getInitCache() *gocache.Cache {
 	return ctxCache
 }
 
-func getCurrentGoIdFromRuntime() int64 {
+func getCurrentGoIdFromRuntime() uint64 {
+	//var buf [64]byte
+	//// 获取当前 goroutine 的栈信息
+	//_ = runtime.Stack(buf[:], false)
+	//firstLine := strings.Split(string(buf[:]), "\n")[0]
+	//re := regexp.MustCompile(`\d+`)
+	//numbers := re.FindAllString(firstLine, -1)
+	//if len(numbers) > 0 {
+	//	// 不知道是哪个数字，就进行组合起来，必然会一致的，并且会不同
+	//	if goIdTemp, ok := conv.Int64(strings.Join(numbers, "")); ok {
+	//		return uint64(goIdTemp)
+	//	}
+	//}
+	//return 0
+
 	var buf [64]byte
-	// 获取当前 goroutine 的栈信息
-	_ = runtime.Stack(buf[:], false)
-	firstLine := strings.Split(string(buf[:]), "\n")[0]
-	re := regexp.MustCompile(`\d+`)
-	numbers := re.FindAllString(firstLine, -1)
-	if len(numbers) > 0 {
-		// 不知道是哪个数字，就进行组合起来，必然会一致的，并且会不同
-		if goIdTemp, ok := conv.Int64(strings.Join(numbers, "")); ok {
-			return goIdTemp
-		}
-	}
-	return -1
+	n := runtime.Stack(buf[:], false)
+	// stack第一行：goroutine 123 [running]:
+	fields := strings.Fields(strings.TrimPrefix(string(buf[:n]), "goroutine "))
+	id, _ := strconv.ParseUint(fields[0], 10, 64)
+	return id
 }
 
 // getCurrentGoId 取得当前的协程ID
 func getCurrentGoId() string {
-	goId := getCurrentGoIdFromRuntime()
+	goId := GetGoroutineId()
 	if goId > 0 {
-		return strconv.FormatInt(goId, baseInt)
+		return strconv.FormatUint(goId, baseInt)
 	}
 	return strconv.FormatUint(routine.Goid(), baseInt)
+}
+func GetGoroutineId() uint64 {
+	//runtime.GetGoroutineId()
+	uGid := routine.Goid()
+	if uGid > 0 {
+		return uGid
+	}
+
+	gid := goid.Get()
+	if gid > 0 {
+		return uint64(gid)
+	}
+	goId := getCurrentGoIdFromRuntime()
+	if goId > 0 {
+		return goId
+	}
+	return 0
 }
 
 // InitContext 设置上下文，需要在入口协程上执行，会返回当前的IdKey
