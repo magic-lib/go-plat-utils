@@ -20,6 +20,9 @@ func ContextMethodToAnyHandler[TReq, TResp any](method any) (ContextAnyHandler, 
 	}
 
 	// 这两种类型底层完全一样，但仍然是两种不同的类型
+	reqType := reflect.TypeOf((*TReq)(nil)).Elem().String()
+	respType := reflect.TypeOf((*TResp)(nil)).Elem().String()
+
 	methodFun, ok := method.(func(ctx context.Context, args TReq) (TResp, error))
 	if !ok {
 		methodFun, ok = method.(ContextTypedHandler[TReq, TResp])
@@ -30,9 +33,9 @@ func ContextMethodToAnyHandler[TReq, TResp any](method any) (ContextAnyHandler, 
 			if err != nil {
 				methodName, isMethod := GetFuncName(method)
 				if !isMethod {
-					return nil, fmt.Errorf("%s error: method is not function", methodName)
+					return nil, fmt.Errorf("%s error: method is not function, expect TReq=%s TResp=%s", methodName, reqType, respType)
 				}
-				return nil, fmt.Errorf("method is not func(ctx context.Context, param P) (V, error): %s", methodName)
+				return nil, fmt.Errorf("method is not func(ctx context.Context, param P) (V, error): %s, expect TReq=%s TResp=%s: %v", methodName, reqType, respType, err)
 			}
 		}
 	}
@@ -44,7 +47,8 @@ func ContextMethodToAnyHandler[TReq, TResp any](method any) (ContextAnyHandler, 
 			if err != nil {
 				funcName, _ := GetFuncName(method)
 				paramList, _, _ := FuncInTypeList(method)
-				return nil, fmt.Errorf("methodName: %s, %s, param is %s, not %T, err: %v", funcName, conv.String(paramList), conv.String(param), reflect.TypeOf(zero).String(), err)
+				return nil, fmt.Errorf("methodName: %s, %s, param is %s, not %s, expect TReq=%s TResp=%s, err: %v",
+					funcName, conv.String(paramList), conv.String(param), reflect.TypeOf(zero).String(), reqType, respType, err)
 			}
 			paramPtr, ok = actionParam.(TReq)
 			if !ok {
@@ -52,10 +56,8 @@ func ContextMethodToAnyHandler[TReq, TResp any](method any) (ContextAnyHandler, 
 			}
 		}
 		retData, err := methodFun(ctx, paramPtr)
-		retDataPtr, ok := any(retData).(TResp)
-		if !ok {
-			var zero TResp
-			return nil, fmt.Errorf("retData is %T, not %T", retDataPtr, reflect.TypeOf(zero).Name())
+		if _, ok := any(retData).(TResp); !ok {
+			return nil, fmt.Errorf("retData is %T, expect TResp=%s, TReq=%s", retData, respType, reqType)
 		}
 		//调用方法
 		return retData, err

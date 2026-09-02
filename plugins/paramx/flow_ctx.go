@@ -281,7 +281,7 @@ func (c *FlowContext) SetStepArguments(stepId StepId, params map[string]any) {
 func (c *FlowContext) GetStepArguments(stepId StepId) map[string]any {
 	c.mux.RLock()
 	oneStepMap := make(map[string]any)
-	for k, v := range c.Arguments {
+	for k, v := range c.Arguments { //公共参数优先级低于单步参数
 		oneStepMap[k] = v
 	}
 	if ps, ok := c.Steps[stepId]; ok && ps != nil && len(ps.Arguments) > 0 {
