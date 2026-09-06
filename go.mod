@@ -4,12 +4,6 @@ go 1.24.2
 
 toolchain go1.24.6
 
-retract (
-	v1.20260210.1
-	v1.20251105.1
-	v1.20250721.2
-)
-
 require (
 	github.com/Knetic/govaluate v3.0.0+incompatible
 	github.com/Masterminds/sprig/v3 v3.2.3
