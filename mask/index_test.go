@@ -37,3 +37,36 @@ func TestMask(t *testing.T) {
 	fmt.Println(aa, bb)
 
 }
+
+func TestIsSameNumber(t *testing.T) {
+	cases := []struct {
+		newNumber string
+		oldNumber string
+		want      bool
+	}{
+		// 完全相同
+		{"13800138000", "13800138000", true},
+		{"", "", true},
+		{"abc", "abc", true},
+		// 掩码匹配：oldNumber 中数字位必须一致，非数字位（掩码）可匹配任意字符
+		{"13800138000", "138****8000", true},
+		{"13800138000", "138********", true},
+		{"13800138000", "********8000", false},
+		{"15012345678", "1**********", true},
+		{"138xx30000", "138***0000", true}, // 掩码位可匹配任意字符（包括字母）
+		{"12345", "1234*", true},
+		// 掩码但数字位不匹配
+		{"13900138000", "138****8000", false},
+		{"13800138001", "138****8000", false},
+		{"12345", "12346", false},
+		{"11111111111", "22222222222", false},
+		// 长度不同
+		{"13800138000", "1380013800", false},
+		{"13800138000", "138001380001", false},
+	}
+	for _, c := range cases {
+		if got := mask.IsMatch(c.newNumber, c.oldNumber, "*"); got != c.want {
+			t.Errorf("IsMatch(%q, %q)=%v, want %v", c.newNumber, c.oldNumber, got, c.want)
+		}
+	}
+}

@@ -150,3 +150,37 @@ func RealName(realName string) string {
 	}
 	return Character(realName, 1, 1, "*")
 }
+
+// IsMatch 判断字符串是否相同，支持掩码匹配。noMask 为无掩码的实际字符串，hasMask 中含有掩码字符 maskCode。
+// maskCode 为空时默认使用 "*"。两串长度须一致；hasMask 中非掩码位必须与 noMask 同位置完全一致。
+func IsMatch(noMask string, hasMask string, maskCode string) bool {
+	if noMask == hasMask {
+		return true
+	}
+	noRunes := []rune(noMask)
+	maskRunes := []rune(hasMask)
+	if len(noRunes) != len(maskRunes) {
+		return false
+	}
+
+	if maskCode == "" {
+		maskCode = "*"
+	}
+	// 掩码字符集合（maskCode 可为多个掩码字符，如 "*#"）
+	maskSet := make(map[rune]struct{}, len([]rune(maskCode)))
+	for _, mr := range maskCode {
+		maskSet[mr] = struct{}{}
+	}
+
+	matched := true
+	for i, mc := range maskRunes {
+		if _, ok := maskSet[mc]; ok {
+			continue
+		}
+		if noRunes[i] != mc {
+			matched = false
+			break
+		}
+	}
+	return matched
+}
