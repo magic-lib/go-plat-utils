@@ -35,6 +35,9 @@ func SafeReadBody(r *http.Request, nexts ...func(r *http.Request)) []byte {
 	}
 
 	lo.ForEach(nexts, func(next func(r *http.Request), _ int) {
+		if next == nil {
+			return
+		}
 		next(r)
 	})
 

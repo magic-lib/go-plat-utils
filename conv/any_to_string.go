@@ -526,7 +526,9 @@ func getStringFromJson(src any) (string, error) {
 		retAll := strFix(json)
 		v := reflect.ValueOf(src)
 		if v.Kind() == reflect.Struct {
-			newMap := getStringFromStruct(src, nil)
+			newMapAll := make(map[string]any)
+			_ = Unmarshal(retAll, &newMapAll)
+			newMap := getStringFromStruct(src, newMapAll)
 			retAll, err = jsoniterForNil.MarshalToString(newMap)
 			return retAll, err
 		}
@@ -545,6 +547,9 @@ func getStringFromStruct(obj any, newMap map[string]any) map[string]any {
 	}
 	v := reflect.ValueOf(obj)
 	if v.Kind() != reflect.Struct {
+		if v.Kind() == reflect.Ptr && v.IsValid() && !v.IsNil() {
+			return getStringFromStruct(v.Elem().Interface(), newMap)
+		}
 		return newMap
 	}
 	t := v.Type()

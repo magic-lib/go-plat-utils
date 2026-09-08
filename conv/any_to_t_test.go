@@ -389,3 +389,27 @@ func TestStructToString(t *testing.T) {
 	mm := conv.String(aa)
 	fmt.Println(mm)
 }
+
+type userAffiliationCacheValue struct {
+	*UserAffiliationResp
+	UserResp           *userAffiliationCacheValue `json:"user_resp,omitempty"`
+	UserResp2          *UserAffiliationResp       `json:"user_resp2,omitempty"`
+	CachedPromotionStr string                     `json:"cached_promotion_str,omitempty"`
+}
+
+type UserAffiliationResp struct {
+	NeedJump  bool   `json:"need_jump"`
+	JumpUrl   string `json:"jump_url"`
+	ReasonMsg string `json:"reason_msg"` // 原因是什么
+}
+
+func TestAnyToString1(t *testing.T) {
+	aa := new(userAffiliationCacheValue)
+	aa.UserAffiliationResp = new(UserAffiliationResp)
+	aa.UserResp = new(userAffiliationCacheValue)
+	aa.UserResp.UserAffiliationResp = new(UserAffiliationResp)
+	aa.UserResp.NeedJump = true
+	aa.NeedJump = false
+	mm := conv.String(aa)
+	fmt.Println(mm)
+}

@@ -629,7 +629,7 @@ func getParamByteFromBody(req *http.Request) ([]byte, error) {
 	if cachedBody, ok := req.Context().Value(bodyCacheKey{}).([]byte); ok {
 		return cachedBody, nil
 	}
-	requestBody := SafeReadBody(req, nil)
+	requestBody := SafeReadBody(req)
 	newCtx := context.WithValue(req.Context(), bodyCacheKey{}, requestBody)
 	req = req.WithContext(newCtx)
 	return requestBody, nil

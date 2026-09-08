@@ -160,6 +160,6 @@ func (bs *BaseSignCheck) CheckHttpSignature(r *http.Request) (bool, error) {
 	p.Method = r.Method
 	p.Path = r.URL.Path
 	p.Query = r.URL.Query()
-	p.Body = param.SafeReadBody(r, nil)
+	p.Body = param.SafeReadBody(r)
 	return bs.checkHttpSignature(r.Context(), r.Header, p)
 }

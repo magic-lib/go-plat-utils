@@ -94,9 +94,9 @@ func matchNumberExpr(expr string, num float64) bool {
 func parseBound(s string) (float64, bool, bool) {
 	s = strings.ToLower(strings.TrimSpace(s))
 	switch s {
-	case "+inf", "inf", "infinity", "+infinity":
+	case "+inf", "inf", "infinity", "+infinity", "∞", "+∞":
 		return math.Inf(1), true, true
-	case "-inf", "-infinity":
+	case "-inf", "-infinity", "-∞":
 		return math.Inf(-1), true, true
 	}
 	v, err := conv.Convert[float64](s)
