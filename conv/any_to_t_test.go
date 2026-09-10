@@ -412,4 +412,8 @@ func TestAnyToString1(t *testing.T) {
 	aa.NeedJump = false
 	mm := conv.String(aa)
 	fmt.Println(mm)
+
+	bb := new(userAffiliationCacheValue)
+	err := conv.Unmarshal(mm, bb)
+	fmt.Println(bb, err)
 }

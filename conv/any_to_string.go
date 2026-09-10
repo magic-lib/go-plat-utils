@@ -2,11 +2,13 @@ package conv
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/cond"
 	jsoniterForNil "github.com/magic-lib/go-plat-utils/internal/jsoniter/go"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
+	"github.com/ucarion/jcs"
 	"github.com/viant/toolbox"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -30,36 +32,51 @@ func String(src any) string {
 
 	retStr, err := baseAsString(src)
 	if err == nil {
-		return retStr
+		return string2Json(retStr)
 	}
 
 	var ok bool
 	src, retStr, ok = getBySpecialType(src)
 	if ok {
-		return retStr
+		return string2Json(retStr)
 	}
 
 	retStr, err = getBySqlType(src)
 	if err == nil {
-		return retStr
+		return string2Json(retStr)
 	}
 
 	retStr, err = getByTypeString(src)
 	if err == nil {
-		return retStr
+		return string2Json(retStr)
 	}
 
 	retStr, err = getByCopy(src) //concurrent map read and map write
 	if err == nil {
-		return retStr
+		return string2Json(retStr)
 	}
 	retStr, err = cast.ToStringE(src)
 	if err == nil {
-		return retStr
+		return string2Json(retStr)
 	}
 
 	fmt.Printf("jsoniter.Marshal error:%s", err.Error())
-	return toolbox.AsString(src)
+	retStr = toolbox.AsString(src)
+	return string2Json(retStr)
+}
+
+func string2Json(s string) string {
+	if cond.IsJsonMap(s) {
+		s = strings.TrimSpace(s)
+		var temp any
+		if err := json.Unmarshal([]byte(s), &temp); err == nil {
+			newS, err := jcs.Format(temp)
+			if err == nil {
+				return newS
+			}
+		}
+	}
+	return s
 }
 
 func baseAsString(src any) (string, error) {

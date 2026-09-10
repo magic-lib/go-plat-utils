@@ -2,6 +2,7 @@ package id_test
 
 import (
 	"fmt"
+	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/id-generator/id"
 	"github.com/magic-lib/go-plat-utils/utils"
 	"testing"
@@ -13,6 +14,44 @@ func TestAnyToBool(t *testing.T) {
 		fmt.Println(ss)
 	}
 	fmt.Println("ok")
+}
+func TestGetUUID(t *testing.T) {
+	aa := map[string]any{
+		"aaa": "1",
+		"bbb": "22",
+		"ccc": "333",
+	}
+	bb := conv.String(aa)
+	mm := id.GetUUID(bb)
+	fmt.Println(mm)
+
+	aa = map[string]any{
+		"bbb": "22",
+		"ccc": "333",
+		"aaa": 1,
+	}
+	bb = conv.String(aa)
+	mm = id.GetUUID(bb)
+	fmt.Println(mm)
+}
+func TestGetUint64(t *testing.T) {
+	aa := map[string]any{
+		"aaa": 1,
+		"bbb": "22",
+		"ccc": "333",
+	}
+	bb := conv.String(aa)
+	mm := id.GetUint64(bb)
+	fmt.Println(mm)
+
+	aa = map[string]any{
+		"bbb": "22",
+		"ccc": "333",
+		"aaa": 1,
+	}
+	bb = conv.String(aa)
+	mm = id.GetUint64(bb)
+	fmt.Println(mm)
 }
 
 func TestGeneratorId(t *testing.T) {

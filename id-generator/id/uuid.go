@@ -2,6 +2,8 @@ package id
 
 import (
 	"fmt"
+	"github.com/magic-lib/go-plat-utils/conv"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	//alibabautils "github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
 	"github.com/bwmarrin/snowflake"
 	"github.com/go-dev-frame/sponge/pkg/krand"
@@ -11,7 +13,6 @@ import (
 	"github.com/marspere/goencrypt"
 	gouuid "github.com/nu7hatch/gouuid"
 	"github.com/rs/xid"
-	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 // GetXId 20字符 id 生成器,如：
@@ -95,7 +96,7 @@ func NewUUID() string {
 				return "", err
 			}
 			return uuidTemp.String(), nil
-		}, // 使用gouuid生成UUID
+		},                                                           // 使用gouuid生成UUID
 		func() (string, error) { return gguid.New().String(), nil }, // 版本4
 		func() (string, error) { return getUUIDv7(), nil },          // 使用gguid的另一个生成方法
 		func() (string, error) {
@@ -131,6 +132,8 @@ func GetUUID(s string) string {
 	if s == "" {
 		return NewUUID()
 	}
+	// 如果是json结构，因为map会因为顺序不同，而生成的string会不同，因此需要处理一下
+	s = conv.String(s)
 
 	uuidTemp, err := goencrypt.MD5(s)
 	if len(uuidTemp) != 32 || err != nil {

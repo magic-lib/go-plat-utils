@@ -13,6 +13,7 @@ require (
 	github.com/antonfisher/nested-logrus-formatter v1.3.1
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/bytedance/go-tagexpr/v2 v2.9.11
+	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/chuckpreslar/inflect v0.0.0-20150228233301-423e3ac59c61
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/docker/go v1.5.1-1
@@ -77,6 +78,7 @@ require (
 	github.com/tmc/langchaingo v0.1.13
 	github.com/tmc/langgraphgo v0.0.0-20240324234251-3b0caeaffd16
 	github.com/traefik/yaegi v0.16.1
+	github.com/ucarion/jcs v0.1.2
 	github.com/viant/toolbox v0.37.0
 	github.com/wI2L/jsondiff v0.7.1
 	github.com/zeromicro/go-zero v1.9.2
@@ -113,7 +115,6 @@ require (
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic v1.14.2 // indirect
 	github.com/bytedance/sonic/loader v0.4.0 // indirect
-	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dlclark/regexp2 v1.10.0 // indirect

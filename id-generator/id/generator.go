@@ -1,6 +1,10 @@
 package id
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
+	"github.com/cespare/xxhash/v2"
+	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/utils/httputil/param"
 	"github.com/sony/sonyflake"
 	"log"
@@ -117,4 +121,14 @@ func getMachineID() (uint16, error) {
 	}
 	ip := ipv4.To4()
 	return uint16(ip[2])<<8 + uint16(ip[3]), nil
+}
+
+func strToSHA256Uint64(s string) uint64 {
+	h := sha256.Sum256([]byte(s))
+	//取前8字节转uint64
+	return binary.BigEndian.Uint64(h[:8])
+}
+func GetUint64(s string) uint64 {
+	s = conv.String(s)
+	return xxhash.Sum64String(s)
 }
