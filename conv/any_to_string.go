@@ -66,7 +66,7 @@ func String(src any) string {
 }
 
 func string2Json(s string) string {
-	if cond.IsJsonMap(s) {
+	if cond.IsJson(s) {
 		s = strings.TrimSpace(s)
 		var temp any
 		if err := json.Unmarshal([]byte(s), &temp); err == nil {

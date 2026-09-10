@@ -28,13 +28,8 @@ func IsUUID(uuid string) bool {
 
 // IsJson 是否是json字符串
 func IsJson(text string) bool {
-	text = strings.TrimSpace(text)
-	if text == "" {
-		return false
-	}
-
-	var temp any
-	if err := json.Unmarshal([]byte(text), &temp); err != nil {
+	temp, ok := getAnyFromJsonString(text)
+	if !ok {
 		return false
 	}
 
@@ -49,15 +44,23 @@ func IsJson(text string) bool {
 	}
 }
 
-// IsJsonMap 是否是jsonMap字符串
-func IsJsonMap(text string) bool {
+func getAnyFromJsonString(text string) (any, bool) {
 	text = strings.TrimSpace(text)
 	if text == "" {
-		return false
+		return nil, false
 	}
 
 	var temp any
 	if err := json.Unmarshal([]byte(text), &temp); err != nil {
+		return nil, false
+	}
+	return temp, true
+}
+
+// IsJsonMap 是否是jsonMap字符串
+func IsJsonMap(text string) bool {
+	temp, ok := getAnyFromJsonString(text)
+	if !ok {
 		return false
 	}
 	// 检查解析后的类型是否为对象或数组

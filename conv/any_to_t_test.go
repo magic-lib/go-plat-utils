@@ -417,3 +417,36 @@ func TestAnyToString1(t *testing.T) {
 	err := conv.Unmarshal(mm, bb)
 	fmt.Println(bb, err)
 }
+func TestAnyToString2(t *testing.T) {
+	aa := map[string]any{
+		"aa": "111",
+		"bb": "222",
+	}
+	mm := conv.String(aa)
+	fmt.Println(mm)
+
+	aa = map[string]any{
+		"bb": "222",
+		"aa": "111",
+	}
+	mm = conv.String(aa)
+	fmt.Println(mm)
+
+	aaa := []any{
+		map[string]any{
+			"aa": "111",
+			"bb": "222",
+		},
+	}
+	mm = conv.String(aaa)
+	fmt.Println(mm)
+
+	aaa = []any{
+		map[string]any{
+			"bb": "222",
+			"aa": "111",
+		},
+	}
+	mm = conv.String(aaa)
+	fmt.Println(mm)
+}
