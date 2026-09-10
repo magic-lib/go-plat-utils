@@ -30,13 +30,16 @@ func String(src any) string {
 		return src.(error).Error()
 	}
 
+	// IgnoreOmitempty 为 true 时忽略 json tag 中的 omitempty，空值字段也会输出（String 显示全部字段）
+	ignoreOmitempty := true
+
 	retStr, err := baseAsString(src)
 	if err == nil {
 		return string2Json(retStr)
 	}
 
 	var ok bool
-	src, retStr, ok = getBySpecialType(src)
+	src, retStr, ok = getBySpecialType(src, ignoreOmitempty)
 	if ok {
 		return string2Json(retStr)
 	}
@@ -46,12 +49,12 @@ func String(src any) string {
 		return string2Json(retStr)
 	}
 
-	retStr, err = getByTypeString(src)
+	retStr, err = getByTypeString(src, ignoreOmitempty)
 	if err == nil {
 		return string2Json(retStr)
 	}
 
-	retStr, err = getByCopy(src) //concurrent map read and map write
+	retStr, err = getByCopy(src, ignoreOmitempty) //concurrent map read and map write
 	if err == nil {
 		return string2Json(retStr)
 	}
@@ -99,7 +102,7 @@ func mustBaseAsString(src any) string {
 	return fmt.Sprintf("%v", src)
 }
 
-func getBySpecialType(src any) (any, string, bool) {
+func getBySpecialType(src any, ignoreOmitempty bool) (any, string, bool) {
 	strType := reflect.TypeOf(src)
 	strValue := reflect.ValueOf(src)
 	if strType.Kind() == reflect.Ptr {
@@ -122,7 +125,7 @@ func getBySpecialType(src any) (any, string, bool) {
 		if strValue.IsNil() {
 			return src, "", true
 		}
-		retStr, newMap, err := getByMap(src)
+		retStr, newMap, err := getByMap(src, ignoreOmitempty)
 		if err == nil {
 			return src, retStr, true
 		}
@@ -133,7 +136,7 @@ func getBySpecialType(src any) (any, string, bool) {
 		if strValue.IsNil() {
 			return src, "", true
 		}
-		retStr, newList, err := getBySlice(src)
+		retStr, newList, err := getBySlice(src, ignoreOmitempty)
 		if err == nil {
 			return src, retStr, true
 		}
@@ -208,8 +211,8 @@ func getBySyncMap(synMap *sync.Map) map[any]any {
 	fmt.Println("getBySyncMap 3:")
 	return newMap
 }
-func getByMap(src any) (string, map[any]any, error) {
-	retStr, err := getStringFromJson(src)
+func getByMap(src any, ignoreOmitempty bool) (string, map[any]any, error) {
+	retStr, err := getStringFromJson(src, ignoreOmitempty)
 	if err == nil {
 		return retStr, nil, nil
 	}
@@ -222,20 +225,20 @@ func getByMap(src any) (string, map[any]any, error) {
 		newMap[iter.Key().Interface()] = iter.Value().Interface()
 	}
 
-	retStr, err = getStringFromJson(newMap)
+	retStr, err = getStringFromJson(newMap, ignoreOmitempty)
 	if err == nil {
 		return retStr, newMap, nil
 	}
 
 	return "", newMap, err
 }
-func getBySlice(src any) (string, []any, error) {
+func getBySlice(src any, ignoreOmitempty bool) (string, []any, error) {
 	//如果是[]byte，则直接转为string
 	if strByte, ok := src.([]byte); ok {
 		return string(strByte), nil, nil
 	}
 
-	json, err := getStringFromJson(src)
+	json, err := getStringFromJson(src, ignoreOmitempty)
 	if err == nil {
 		return json, nil, nil
 	}
@@ -247,7 +250,7 @@ func getBySlice(src any) (string, []any, error) {
 		newMap = append(newMap, oneItem)
 	}
 
-	retStr, err := getStringFromJson(newMap)
+	retStr, err := getStringFromJson(newMap, ignoreOmitempty)
 	if err == nil {
 		return retStr, newMap, nil
 	}
@@ -437,7 +440,7 @@ func getBySqlType(src any) (string, error) {
 	return "", fmt.Errorf("sql type error")
 }
 
-func getByTypeString(src any) (string, error) {
+func getByTypeString(src any, ignoreOmitempty bool) (string, error) {
 	strType := fmt.Sprintf("%T", src)
 	if strType == "errors.errorString" {
 		errTemp := fmt.Sprintf("%v", src)
@@ -457,17 +460,17 @@ func getByTypeString(src any) (string, error) {
 				oneTemp := arrTemp.Index(i).Interface()
 				newArrTemp = append(newArrTemp, oneTemp)
 			}
-			retStr, _, err := getBySlice(newArrTemp)
+			retStr, _, err := getBySlice(newArrTemp, ignoreOmitempty)
 			return retStr, err
 		}
 	}
 
 	return "", fmt.Errorf("typeString error")
 }
-func getByCopy(src any) (string, error) {
+func getByCopy(src any, ignoreOmitempty bool) (string, error) {
 	newStrTemp := mapDeepCopy(src) //concurrent map read and map write
 
-	retStr, err := getStringFromJson(newStrTemp)
+	retStr, err := getStringFromJson(newStrTemp, ignoreOmitempty)
 	if err == nil {
 		return retStr, nil
 	}
@@ -527,27 +530,29 @@ func unwrapSqlTypes(src any) any {
 	return src
 }
 
-func getStringFromJson(src any) (string, error) {
+func getStringFromJson(src any, ignoreOmitempty bool) (string, error) {
 	src = unwrapSqlTypes(src)
-	json, err := jsoniterForNil.MarshalToString(src)
+	jsonStr, err := jsoniterForNil.MarshalToString(src)
 	if err == nil {
-		if len(json) >= 2 { //解决返回字符串首位带"的问题
-			match, errTemp := regexp.MatchString(`^".*"$`, json)
+		if len(jsonStr) >= 2 { //解决返回字符串首位带"的问题
+			match, errTemp := regexp.MatchString(`^".*"$`, jsonStr)
 			if errTemp == nil {
 				if match {
-					json = json[1 : len(json)-1]
+					jsonStr = jsonStr[1 : len(jsonStr)-1]
 				}
 			}
 		}
 		//解决 & 会转换成 \u0026 的问题
-		retAll := strFix(json)
-		v := reflect.ValueOf(src)
-		if v.Kind() == reflect.Struct {
-			newMapAll := make(map[string]any)
-			_ = Unmarshal(retAll, &newMapAll)
-			newMap := getStringFromStruct(src, newMapAll)
-			retAll, err = jsoniterForNil.MarshalToString(newMap)
-			return retAll, err
+		retAll := strFix(jsonStr)
+		if ignoreOmitempty {
+			v := reflect.ValueOf(src)
+			if v.Kind() == reflect.Struct {
+				newMapAll := make(map[string]any)
+				_ = Unmarshal(retAll, &newMapAll)
+				newMap := getStringFromStruct(src, newMapAll)
+				retAll, err = jsoniterForNil.MarshalToString(newMap)
+				return retAll, err
+			}
 		}
 		return retAll, nil
 	}

@@ -3,6 +3,7 @@ package httputil
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/cond"
 	"github.com/magic-lib/go-plat-utils/conv"
@@ -154,8 +155,14 @@ func WriteCommResponse(w http.ResponseWriter, comm *CommResponse, code ...int) e
 	}
 
 	response := comm.withNowTime()
+	respStr := ""
 
-	respStr := conv.String(response)
+	respByte, err := json.Marshal(response)
+	if err == nil {
+		respStr = string(respByte)
+	} else {
+		respStr = conv.String(response)
+	}
 	if comm.ProcessResp != nil {
 		respStrTemp, err := comm.ProcessResp(response, respStr)
 		if err == nil {
@@ -180,7 +187,7 @@ func WriteCommResponse(w http.ResponseWriter, comm *CommResponse, code ...int) e
 	if respHeader != nil {
 		w.Header().Set("Content-Type", jsonContentType)
 	}
-	respByte := []byte(respStr)
+	respByte = []byte(respStr)
 
 	oneStatusCode := http.StatusOK
 	if len(code) > 0 {
@@ -188,7 +195,7 @@ func WriteCommResponse(w http.ResponseWriter, comm *CommResponse, code ...int) e
 	}
 	w.WriteHeader(oneStatusCode)
 
-	_, err := w.Write(respByte)
+	_, err = w.Write(respByte)
 
 	return err
 }

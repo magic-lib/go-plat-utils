@@ -398,9 +398,9 @@ type userAffiliationCacheValue struct {
 }
 
 type UserAffiliationResp struct {
-	NeedJump  bool   `json:"need_jump"`
-	JumpUrl   string `json:"jump_url"`
-	ReasonMsg string `json:"reason_msg"` // 原因是什么
+	NeedJump  bool   `json:"need_jump,omitempty"`
+	JumpUrl   string `json:"jump_url,omitempty"`
+	ReasonMsg string `json:"reason_msg,omitempty"` // 原因是什么
 }
 
 func TestAnyToString1(t *testing.T) {
