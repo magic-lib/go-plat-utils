@@ -299,6 +299,37 @@ func ConvertForTypeString(targetType string, raw any) (any, bool) {
 	}
 	return raw, false
 }
+func ZeroForTypeString(targetType string, defaultValues ...any) any {
+	var defaultValue any
+	if len(defaultValues) > 0 {
+		defaultValue = defaultValues[0]
+	}
+
+	if targetType == "" {
+		return defaultValue
+	}
+	targetType = strings.ToLower(strings.TrimSpace(targetType))
+	switch targetType {
+	case GoTypeNil:
+		return nil
+	case GoTypeString:
+		return ""
+	case GoTypeBool:
+		return false
+	case GoTypeInt, GoTypeInt8, GoTypeInt16, GoTypeInt32, GoTypeInt64,
+		GoTypeUint, GoTypeUint8, GoTypeUint16, GoTypeUint32, GoTypeUint64, GoTypeFloat32, GoTypeFloat64:
+		return 0
+	case GoTypeDecimal:
+		return decimal.Zero
+	case GoTypeTime:
+		return time.Time{}
+	case GoTypeSlice:
+		return []any{}
+	case GoTypeMap:
+		return map[string]any{}
+	}
+	return defaultValue
+}
 
 // ConvertForTypeJs 按前端 JavaScript 的类型名将 raw 转换为对应类型的值
 // （ConvertForTypeString 的 JS 版，类型名忽略大小写与首尾空格）。
