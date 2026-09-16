@@ -132,3 +132,12 @@ func JaroWinklerSimilarity(str1, str2 string) int {
 	score := similarity * 100
 	return int(score + 0.5) // 小数部份四舍五入
 }
+
+// SubStrMaxLen 按字符截取，maxRuneCount 最大字符数
+func SubStrMaxLen(s string, maxRuneCount int) string {
+	if utf8.RuneCountInString(s) <= maxRuneCount {
+		return s
+	}
+	runes := []rune(s)
+	return string(runes[:maxRuneCount])
+}

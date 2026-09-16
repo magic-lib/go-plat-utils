@@ -8,6 +8,7 @@ import (
 
 // KeyListFromMap 参数传字符串，避免不是map结构
 // {"app":{"mm":1}} ==> "app.mm" : 1
+// {"app":{"mm":[0,1]}} ==> {"app.mm" : [0,1], "app.mm[0]" : 0, "app.mm[1]" : 1}
 func KeyListFromMap(keyMapJsonObject any) map[string]any {
 	keyMapJson := String(keyMapJsonObject)
 
@@ -38,6 +39,13 @@ func toStringFromList(oneList []any, lastKey string, keyList []string, index int
 	if keyList == nil {
 		keyList = make([]string, 0)
 	}
+	// 保存整个数组本身（带完整父级前缀），例如 app.mm -> [0,1]。
+	// 这样既能按索引展开（app.mm[0]、app.mm[1]），也保留数组整体，方便按 app.mm 直接引用。
+	fullKey := lastKey
+	if len(keyList) > 0 {
+		fullKey = strings.Join(append(append([]string{}, keyList...), lastKey), ".")
+	}
+	allMap[fullKey] = oneList
 	for i, one := range oneList {
 		newKey := fmt.Sprintf("%s[%d]", lastKey, i)
 		if target2, ok := one.(map[string]any); ok {
