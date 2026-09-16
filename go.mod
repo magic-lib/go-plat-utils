@@ -6,6 +6,7 @@ toolchain go1.24.6
 
 require (
 	github.com/Knetic/govaluate v3.0.0+incompatible
+	github.com/Masterminds/semver/v3 v3.2.0
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/PaesslerAG/gval v1.2.4
 	github.com/alicebob/miniredis/v2 v2.35.0
@@ -105,7 +106,6 @@ require (
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
-	github.com/Masterminds/semver/v3 v3.2.0 // indirect
 	github.com/adjust/rmq/v4 v4.0.0 // indirect
 	github.com/alexellis/hmac v0.0.0-20180624211220-5c52ab81c0de // indirect
 	github.com/andeya/ameda v1.5.3 // indirect
