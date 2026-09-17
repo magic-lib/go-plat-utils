@@ -63,6 +63,20 @@ func ContextMethodToAnyHandler[TReq, TResp any](method any) (ContextAnyHandler, 
 		return retData, err
 	}, nil
 }
+
+// ContextMethodToAnyHandlerOrNil 同 ContextMethodToAnyHandler，但不返回 error：
+// method 为 nil 或转换失败时静默返回 nil（基础版本在 method 为 nil 时会 panic）。
+// 适用于允许注册失败的场景；需要感知失败原因时请使用 ContextMethodToAnyHandler。
+func ContextMethodToAnyHandlerOrNil[TReq, TResp any](method any) ContextAnyHandler {
+	if method == nil {
+		return nil
+	}
+	anyHandler, err := ContextMethodToAnyHandler[TReq, TResp](method)
+	if err != nil {
+		return nil
+	}
+	return anyHandler
+}
 func ContextMethodToTypeHandler[TReq, TResp any](method any) (ContextTypedHandler[TReq, TResp], error) {
 	if method == nil {
 		return nil, fmt.Errorf("method is nil")
