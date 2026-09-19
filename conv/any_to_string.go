@@ -2,13 +2,11 @@ package conv
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/cond"
 	jsoniterForNil "github.com/magic-lib/go-plat-utils/internal/jsoniter/go"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
-	"github.com/ucarion/jcs"
 	"github.com/viant/toolbox"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -68,17 +66,18 @@ func String(src any) string {
 	return string2Json(retStr)
 }
 
+// string2Json 将字符串转换为 json 字符串
 func string2Json(s string) string {
-	if cond.IsJson(s) {
-		s = strings.TrimSpace(s)
-		var temp any
-		if err := json.Unmarshal([]byte(s), &temp); err == nil {
-			newS, err := jcs.Format(temp)
-			if err == nil {
-				return newS
-			}
-		}
-	}
+	//if cond.IsJson(s) {
+	//	s = strings.TrimSpace(s)
+	//	var temp any
+	//	if err := json.Unmarshal([]byte(s), &temp); err == nil {
+	//		newS, err := jcs.Format(temp)
+	//		if err == nil {
+	//			return newS
+	//		}
+	//	}
+	//}
 	return s
 }
 
