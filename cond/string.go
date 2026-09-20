@@ -49,6 +49,10 @@ func getAnyFromJsonString(text string) (any, bool) {
 	if text == "" {
 		return nil, false
 	}
+	//简单判断，避免json.Unmarshal性能开销
+	if len(text) < 2 || (text[0] != '{' && text[0] != '[') {
+		return nil, false
+	}
 
 	var temp any
 	if err := json.Unmarshal([]byte(text), &temp); err != nil {

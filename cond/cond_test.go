@@ -1,6 +1,7 @@
 package cond_test
 
 import (
+	"errors"
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/cond"
 	"github.com/wI2L/jsondiff"
@@ -120,5 +121,116 @@ func TestIsSameJSON(t *testing.T) {
 		if got := cond.IsSameJson(c.jsonA, c.jsonB); got != c.want {
 			t.Errorf("IsSameJSON(%q, %q)=%v, want %v", c.jsonA, c.jsonB, got, c.want)
 		}
+	}
+}
+// -------- 以下为 IsError 测试用例用到的类型 --------
+
+// onlyError 只有 Error 一个导出方法
+type onlyError struct {
+	msg string
+}
+
+func (e onlyError) Error() string { return e.msg }
+
+// onlyErrorWithUnexported Error 之外只有一个未导出方法
+type onlyErrorWithUnexported struct {
+	msg string
+}
+
+func (e onlyErrorWithUnexported) Error() string { return e.msg }
+func (e onlyErrorWithUnexported) helper() string {
+	return e.msg
+}
+
+// errorWithGetter Error 之外还有一个导出方法：典型的业务结构体，不应被认作 error
+type errorWithGetter struct {
+	msg string
+}
+
+func (e errorWithGetter) Error() string { return e.msg }
+func (e errorWithGetter) GetMsg() string {
+	return e.msg
+}
+
+// errorWithStringer Error 之外还有一个 String
+type errorWithStringer struct {
+	msg string
+}
+
+func (e errorWithStringer) Error() string  { return e.msg }
+func (e errorWithStringer) String() string { return e.msg }
+
+// ptrError Error 使用指针接收者
+type ptrError struct {
+	msg string
+}
+
+func (e *ptrError) Error() string { return e.msg }
+
+// errorWithUnwrap Error 之外只有一个 Unwrap：错误链成员，应被认作 error
+type errorWithUnwrap struct {
+	msg  string
+	next error
+}
+
+func (e errorWithUnwrap) Error() string { return e.msg }
+func (e errorWithUnwrap) Unwrap() error { return e.next }
+
+// errorWithUnwrapAndGetter Error + Unwrap 之外还有第三个导出方法
+type errorWithUnwrapAndGetter struct {
+	msg string
+}
+
+func (e errorWithUnwrapAndGetter) Error() string { return e.msg }
+func (e errorWithUnwrapAndGetter) Unwrap() error { return nil }
+func (e errorWithUnwrapAndGetter) GetMsg() string {
+	return e.msg
+}
+
+// embedHost 匿名嵌入 errorWithGetter，提升上来的 Error/GetMsg 都算自己的导出方法
+type embedHost struct {
+	errorWithGetter
+}
+
+// embedUnwrapHost 匿名嵌入 errorWithUnwrap，提升上来的只有 Error/Unwrap
+type embedUnwrapHost struct {
+	errorWithUnwrap
+}
+
+func TestIsError(t *testing.T) {
+	cases := []struct {
+		name string
+		in   any
+		want bool
+	}{
+		{"nil", nil, false},
+		{"非error/int", 1, false},
+		{"非error/string", "abc", false},
+		{"非error/time", time.Now(), false},
+
+		{"errors.New", errors.New("boom"), true},
+		{"fmt.Errorf无%w", fmt.Errorf("boom"), true},
+		{"fmt.Errorf带%w", fmt.Errorf("wrap: %w", errors.New("boom")), true},  // Unwrap 放行
+		{"errors.Join", errors.Join(errors.New("a"), errors.New("b")), true}, // Unwrap 放行
+
+		{"仅Error一个导出方法", onlyError{"boom"}, true},
+		{"仅Error一个导出方法/指针", &onlyError{"boom"}, true},
+		{"Error+未导出方法", onlyErrorWithUnexported{"boom"}, true}, // 未导出方法不计数
+		{"Error+Unwrap", errorWithUnwrap{"boom", nil}, true},
+		{"Error+Unwrap+GetMsg", errorWithUnwrapAndGetter{"boom"}, false},
+		{"Error+GetMsg", errorWithGetter{"boom"}, false},
+		{"Error+String", errorWithStringer{"boom"}, false},
+		{"嵌入提升出的其它导出方法", embedHost{errorWithGetter{"boom"}}, false},
+		{"嵌入提升出的Error+Unwrap", embedUnwrapHost{errorWithUnwrap{"boom", nil}}, true},
+
+		{"指针接收者/传指针", &ptrError{"boom"}, true},
+		{"指针接收者/传值", ptrError{"boom"}, false}, // 值类型未实现 error
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := cond.IsError(c.in); got != c.want {
+				t.Errorf("IsError(%T)=%v, want %v", c.in, got, c.want)
+			}
+		})
 	}
 }

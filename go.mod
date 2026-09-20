@@ -79,7 +79,6 @@ require (
 	github.com/tmc/langchaingo v0.1.13
 	github.com/tmc/langgraphgo v0.0.0-20240324234251-3b0caeaffd16
 	github.com/traefik/yaegi v0.16.1
-	github.com/ucarion/jcs v0.1.2
 	github.com/viant/toolbox v0.37.0
 	github.com/wI2L/jsondiff v0.7.1
 	github.com/zeromicro/go-zero v1.9.2

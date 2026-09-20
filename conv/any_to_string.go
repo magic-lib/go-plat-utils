@@ -2,10 +2,10 @@ package conv
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/cond"
 	jsoniterForNil "github.com/magic-lib/go-plat-utils/internal/jsoniter/go"
-	"github.com/samber/lo"
 	"github.com/spf13/cast"
 	"github.com/viant/toolbox"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -19,11 +19,28 @@ import (
 	"time"
 )
 
+var (
+	// quotedJSONRegexp 预编译：getStringFromJson 位于 map/slice/struct 的必经路径，
+	// 原先每次调用都执行 regexp.MatchString 重新编译正则（约 1-2µs 且多次分配）。
+	quotedJSONRegexp = regexp.MustCompile(`^".*"$`)
+
+	// 以下为静态哨兵错误。所有调用点仅判断 err == nil，从不使用错误文本，
+	// 因此用包级变量代替 fmt.Errorf，可消除失败路径上的字符串与 error 分配
+	// （struct 分支单次转换会连续触发其中 4-5 次失败）。
+	errKind       = errors.New("kind error")
+	errType       = errors.New("type error")
+	errSQLType    = errors.New("sql type error")
+	errTypeString = errors.New("typeString error")
+	errCopy       = errors.New("copy error")
+)
+
 // String 转换为string
 func String(src any) string {
 	if src == nil {
 		return ""
 	}
+
+	// 特殊处理error类型
 	if cond.IsError(src) {
 		return src.(error).Error()
 	}
@@ -61,22 +78,27 @@ func String(src any) string {
 		return string2Json(retStr)
 	}
 
-	fmt.Printf("jsoniter.Marshal error:%s", err.Error())
 	retStr = toolbox.AsString(src)
 	return string2Json(retStr)
 }
 
 // string2Json 将字符串转换为 json 字符串
 func string2Json(s string) string {
-	//if cond.IsJson(s) {
-	//	s = strings.TrimSpace(s)
-	//	var temp any
-	//	if err := json.Unmarshal([]byte(s), &temp); err == nil {
-	//		newS, err := jcs.Format(temp)
-	//		if err == nil {
-	//			return newS
-	//		}
-	//	}
+	//t := strings.TrimLeft(s, " \t\r\n") // 不分配
+	//if len(t) < 2 || (t[0] != '{' && t[0] != '[') {
+	//	return s // 99% 场景到此结束：0 解析 0 分配
+	//}
+	//var temp any
+	//if err := json.Unmarshal([]byte(t), &temp); err != nil {
+	//	return s
+	//}
+	//switch temp.(type) {
+	//case map[string]any, []any:
+	//default:
+	//	return s
+	//}
+	//if newS, err := jcs.Format(temp); err == nil {
+	//	return newS
 	//}
 	return s
 }
@@ -111,13 +133,10 @@ func getBySpecialType(src any, ignoreOmitempty bool) (any, string, bool) {
 		return src, String(strValue.Elem().Interface()), true
 	}
 
-	// 常用特殊类型
-	if strValue.Type().String() == "sync.Map" {
-		retStr := ""
-		if synMap, ok := src.(sync.Map); ok {
-			retStr = String(getBySyncMap(&synMap))
-		}
-		return src, retStr, true
+	// 常用特殊类型：直接用类型断言判定，避免 strValue.Type().String()
+	// 每次生成完整类型名字符串（一次分配 + 字符串比较）后再与紧随其后的断言重复判断
+	if synMap, ok := src.(sync.Map); ok {
+		return src, String(getBySyncMap(&synMap)), true
 	}
 
 	if strType.Kind() == reflect.Map {
@@ -183,7 +202,11 @@ func hasCustomJSONTag(msg proto.Message) bool {
 
 		jsonTag := field.Tag.Get("json")
 		if jsonTag != "" && jsonTag != "-" {
-			tagName := strings.Split(jsonTag, ",")[0]
+			// 用 Index 截断代替 strings.Split，避免为每个字段分配切片
+			tagName := jsonTag
+			if idx := strings.Index(tagName, ","); idx >= 0 {
+				tagName = tagName[:idx]
+			}
 			if tagName != "" && tagName != field.Name {
 				return true
 			}
@@ -201,13 +224,10 @@ func getBySyncMap(synMap *sync.Map) map[any]any {
 			return
 		}
 	}()
-	fmt.Println("getBySyncMap 1:")
 	synMap.Range(func(key, value any) bool {
-		fmt.Println("getBySyncMap 2:")
 		//newMap[key] = value
 		return true
 	})
-	fmt.Println("getBySyncMap 3:")
 	return newMap
 }
 func getByMap(src any, ignoreOmitempty bool) (string, map[any]any, error) {
@@ -358,7 +378,7 @@ func getByKind(i any) (string, error) {
 	case reflect.Bool:
 		return strconv.FormatBool(v.Bool()), nil
 	default:
-		return "", fmt.Errorf("kind error")
+		return "", errKind
 	}
 }
 
@@ -415,7 +435,7 @@ func getByType(src any) (string, error) {
 		}
 	case map[any]any:
 		// 直接创建临时map进行类型转换
-		stringMap := make(map[string]any)
+		stringMap := make(map[string]any, len(v))
 		for key, value := range v {
 			stringMap[String(key)] = value
 		}
@@ -426,7 +446,7 @@ func getByType(src any) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("type error")
+	return "", errType
 }
 func getBySqlType(src any) (string, error) {
 	if strNull, ok := src.(sql.NullString); ok {
@@ -436,11 +456,11 @@ func getBySqlType(src any) (string, error) {
 		return "", nil
 	}
 
-	return "", fmt.Errorf("sql type error")
+	return "", errSQLType
 }
 
 func getByTypeString(src any, ignoreOmitempty bool) (string, error) {
-	strType := fmt.Sprintf("%T", src)
+	strType := reflect.TypeOf(src).String()
 	if strType == "errors.errorString" {
 		errTemp := fmt.Sprintf("%v", src)
 		if len(errTemp) <= 2 {
@@ -451,10 +471,10 @@ func getByTypeString(src any, ignoreOmitempty bool) (string, error) {
 
 	//看看是否是数组类型
 	if len(strType) >= 2 {
-		subTemp := lo.Substring(strType, 0, 2)
+		subTemp := strType[:2]
 		if subTemp == "[]" && strType != "[]string" {
 			arrTemp := reflect.ValueOf(src)
-			newArrTemp := make([]any, 0)
+			newArrTemp := make([]any, 0, arrTemp.Len())
 			for i := 0; i < arrTemp.Len(); i++ {
 				oneTemp := arrTemp.Index(i).Interface()
 				newArrTemp = append(newArrTemp, oneTemp)
@@ -464,7 +484,7 @@ func getByTypeString(src any, ignoreOmitempty bool) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("typeString error")
+	return "", errTypeString
 }
 func getByCopy(src any, ignoreOmitempty bool) (string, error) {
 	newStrTemp := mapDeepCopy(src) //concurrent map read and map write
@@ -473,7 +493,7 @@ func getByCopy(src any, ignoreOmitempty bool) (string, error) {
 	if err == nil {
 		return retStr, nil
 	}
-	return "", fmt.Errorf("copy error")
+	return "", errCopy
 }
 
 // unwrapSqlTypes 递归展开 sql.Null* 类型为底层值，解决嵌套在 struct/map/slice 中
@@ -533,13 +553,9 @@ func getStringFromJson(src any, ignoreOmitempty bool) (string, error) {
 	src = unwrapSqlTypes(src)
 	jsonStr, err := jsoniterForNil.MarshalToString(src)
 	if err == nil {
-		if len(jsonStr) >= 2 { //解决返回字符串首位带"的问题
-			match, errTemp := regexp.MatchString(`^".*"$`, jsonStr)
-			if errTemp == nil {
-				if match {
-					jsonStr = jsonStr[1 : len(jsonStr)-1]
-				}
-			}
+		//解决返回字符串首位带"的问题
+		if len(jsonStr) >= 2 && quotedJSONRegexp.MatchString(jsonStr) {
+			jsonStr = jsonStr[1 : len(jsonStr)-1]
 		}
 		//解决 & 会转换成 \u0026 的问题
 		retAll := strFix(jsonStr)
@@ -636,7 +652,7 @@ func strFix(s string) string {
 func mapDeepCopy(value any) any {
 	switch v := value.(type) {
 	case map[string]any:
-		newMap := make(map[string]any)
+		newMap := make(map[string]any, len(v))
 		for k, v := range v {
 			newMap[k] = mapDeepCopy(v)
 		}

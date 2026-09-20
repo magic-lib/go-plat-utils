@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -130,20 +131,62 @@ func IsPointer(val any) bool {
 	return reflect.TypeOf(val).Kind() == reflect.Ptr
 }
 
+// errorTypeCache 缓存「类型 → IsError 判定结果」。
+// NumMethod/Method(i) 走反射且 Method(i) 会构造 reflect.Value（有分配），
+// 同一类型的判定结果恒定不变，按 reflect.Type 缓存可避免重复计算。
+var errorTypeCache sync.Map // map[reflect.Type]bool
+
+// IsError 判断 val 是否是一个「纯粹的」错误对象，需要同时满足：
+//  1. val 实现了 error 接口（方法集内含签名为 Error() string 的方法）；
+//  2. 该类型的**导出**方法只允许是 Error，以及可选的 Unwrap。
+//
+// 之所以加第 2 条：Go 的接口是隐式实现，业务结构体只要碰巧定义了
+// Error() string 就会被 val.(error) 命中；而这类结构体通常还带有
+// GetXxx/ToXxx/MarshalJSON 等其它导出方法，据此可把它们与真正的错误区分开。
+//
+// Unwrap 之所以放行：它是 errors 包约定的错误链方法（Unwrap() error），
+// 带它说明该类型仍是一条纯粹的错误链的成员，而非某个碰巧有 Error 方法的业务对象。
+// errors.New/fmt.Errorf（含 %w 包装）/errors.Join 的结果都会被判为 true。
+//
+// 未导出方法不计入统计；嵌入结构体提升上来的导出方法计入。
+//
+// 注意：判定基于 val 的动态类型本身。若 Error 使用指针接收者，则传值 T{}
+// 连条件 1 都不满足（返回 false），需传 &T{}；这与 Go 自身的方法集规则一致。
 func IsError(val any) bool {
-	_, ok := val.(error)
-	if !ok {
+	if val == nil {
+		return false
+	}
+	if _, ok := val.(error); !ok {
 		return false
 	}
 
-	value := reflect.ValueOf(val)
-	typ := value.Type()
-	if typ.Kind() == reflect.Interface &&
-		typ.NumMethod() == 1 &&
-		typ.Method(0).Name == "Error" {
-		return true
+	typ := reflect.TypeOf(val)
+	if cached, ok := errorTypeCache.Load(typ); ok {
+		return cached.(bool)
 	}
-	return false
+	ret := hasOnlyErrorMethods(typ)
+	errorTypeCache.Store(typ, ret)
+	return ret
+}
+
+// hasOnlyErrorMethods 判断 typ 的导出方法是否只由 Error 和 Unwrap 组成，且 Error 必须存在
+func hasOnlyErrorMethods(typ reflect.Type) bool {
+	hasError := false
+	for i := 0; i < typ.NumMethod(); i++ {
+		method := typ.Method(i)
+		if !method.IsExported() { // 未导出方法忽略
+			continue
+		}
+		switch method.Name {
+		case "Error":
+			hasError = true
+		case "Unwrap":
+			// 错误链约定方法，放行
+		default:
+			return false // 出现第 3 方导出方法，立即结束
+		}
+	}
+	return hasError
 }
 
 // IsEqual 宽松相等判断，支持跨类型比较，适用于规则引擎中的值匹配场景：
