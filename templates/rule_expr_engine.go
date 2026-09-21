@@ -51,7 +51,7 @@ func (e *RuleExprEngine) RunString(expr string, args any, noEvaluate ...bool) (a
 		argAny = argMap
 		if err != nil {
 			fmt.Println("RuleExprEngine RunString Unmarshal expr:", expr, "args:", conv.String(args), "err:", err)
-			if !cond.IsJsonMap(conv.String(args)) {
+			if !cond.IsJsonObject(conv.String(args)) {
 				argAny = args //如果不是json格式，就用原始格式
 			}
 		}
@@ -117,7 +117,7 @@ func (e *RuleExprEngine) RenderObject(expr string, args any) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	if cond.IsJsonMap(conv.String(newArgs)) {
+	if cond.IsJsonObject(conv.String(newArgs)) {
 		var argMap map[string]any
 		_ = conv.Unmarshal(newArgs, &argMap)
 		return argMap, nil

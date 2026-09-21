@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/google/go-cmp/cmp"
 	"github.com/json-iterator/go"
+	"github.com/magic-lib/go-plat-utils/internal"
 	"regexp"
 	"strings"
 )
@@ -49,8 +50,8 @@ func getAnyFromJsonString(text string) (any, bool) {
 	if text == "" {
 		return nil, false
 	}
-	//简单判断，避免json.Unmarshal性能开销
-	if len(text) < 2 || (text[0] != '{' && text[0] != '[') {
+	// 简单判断，避免 json.Unmarshal 性能开销
+	if !internal.SimpleCheckJsonArrayOrObject(text) {
 		return nil, false
 	}
 
@@ -62,7 +63,14 @@ func getAnyFromJsonString(text string) (any, bool) {
 }
 
 // IsJsonMap 是否是jsonMap字符串
+// deprecated
+// 请使用 IsJsonObject 替代
 func IsJsonMap(text string) bool {
+	return IsJsonObject(text)
+}
+
+// IsJsonObject 是否是json Object 字符串
+func IsJsonObject(text string) bool {
 	temp, ok := getAnyFromJsonString(text)
 	if !ok {
 		return false

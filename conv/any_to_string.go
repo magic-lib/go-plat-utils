@@ -2,11 +2,14 @@ package conv
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/iancoleman/orderedmap"
 	"github.com/magic-lib/go-plat-utils/cond"
 	jsoniterForNil "github.com/magic-lib/go-plat-utils/internal/jsoniter/go"
 	"github.com/spf13/cast"
+	"github.com/ucarion/jcs"
 	"github.com/viant/toolbox"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -34,6 +37,8 @@ var (
 	errCopy       = errors.New("copy error")
 )
 
+const MysqlZeroTime = "1000-01-01 00:00:00"
+
 // String 转换为string
 func String(src any) string {
 	if src == nil {
@@ -50,57 +55,36 @@ func String(src any) string {
 
 	retStr, err := baseAsString(src)
 	if err == nil {
-		return string2Json(retStr)
+		return retStr
 	}
 
 	var ok bool
 	src, retStr, ok = getBySpecialType(src, ignoreOmitempty)
 	if ok {
-		return string2Json(retStr)
+		return retStr
 	}
 
 	retStr, err = getBySqlType(src)
 	if err == nil {
-		return string2Json(retStr)
+		return retStr
 	}
 
 	retStr, err = getByTypeString(src, ignoreOmitempty)
 	if err == nil {
-		return string2Json(retStr)
+		return retStr
 	}
 
 	retStr, err = getByCopy(src, ignoreOmitempty) //concurrent map read and map write
 	if err == nil {
-		return string2Json(retStr)
+		return retStr
 	}
 	retStr, err = cast.ToStringE(src)
 	if err == nil {
-		return string2Json(retStr)
+		return retStr
 	}
 
 	retStr = toolbox.AsString(src)
-	return string2Json(retStr)
-}
-
-// string2Json 将字符串转换为 json 字符串
-func string2Json(s string) string {
-	//t := strings.TrimLeft(s, " \t\r\n") // 不分配
-	//if len(t) < 2 || (t[0] != '{' && t[0] != '[') {
-	//	return s // 99% 场景到此结束：0 解析 0 分配
-	//}
-	//var temp any
-	//if err := json.Unmarshal([]byte(t), &temp); err != nil {
-	//	return s
-	//}
-	//switch temp.(type) {
-	//case map[string]any, []any:
-	//default:
-	//	return s
-	//}
-	//if newS, err := jcs.Format(temp); err == nil {
-	//	return newS
-	//}
-	return s
+	return retStr
 }
 
 func baseAsString(src any) (string, error) {
@@ -225,7 +209,7 @@ func getBySyncMap(synMap *sync.Map) map[any]any {
 		}
 	}()
 	synMap.Range(func(key, value any) bool {
-		//newMap[key] = value
+		newMap[key] = value
 		return true
 	})
 	return newMap
@@ -257,9 +241,9 @@ func getBySlice(src any, ignoreOmitempty bool) (string, []any, error) {
 		return string(strByte), nil, nil
 	}
 
-	json, err := getStringFromJson(src, ignoreOmitempty)
+	jsonStr, err := getStringFromJson(src, ignoreOmitempty)
 	if err == nil {
-		return json, nil, nil
+		return jsonStr, nil, nil
 	}
 	strValue := reflect.ValueOf(src)
 
@@ -382,6 +366,43 @@ func getByKind(i any) (string, error) {
 	}
 }
 
+// outputFieldCache 缓存 hasOutputField 的判定结果，key 为 reflect.Type，value 为 bool。
+// 判定只与动态类型有关，缓存后可避免每次转换都遍历结构体字段。
+var outputFieldCache sync.Map
+
+// hasOutputField 判断 val（解引用后）是否含有「可导出且会被输出」的字段，json:"-" 的字段不算。
+// 用于区分「纯粹的错误对象」与「碰巧实现了 error 接口的业务结构体」：
+//   - 业务结构体带有可导出字段，序列化后是有内容的 JSON，此时应当按对象输出；
+//   - 纯粹的错误对象（errors.New、fmt.Errorf 等）没有可导出字段，
+//     序列化只会得到 {}，此时输出 Error() 的文本才有意义。
+func hasOutputField(val any) bool {
+	v := reflect.ValueOf(val)
+	for v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return false
+		}
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		return false
+	}
+	if cached, ok := outputFieldCache.Load(v.Type()); ok {
+		return cached.(bool)
+	}
+	t := v.Type()
+	has := false
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		if !f.IsExported() || f.Tag.Get("json") == "-" {
+			continue
+		}
+		has = true
+		break
+	}
+	outputFieldCache.Store(t, has)
+	return has
+}
+
 func getByType(src any) (string, error) {
 	if src == nil {
 		return "", nil
@@ -419,6 +440,12 @@ func getByType(src any) (string, error) {
 	case []byte:
 		return string(v), nil
 	case error:
+		// 如果该对象包含了别的可导出的值，则打印这个值，否则输出v.Error()内容
+		if hasOutputField(v) {
+			// 还有可导出的字段，说明这是「碰巧实现了 error 的业务对象」而不是纯粹的错误，
+			// 返回 errType 让流程继续往后走，最终按对象序列化输出
+			return "", errType
+		}
 		return v.Error(), nil
 	case time.Time:
 		{
@@ -434,10 +461,16 @@ func getByType(src any) (string, error) {
 			}
 		}
 	case map[any]any:
+		if cond.IsNil(src) {
+			return "", nil
+		}
 		// 直接创建临时map进行类型转换
 		stringMap := make(map[string]any, len(v))
 		for key, value := range v {
 			stringMap[String(key)] = value
+		}
+		if newS, err := jcs.Format(stringMap); err == nil {
+			return newS, nil
 		}
 		if data, err := jsoniterForNil.Marshal(stringMap); err == nil {
 			return string(data), nil
@@ -498,59 +531,93 @@ func getByCopy(src any, ignoreOmitempty bool) (string, error) {
 
 // unwrapSqlTypes 递归展开 sql.Null* 类型为底层值，解决嵌套在 struct/map/slice 中
 // 时 JSON 序列化为 {"String":"...","Valid":true} 而非实际值的问题
-func unwrapSqlTypes(src any) any {
+func unwrapSqlTypes(src any) (any, bool) {
 	if src == nil {
-		return nil
+		return nil, false
 	}
 
 	// 直接处理各类 sql.Null* 类型
 	switch v := src.(type) {
 	case sql.NullString:
 		if v.Valid {
-			return v.String
+			return v.String, true
 		}
-		return ""
+		return "", true
 	case sql.NullInt64:
 		if v.Valid {
-			return v.Int64
+			return v.Int64, true
 		}
-		return int64(0)
+		return int64(0), true
 	case sql.NullFloat64:
 		if v.Valid {
-			return v.Float64
+			return v.Float64, true
 		}
-		return float64(0)
+		return float64(0), true
 	case sql.NullBool:
 		if v.Valid {
-			return v.Bool
+			return v.Bool, true
 		}
-		return false
+		return false, true
 	case sql.NullInt32:
 		if v.Valid {
-			return v.Int32
+			return v.Int32, true
 		}
-		return int32(0)
+		return int32(0), true
 	case sql.NullInt16:
 		if v.Valid {
-			return v.Int16
+			return v.Int16, true
 		}
-		return int16(0)
+		return int16(0), true
 	case sql.NullByte:
 		if v.Valid {
-			return v.Byte
+			return v.Byte, true
 		}
-		return byte(0)
+		return byte(0), true
 	case sql.NullTime:
 		if v.Valid {
-			return v.Time
+			return v.Time, true
 		}
-		return time.Time{}
+		return MysqlZeroTime, true
 	}
-	return src
+	return src, false
 }
 
 func getStringFromJson(src any, ignoreOmitempty bool) (string, error) {
-	src = unwrapSqlTypes(src)
+	_, ok1 := src.(map[string]any)
+	_, ok2 := src.(map[string]string)
+	_, ok3 := src.(map[any]any)
+	_, ok4 := src.([]any)
+	if ok1 || ok2 || ok3 || ok4 {
+		if newS, err := jcs.Format(src); err == nil {
+			return newS, nil
+		} else {
+			if ok1 {
+				omIns := orderedmap.New()
+				for k, v := range src.(map[string]any) {
+					omIns.Set(k, v)
+				}
+				bs, err := json.Marshal(omIns)
+				if err == nil {
+					return string(bs), nil
+				}
+			}
+			if ok2 {
+				omIns := orderedmap.New()
+				for k, v := range src.(map[string]string) {
+					omIns.Set(k, v)
+				}
+				bs, err := json.MarshalIndent(omIns, "", "")
+				if err == nil {
+					return string(bs), nil
+				}
+			}
+		}
+	}
+
+	src, ok1 = unwrapSqlTypes(src)
+	if ok1 {
+		return String(src), nil
+	}
 	jsonStr, err := jsoniterForNil.MarshalToString(src)
 	if err == nil {
 		//解决返回字符串首位带"的问题
@@ -563,10 +630,15 @@ func getStringFromJson(src any, ignoreOmitempty bool) (string, error) {
 			v := reflect.ValueOf(src)
 			if v.Kind() == reflect.Struct {
 				newMapAll := make(map[string]any)
-				_ = Unmarshal(retAll, &newMapAll)
+				err = jsoniterForNil.UnmarshalFromString(retAll, &newMapAll)
+				if err != nil {
+					return retAll, err
+				}
 				newMap := getStringFromStruct(src, newMapAll)
-				retAll, err = jsoniterForNil.MarshalToString(newMap)
-				return retAll, err
+				if newS, err := jcs.Format(newMap); err == nil {
+					return newS, nil
+				}
+				return jsoniterForNil.MarshalToString(newMap)
 			}
 		}
 		return retAll, nil

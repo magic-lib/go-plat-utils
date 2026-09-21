@@ -138,7 +138,8 @@ var errorTypeCache sync.Map // map[reflect.Type]bool
 
 // IsError 判断 val 是否是一个「纯粹的」错误对象，需要同时满足：
 //  1. val 实现了 error 接口（方法集内含签名为 Error() string 的方法）；
-//  2. 该类型的**导出**方法只允许是 Error，以及可选的 Unwrap。
+//  2. 该类型的**导出**方法只允许是 Error，以及可选的 Unwrap；
+//  3. 该类型没有**可导出**的字段（即序列化后不会有别的内容输出）。
 //
 // 之所以加第 2 条：Go 的接口是隐式实现，业务结构体只要碰巧定义了
 // Error() string 就会被 val.(error) 命中；而这类结构体通常还带有
@@ -148,7 +149,13 @@ var errorTypeCache sync.Map // map[reflect.Type]bool
 // 带它说明该类型仍是一条纯粹的错误链的成员，而非某个碰巧有 Error 方法的业务对象。
 // errors.New/fmt.Errorf（含 %w 包装）/errors.Join 的结果都会被判为 true。
 //
+// 之所以加第 3 条：第 2 条只看方法，一个只定义了 Error 方法、却带着可导出字段的结构体
+// 仍会被判为纯错误，于是调用方只能拿到 Error() 的文本而丢掉了字段内容。
+// 这类对象序列化后是有内容的（有别的输出元素），应当被当作业务对象输出，故返回 false。
+// 典型如 `type BizErr struct{ Code int; Msg string }`，只有 Error 方法但有可导出字段 → false。
+//
 // 未导出方法不计入统计；嵌入结构体提升上来的导出方法计入。
+// 字段侧：未导出字段忽略，json:"-" 的字段视为不输出，同样忽略；指针会逐层解引用。
 //
 // 注意：判定基于 val 的动态类型本身。若 Error 使用指针接收者，则传值 T{}
 // 连条件 1 都不满足（返回 false），需传 &T{}；这与 Go 自身的方法集规则一致。
@@ -164,9 +171,32 @@ func IsError(val any) bool {
 	if cached, ok := errorTypeCache.Load(typ); ok {
 		return cached.(bool)
 	}
-	ret := hasOnlyErrorMethods(typ)
+	ret := hasOnlyErrorMethods(typ) && !hasExportableField(typ)
 	errorTypeCache.Store(typ, ret)
 	return ret
+}
+
+// hasExportableField 判断 typ（逐层解引用后）是否存在「可导出且会被输出」的字段。
+// 只要存在这样的字段，就说明该错误对象序列化后还有别的内容，不是纯粹的错误。
+// json:"-" 表示该字段不参与序列化，不计入；非结构体类型一律视为没有字段。
+func hasExportableField(typ reflect.Type) bool {
+	for typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+	if typ.Kind() != reflect.Struct {
+		return false
+	}
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+		if !field.IsExported() { // 未导出字段不会被输出
+			continue
+		}
+		if field.Tag.Get("json") == "-" { // 显式声明不输出
+			continue
+		}
+		return true
+	}
+	return false
 }
 
 // hasOnlyErrorMethods 判断 typ 的导出方法是否只由 Error 和 Unwrap 组成，且 Error 必须存在

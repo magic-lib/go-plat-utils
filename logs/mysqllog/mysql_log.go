@@ -279,7 +279,7 @@ func (ml *mysqlLogger) parseSingleMessage(msg any) *logs.LogData {
 
 	// 其他类型，尝试解析
 	logData := logs.NewLogData(nil)
-	if cond.IsJsonMap(conv.String(msg)) {
+	if cond.IsJsonObject(conv.String(msg)) {
 		_ = conv.Unmarshal(msg, logData)
 		extends := make(map[string]any)
 		_ = conv.Unmarshal(msg, &extends)
@@ -301,7 +301,7 @@ func (ml *mysqlLogger) parseMultipleMessages(msg []any) *logs.LogData {
 
 	for _, v := range msg {
 		// 尝试作为 JSON map 解析
-		if cond.IsJsonMap(conv.String(v)) {
+		if cond.IsJsonObject(conv.String(v)) {
 			tempMap := make(map[string]any)
 			_ = conv.Unmarshal(v, &tempMap)
 			if len(tempMap) > 0 {

@@ -123,6 +123,7 @@ func TestIsSameJSON(t *testing.T) {
 		}
 	}
 }
+
 // -------- 以下为 IsError 测试用例用到的类型 --------
 
 // onlyError 只有 Error 一个导出方法
@@ -197,6 +198,31 @@ type embedUnwrapHost struct {
 	errorWithUnwrap
 }
 
+// fieldOnlyError 只有一个 Error 方法，但带有可导出字段：
+// 序列化后还有别的内容输出，不算纯粹的错误
+type fieldOnlyError struct {
+	Code int
+	msg  string
+}
+
+func (e fieldOnlyError) Error() string { return e.msg }
+
+// fieldOnlyErrorPtr 同上，但 Error 用指针接收者，只能传指针
+type fieldOnlyErrorPtr struct {
+	Code int
+	msg  string
+}
+
+func (e *fieldOnlyErrorPtr) Error() string { return e.msg }
+
+// jsonSkipError 唯一的字段被 json:"-" 排除，序列化后什么都不输出，仍是纯粹的错误
+type jsonSkipError struct {
+	Code int `json:"-"`
+	msg  string
+}
+
+func (e jsonSkipError) Error() string { return e.msg }
+
 func TestIsError(t *testing.T) {
 	cases := []struct {
 		name string
@@ -225,6 +251,11 @@ func TestIsError(t *testing.T) {
 
 		{"指针接收者/传指针", &ptrError{"boom"}, true},
 		{"指针接收者/传值", ptrError{"boom"}, false}, // 值类型未实现 error
+
+		// 字段侧：有可导出字段就有别的输出元素，不算纯粹的错误
+		{"只有Error但有可导出字段", fieldOnlyError{Code: 1, msg: "boom"}, false},
+		{"只有Error但有可导出字段/指针", &fieldOnlyErrorPtr{Code: 1, msg: "boom"}, false},
+		{"字段被json:-排除", jsonSkipError{Code: 1, msg: "boom"}, true}, // 不输出，仍算纯错误
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

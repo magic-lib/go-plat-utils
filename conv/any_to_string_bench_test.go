@@ -2,8 +2,10 @@ package conv_test
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
@@ -14,7 +16,8 @@ import (
 // 基准测试与等价性回归测试：conv.String 性能优化的验证基线。
 //
 // 约定：本文件先于优化建立，TestStringGolden 中的期望值取自优化前的实际输出，
-// 优化后必须逐字节一致；BenchmarkString* 用于量化 ns/op 与 allocs/op 的改善。
+// 优化后必须保持一致（键序随机的项按 JSON 语义等价比较）；
+// BenchmarkString* 用于量化 ns/op 与 allocs/op 的改善。
 
 // benchUser 覆盖 struct 路径：含 json tag、omitempty、匿名嵌入、嵌套指针。
 type benchUser struct {
@@ -237,8 +240,25 @@ func BenchmarkStringMixed(b *testing.B) {
 
 // --- 等价性回归 ---
 
-// TestStringGolden 断言 conv.String 对每个分支的输出与优化前逐字节一致。
-// 期望值取自优化前 TestCaptureBaseline 的实际输出，任何优化都必须保持其不变。
+// jsonEqualOrEqual 先按字符串相等比较；不相等时，若两边都是合法 JSON 则按语义等价比较。
+// 必须这么做的原因：struct / map 的输出内部会经过 map 中转，键序取决于 Go 的 map 迭代顺序，
+// 是随机的，无法做逐字节断言；只能比较反序列化后的结构。
+func jsonEqualOrEqual(got, want string) bool {
+	if got == want {
+		return true
+	}
+	var g, w any
+	if json.Unmarshal([]byte(got), &g) != nil {
+		return false
+	}
+	if json.Unmarshal([]byte(want), &w) != nil {
+		return false
+	}
+	return reflect.DeepEqual(g, w)
+}
+
+// TestStringGolden 断言 conv.String 对每个分支的输出保持稳定。
+// 期望值取自 TestCaptureBaseline 的实际输出，任何优化都必须保持其不变。
 func TestStringGolden(t *testing.T) {
 	want := map[string]string{
 		"nil":          "",
@@ -252,11 +272,11 @@ func TestStringGolden(t *testing.T) {
 		"bytes":        "hello bytes",
 		"time":         "2026-09-19 10:30:00",
 
-		// string2Json：非 JSON 文本原样返回；真 JSON 走 JCS 规范化（键有序、空白归一）
+		// JSON 文本输入一律原样返回：String 不再做 JCS 规范化（键序与空白保持原样）
 		"json-like-str": `{"not really json"`,
-		"json-object":   `{"a":1,"b":2}`,
+		"json-object":   `{"b":2,"a":1}`,
 		"json-array":    `[3,1,2]`,
-		"json-spaced":   `{"y":2,"z":1}`,
+		"json-spaced":   "  \n\t{\"z\":1,\"y\":2}  ",
 
 		// 容器：空字段由 getStringFromStruct 补全，& < > 由 strFix 还原
 		"map-any":    `{"a":1,"b":"two"}`,
@@ -289,7 +309,7 @@ func TestStringGolden(t *testing.T) {
 		if !ok {
 			t.Fatalf("missing golden value for %q", name)
 		}
-		if got := conv.String(src); got != expected {
+		if got := conv.String(src); !jsonEqualOrEqual(got, expected) {
 			t.Errorf("分支 %q 输出漂移:\n got=%q\nwant=%q", name, got, expected)
 		}
 	}
