@@ -2,6 +2,7 @@ package conv_test
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/utils"
@@ -507,4 +508,8 @@ func TestFormatConvString(t *testing.T) {
 	cc := sql.NullString{}
 	conv.Unmarshal(`"123"`, &cc)
 	fmt.Println(cc)
+
+	var dd = json.RawMessage("{\"account_id\":123}")
+	conv.Unmarshal(dd, bb)
+	fmt.Println(bb)
 }

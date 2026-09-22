@@ -16,6 +16,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"reflect"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -120,7 +121,22 @@ func getBySpecialType(src any, ignoreOmitempty bool) (any, string, bool) {
 	// 常用特殊类型：直接用类型断言判定，避免 strValue.Type().String()
 	// 每次生成完整类型名字符串（一次分配 + 字符串比较）后再与紧随其后的断言重复判断
 	if synMap, ok := src.(sync.Map); ok {
-		return src, String(getBySyncMap(&synMap)), true
+		newMap, keyIsString := getBySyncMap(&synMap)
+		if keyIsString {
+			//key 全是 string：按 key 升序排好序再输出，避免 Range/map 遍历顺序随机导致输出不稳定
+			strKeys := make([]string, 0, len(newMap))
+			for key := range newMap {
+				strKeys = append(strKeys, key.(string))
+			}
+			sort.Strings(strKeys)
+
+			omIns := orderedmap.New()
+			for _, strKey := range strKeys {
+				omIns.Set(strKey, newMap[strKey])
+			}
+			return src, String(omIns.Values()), true
+		}
+		return src, String(newMap), true
 	}
 
 	if strType.Kind() == reflect.Map {
@@ -200,7 +216,7 @@ func hasCustomJSONTag(msg proto.Message) bool {
 	return false
 }
 
-func getBySyncMap(synMap *sync.Map) map[any]any {
+func getBySyncMap(synMap *sync.Map) (map[any]any, bool) {
 	newMap := make(map[any]any)
 	defer func() {
 		if err := recover(); err != nil {
@@ -208,11 +224,15 @@ func getBySyncMap(synMap *sync.Map) map[any]any {
 			return
 		}
 	}()
+	keyIsString := true
 	synMap.Range(func(key, value any) bool {
+		if _, ok := key.(string); !ok {
+			keyIsString = false
+		}
 		newMap[key] = value
 		return true
 	})
-	return newMap
+	return newMap, keyIsString
 }
 func getByMap(src any, ignoreOmitempty bool) (string, map[any]any, error) {
 	retStr, err := getStringFromJson(src, ignoreOmitempty)

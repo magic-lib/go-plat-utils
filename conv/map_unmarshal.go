@@ -16,6 +16,7 @@ func Unmarshal(srcStruct any, dstPoint any) error {
 	if srcStruct == nil {
 		return nil
 	}
+	oldStruct := srcStruct
 	oldString, isString := checkIsString(srcStruct)
 	if isString {
 		if oldString == "" {
@@ -79,8 +80,15 @@ func Unmarshal(srcStruct any, dstPoint any) error {
 		}
 	}
 
-	// 2、不行则用json方法
 	t := new(toolsService)
+	// 2、不行则用json方法
+	if cond.IsBytes(oldStruct) {
+		errJson := t.UnmarshalDataFromJson(oldStruct, dstPoint)
+		if errJson == nil {
+			return nil
+		}
+	}
+
 	srcStruct, dstPoint = t.getNewSrcAndDst(srcStruct, dstPoint)
 
 	//先用对象进行替换，因为转换为json串以后，会丢失类型

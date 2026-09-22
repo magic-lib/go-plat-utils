@@ -2,6 +2,7 @@ package conv
 
 import (
 	"database/sql"
+	"github.com/magic-lib/go-plat-utils/cond"
 	"reflect"
 	"strconv"
 	"strings"
@@ -93,9 +94,9 @@ func toBool(val any) (bool, bool) {
 		}
 		return boolValue, true
 	case int, int8, int16, int32, int64:
-		return v != 0, true
+		return !cond.IsZero(v), true
 	case float32, float64:
-		return v != 0, true
+		return !cond.IsZero(v), true
 	default:
 		return false, false
 	}

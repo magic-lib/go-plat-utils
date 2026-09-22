@@ -417,6 +417,15 @@ func TestAnyToString1(t *testing.T) {
 	err := conv.Unmarshal(mm, bb)
 	fmt.Println(bb, err)
 }
+func TestAnyToString55(t *testing.T) {
+	//k, o := conv.Convert[bool](int8(0))
+	//fmt.Println(k, o)
+
+	var kk any = int8(0)
+	if !cond.IsZero(kk) {
+		fmt.Println("kkk")
+	}
+}
 func TestAnyToString2(t *testing.T) {
 	aa := map[string]any{
 		"aa": "111",
