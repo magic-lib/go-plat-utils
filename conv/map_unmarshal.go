@@ -16,23 +16,18 @@ func Unmarshal(srcStruct any, dstPoint any) error {
 	if srcStruct == nil {
 		return nil
 	}
+	oldString, isString := checkIsString(srcStruct)
+	if isString {
+		if oldString == "" {
+			return nil
+		}
+		srcStruct = oldString
+	}
+
 	srcType := reflect.TypeOf(srcStruct)
 	srcVal := reflect.ValueOf(srcStruct)
 	if srcType.Kind() == reflect.Ptr {
 		if srcVal.IsNil() {
-			return nil
-		}
-	}
-
-	isString := false
-	oldString := ""
-	ok := false
-	if oldString, ok = srcStruct.(string); ok {
-		isString = true
-	}
-	if isString {
-		//字符串为空，则直接返回
-		if oldString == "" {
 			return nil
 		}
 	}
@@ -127,6 +122,23 @@ func Unmarshal(srcStruct any, dstPoint any) error {
 		return errJson
 	}
 	return nil
+}
+
+func checkIsString(srcStruct any) (string, bool) {
+	isString := false
+	oldString := ""
+
+	// string 直接取值；底层是 []byte 的（含 json.RawMessage 这类具名类型）统一转成 string
+	if str, ok := srcStruct.(string); ok {
+		oldString, isString = str, true
+	} else {
+		srcType := reflect.TypeOf(srcStruct)
+		if srcType.Kind() == reflect.Slice && srcType.Elem().Kind() == reflect.Uint8 {
+			srcVal := reflect.ValueOf(srcStruct)
+			oldString, isString = string(srcVal.Bytes()), true
+		}
+	}
+	return oldString, isString
 }
 
 func logDebug(str ...any) {
