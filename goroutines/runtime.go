@@ -1,6 +1,8 @@
 package goroutines
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/internal"
 	"github.com/panjf2000/ants/v2"
@@ -106,20 +108,22 @@ func GoSync(task func(params ...any), params ...any) {
 
 // GoAsync 异步方法
 func GoAsync(task func(params ...any), params ...any) {
-	taskFun := routine.WrapTask(func() {
-		func(newTask func(params ...any), tempParams ...interface{}) {
-			GoSync(newTask, tempParams...)
-		}(task, params...)
-	})
-	if defaultAsyncObj.antsPool == nil {
-		go taskFun.Run()
+	if task == nil {
 		return
 	}
+	taskFun := routine.WrapTask(func() {
+		GoSync(task, params...)
+	})
 	defaultAsyncObj.poolMutex.RLock()
 	defer defaultAsyncObj.poolMutex.RUnlock()
-	err := defaultAsyncObj.antsPool.Submit(taskFun.Run)
-	if err != nil {
-		return
+
+	pool := defaultAsyncObj.antsPool
+	var submitErr error
+	if pool != nil {
+		submitErr = pool.Submit(taskFun.Run)
+	}
+	if pool == nil || submitErr != nil {
+		go taskFun.Run()
 	}
 }
 
@@ -129,12 +133,43 @@ type asyncResult[M any] struct {
 }
 
 // GoAsyncTimeout 执行一个方法带过期时间
-func GoAsyncTimeout[T any](timeout time.Duration, fun func(paramsIn ...any) (T, error), paramsOut ...any) (t T, e error) {
+//   - ctx：父 context，传 nil 时等价于 context.Background()；
+//   - timeout：>0 时同步等待结果，最多等 timeout；<=0 时纯异步，立即返回零值和 nil；
+//   - fun：真正执行的任务，它的 ctx 入参已带上超时/取消能力，任务应自行响应；
+//   - paramsOut：传给 fun 的可变参数。
+//
+// 注意两点：
+//  1. 任务一定会被执行（协程池提交失败时退化成裸 goroutine）；
+//  2. 超时或父 ctx 取消只是让调用方不再等待，已经跑起来的任务无法被强制终止。
+func GoAsyncTimeout[T any](ctx context.Context, timeout time.Duration, fun func(ctx context.Context, paramsIn ...any) (T, error), paramsOut ...any) (t T, e error) {
+	if fun == nil {
+		return t, nil
+	}
 	resultChan := make(chan asyncResult[T], 1)
+
+	var taskCtx context.Context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if timeout > 0 {
+		var cancel context.CancelFunc
+		taskCtx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
+	} else {
+		taskCtx = context.WithoutCancel(ctx)
+		// 如果超时时间为0，则表示没有超时时间，纯异步：任务生命周期不受父 ctx 影响
+	}
 
 	// 启动一个 goroutine 来执行耗时操作
 	GoAsync(func(paramsInIn ...any) {
-		oneRet, oneErr := fun(paramsInIn...)
+		defer func() {
+			// 任务 panic 时也要回填结果，否则调用方只能傻等到超时，还拿不到 panic 原因
+			if r := recover(); r != nil {
+				resultChan <- asyncResult[T]{err: fmt.Errorf("GoAsyncTimeout panic: %v", r)}
+				panic(r) // 继续抛给 GoSync 统一处理（打日志 / 回调 panicHandle）
+			}
+		}()
+		oneRet, oneErr := fun(taskCtx, paramsInIn...)
 		resultChan <- asyncResult[T]{data: oneRet, err: oneErr}
 	}, paramsOut...)
 
@@ -142,12 +177,16 @@ func GoAsyncTimeout[T any](timeout time.Duration, fun func(paramsIn ...any) (T, 
 		return t, nil // 直接异步，不等待结果
 	}
 
-	// 使用 select 语句来等待结果或超时
+	// 等待结果、超时或父 ctx 取消；用 taskCtx.Done() 而不是 time.After，
+	// 既能少建一个 timer，也能在父 ctx 取消时立刻返回
 	select {
 	case res := <-resultChan:
 		return res.data, res.err
-	case <-time.After(timeout):
-		return t, fmt.Errorf("GoAsyncTimeout timeout: %d", timeout)
+	case <-taskCtx.Done():
+		if errors.Is(taskCtx.Err(), context.DeadlineExceeded) {
+			return t, fmt.Errorf("GoAsyncTimeout timeout after %v: %w", timeout, context.DeadlineExceeded)
+		}
+		return t, fmt.Errorf("GoAsyncTimeout canceled: %w", taskCtx.Err())
 	}
 }
 

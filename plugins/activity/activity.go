@@ -163,8 +163,9 @@ func (ac *Activity) Execute(ctx context.Context, args map[string]any) (map[strin
 			return inputParams, execCtx.Err()
 		}
 	} else if ac.Control.DelayDuration < 0 {
-		_, err := goroutines.GoAsyncTimeout(time.Duration(ac.Control.Timeout)*time.Second, func(paramsIn ...any) (map[string]any, error) {
-			_, err := ac.execThisAction(execCtx, keyPrefix, linkChar, inputParams)
+		_, err := goroutines.GoAsyncTimeout(execCtx, time.Duration(ac.Control.Timeout)*time.Second, func(ctxIn context.Context, paramsIn ...any) (map[string]any, error) {
+			// 用带超时的 ctxIn，而不是外层的 execCtx
+			_, err := ac.execThisAction(ctxIn, keyPrefix, linkChar, inputParams)
 			if err != nil {
 				return nil, err
 			}
