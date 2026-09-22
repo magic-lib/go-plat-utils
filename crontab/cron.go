@@ -48,10 +48,10 @@ func StartJobs(immediateRun bool, jobs ...map[string]func()) error {
 	runningMu.Lock()
 	defer runningMu.Unlock()
 
-	oneCron := getCron()
 	if len(jobs) == 0 {
 		return nil
 	}
+	oneCron := getCron()
 
 	allKey := make([]string, 0)
 	for _, jobMap := range jobs {
@@ -85,11 +85,7 @@ func StartJobs(immediateRun bool, jobs ...map[string]func()) error {
 		return fmt.Errorf("[crontab] StartJobs allSuccess Fail")
 	}
 
-	if oneCron.isStart {
-		return nil
-	}
-	oneCron.isStart = true
-	//立即执行
+	//立即执行：每次调用都要执行本次传入的任务（不能放在 isStart 判断之后，否则第二次调用会被跳过）
 	if immediateRun {
 		goroutines.GoAsync(func(params ...any) {
 			for _, runFunc := range runList {
@@ -97,6 +93,12 @@ func StartJobs(immediateRun bool, jobs ...map[string]func()) error {
 			}
 		})
 	}
+
+	//cron 的调度循环只会启动一次，后续调用只是向已运行的调度器追加任务
+	if oneCron.isStart {
+		return nil
+	}
+	oneCron.isStart = true
 
 	//异步启动
 	goroutines.GoAsync(func(params ...any) {
