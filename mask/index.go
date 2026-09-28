@@ -4,6 +4,8 @@ import (
 	"strings"
 )
 
+const DefaultMaskChar = "*"
+
 // Character 屏蔽字符码
 func Character(s string, front, after int, maskCode string) string {
 	// 处理边界情况：如果 front 或 end 为负数，将其置为 0
@@ -15,7 +17,7 @@ func Character(s string, front, after int, maskCode string) string {
 	}
 	// 如果掩码字符为空，默认使用 *
 	if maskCode == "" {
-		maskCode = "*"
+		maskCode = DefaultMaskChar
 	}
 
 	runes := []rune(s)
@@ -120,7 +122,7 @@ func Phone(phone string) string {
 		start = 0
 		end = 2
 	}
-	return Character(phone, start, end, "*")
+	return Character(phone, start, end, DefaultMaskChar)
 }
 
 // Email 隐藏邮箱ID的中间部分 zhang@go-mall.com ---> z***g@go-mall.com
@@ -136,7 +138,7 @@ func Email(address string) string {
 	if len(id) <= 4 {
 		padNumber = 1
 	}
-	return Character(id, padNumber, padNumber, "*") + domain
+	return Character(id, padNumber, padNumber, DefaultMaskChar) + domain
 }
 
 // RealName 保留姓名首末位 如：张三--->张* 赵丽颖--->赵*颖 欧阳娜娜--->欧**娜
@@ -146,9 +148,9 @@ func RealName(realName string) string {
 		return realName
 	}
 	if len(realNameRunes) == 2 {
-		return Character(realName, 1, 0, "*")
+		return Character(realName, 1, 0, DefaultMaskChar)
 	}
-	return Character(realName, 1, 1, "*")
+	return Character(realName, 1, 1, DefaultMaskChar)
 }
 
 // IsMatch 判断字符串是否相同，支持掩码匹配。noMask 为无掩码的实际字符串，hasMask 中含有掩码字符 maskCode。
@@ -164,7 +166,7 @@ func IsMatch(noMask string, hasMask string, maskCode string) bool {
 	}
 
 	if maskCode == "" {
-		maskCode = "*"
+		maskCode = DefaultMaskChar
 	}
 	// 掩码字符集合（maskCode 可为多个掩码字符，如 "*#"）
 	maskSet := make(map[rune]struct{}, len([]rune(maskCode)))

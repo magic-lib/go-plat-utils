@@ -389,6 +389,10 @@ func TestStructToString(t *testing.T) {
 	mm := conv.String(aa)
 	fmt.Println(mm)
 }
+func TestStructToTime(t *testing.T) {
+	mm, ok := conv.Time("2h30m")
+	fmt.Println(mm, ok)
+}
 
 type userAffiliationCacheValue struct {
 	*UserAffiliationResp

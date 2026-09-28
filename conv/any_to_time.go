@@ -215,6 +215,11 @@ func toTimeFromString(v string) (time.Time, bool) {
 				}
 			}
 		}
+		{
+			//units.BytesSize(1610612736)
+			//kk, a := time.ParseDuration(v)
+			//fmt.Println(kk, a)
+		}
 
 		return t, false
 	}
