@@ -1,6 +1,7 @@
 package mask
 
 import (
+	"log"
 	"strings"
 )
 
@@ -155,7 +156,7 @@ func RealName(realName string) string {
 
 // IsMatch 判断字符串是否相同，支持掩码匹配。noMask 为无掩码的实际字符串，hasMask 中含有掩码字符 maskCode。
 // maskCode 为空时默认使用 "*"。两串长度须一致；hasMask 中非掩码位必须与 noMask 同位置完全一致。
-func IsMatch(noMask string, hasMask string, maskCode string) bool {
+func IsMatch(hasMask string, noMask string, maskCode string) bool {
 	if noMask == hasMask {
 		return true
 	}
@@ -179,7 +180,11 @@ func IsMatch(noMask string, hasMask string, maskCode string) bool {
 		if _, ok := maskSet[mc]; ok {
 			continue
 		}
-		if noRunes[i] != mc {
+		mc2 := noRunes[i]
+		if _, ok := maskSet[mc2]; ok {
+			continue
+		}
+		if mc2 != mc {
 			matched = false
 			break
 		}

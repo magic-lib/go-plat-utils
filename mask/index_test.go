@@ -65,7 +65,7 @@ func TestIsSameNumber(t *testing.T) {
 		{"13800138000", "138001380001", false},
 	}
 	for _, c := range cases {
-		if got := mask.IsMatch(c.newNumber, c.oldNumber, "*"); got != c.want {
+		if got := mask.IsMatch(c.oldNumber, c.newNumber, "*"); got != c.want {
 			t.Errorf("IsMatch(%q, %q)=%v, want %v", c.newNumber, c.oldNumber, got, c.want)
 		}
 	}
