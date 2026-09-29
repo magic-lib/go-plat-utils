@@ -1,7 +1,6 @@
 package mask
 
 import (
-	"log"
 	"strings"
 )
 
