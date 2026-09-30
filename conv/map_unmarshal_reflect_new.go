@@ -158,9 +158,9 @@ func (c *getNewService) GetByDstAll(srcInterface any, dstType reflect.Type) (new
 		//直接返回
 		return reflect.ValueOf(srcInterface), nil
 	}
-
 	var newDstList reflect.Value
 	var found bool
+
 	logDebug("GetByDstAll param 163:", dstType.Kind().String())
 	if dstType.Kind() == reflect.Slice {
 		found = true
@@ -169,9 +169,10 @@ func (c *getNewService) GetByDstAll(srcInterface any, dstType reflect.Type) (new
 		found = true
 		newDstList, err = c.getByDstPtr(srcInterface, dstType)
 	} else if dstType.Kind() == reflect.Struct {
-		logDebug("GetByDstAll struct:", String(srcInterface), dstType.String())
+		logDebug("GetByDstAll struct 174:", String(srcInterface), dstType.String())
+		logDebug("GetByDstAll struct 175:", srcType)
 		dstIns := reflect.New(dstType)
-		if srcType.Kind() == reflect.Map {
+		if srcType != nil && srcType.Kind() == reflect.Map {
 			found = true
 			t := new(toolsService)
 			err = t.UnmarshalDataFromJson(srcInterface, dstIns.Interface())
@@ -352,6 +353,7 @@ func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (new
 		if canSet := t.canSetStructColumn(dstColumnField.Name, dstColumnValue); !canSet {
 			continue
 		}
+		logDebug("canSetStructColumn 355:", srcStruct, dstColumnField)
 
 		//从src获取每一个目标的值,src 是一个整体，需要一一读取
 		valueTemp := c.GetSrcFromStructField(srcStruct, dstColumnField)
