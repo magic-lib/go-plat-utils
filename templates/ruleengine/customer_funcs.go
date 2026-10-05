@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/cond"
 	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/internal/govaluate-3.0.0"
+	"github.com/magic-lib/go-plat-utils/mask"
 	"github.com/magic-lib/go-plat-utils/utils"
 	"github.com/samber/lo"
 	"github.com/shopspring/decimal"
@@ -15,6 +17,8 @@ import (
 
 // customerFunc 自定义方法列表
 type customerFunc struct {
+	// engLogic 关联的表达式引擎，给 Find 这类需要二次求值的函数复用函数表和表达式缓存，可能为 nil
+	engLogic *EngineLogic
 }
 
 func (r *customerFunc) getAllDecimalList(args ...any) []decimal.Decimal {
@@ -234,6 +238,322 @@ func (r *customerFunc) Array(args ...any) (any, error) {
 	return args, nil
 }
 
+// Find 查找数组中第一个满足条件的元素并返回它，找不到返回 nil。
+// 两种用法：
+//  1. 相等匹配（原逻辑）：Find(Array(1,2,3), 2)
+//  2. 表达式匹配：第二个参数传表达式字符串，对每个元素逐个求值，返回 true 即为命中。
+//     表达式里用变量 item 指代“当前正在遍历的元素”，返回值不是布尔时会转成布尔判断。
+//     元素是 map/结构体时，它的字段也会作为变量直接暴露出来，因此下面三种写法等价：
+//     Find(items, 'age > 18')、Find(items, 'item.age > 18')、Find(items, '[item.age] > 18')
+//     注意 1：本仓库的 govaluate 不支持点号取属性，item.age 会在编译前自动转成 [item.age]。
+//     注意 2：外层已经把第二个参数包起来了，表达式里再出现引号必须转义，
+//     例如 Find(items, "item.name == \'jack\'")。
+//
+// 兜底规则：第二个参数不是字符串、或这个字符串没法当成表达式（无法编译、没有引用任何
+// 当前元素可用的变量）时，退化成原来的相等比较，保证 Find(Array('a','b'), 'a') 这类
+// 老写法不受影响。
+func (r *customerFunc) Find(args ...any) (any, error) {
+	if len(args) < 2 {
+		return nil, fmt.Errorf("参数数量不对：%v", args)
+	}
+
+	// govaluate 的 separatorStage 在左值本身就是 []any 时，会把它摊平进函数的变长参数：
+	// Find([]any{e1,e2}, expr) 实际收到的是 [e1, e2, expr]（数组被拆成了逐个参数）。
+	// 这里做对应的还原：最后一个参数是表达式，前面的全是数组元素。
+	// 若第一个参数本身就是数组，说明没有发生摊平（例如传的是 []string 这种带类型的切片）。
+	var list []any
+	var exprArg any
+	if oneList := anySlice(args[0]); oneList != nil { //没有摊平
+		list, exprArg = oneList, args[1]
+	} else { //发生了摊平
+		list, exprArg = args[:len(args)-1], args[len(args)-1]
+	}
+
+	//第二个参数是字符串时，才尝试把它当成“对当前元素求值”的表达式
+	var itemCheck *itemExprChecker
+	if exprStr, ok := exprArg.(string); ok {
+		itemCheck = r.newItemExprChecker(exprStr)
+	}
+
+	for _, one := range list {
+		if itemCheck != nil {
+			ok, matched := itemCheck.match(itemParams(one))
+			if matched { //表达式确实生效了，以表达式的结果为准
+				if ok {
+					return one, nil
+				}
+				continue
+			}
+			//表达式没生效（引用的变量对不上），走下面的相等比较
+		}
+		if reflect.DeepEqual(one, exprArg) {
+			return one, nil
+		}
+	}
+	//一个都没命中，且表达式执行有报错时，把错误抛出来，方便排查表达式写错的情况
+	if itemCheck != nil && itemCheck.err != nil {
+		return nil, itemCheck.err
+	}
+	return nil, nil
+}
+func (r *customerFunc) Filter(args ...any) (any, error) {
+	if len(args) < 2 {
+		return nil, fmt.Errorf("参数数量不对：%v", args)
+	}
+
+	var list []any
+	var exprArg any
+	if oneList := anySlice(args[0]); oneList != nil { //没有摊平
+		list, exprArg = oneList, args[1]
+	} else { //发生了摊平
+		list, exprArg = args[:len(args)-1], args[len(args)-1]
+	}
+
+	//第二个参数是字符串时，才尝试把它当成“对当前元素求值”的表达式
+	var itemCheck *itemExprChecker
+	if exprStr, ok := exprArg.(string); ok {
+		itemCheck = r.newItemExprChecker(exprStr)
+	}
+	retList := make([]any, 0)
+	for _, one := range list {
+		if itemCheck != nil {
+			ok, matched := itemCheck.match(itemParams(one))
+			if matched { //表达式确实生效了，以表达式的结果为准
+				if ok {
+					retList = append(retList, one)
+				}
+				continue
+			}
+			//表达式没生效（引用的变量对不上），走下面的相等比较
+		}
+		if reflect.DeepEqual(one, exprArg) {
+			retList = append(retList, one)
+			continue
+		}
+	}
+	return retList, nil
+}
+func (r *customerFunc) Len(args ...any) (any, error) {
+	if len(args) == 0 {
+		return 0, nil
+	}
+	var list []any
+	if oneList := anySlice(args[0]); oneList != nil {
+		list = oneList
+	} else {
+		list = args
+	}
+	return len(list), nil
+}
+
+// itemVarName 表达式里指代“当前元素”的变量名
+const itemVarName = "item"
+
+// itemExprChecker 针对单个元素求值的表达式校验器
+type itemExprChecker struct {
+	expression *govaluate.EvaluableExpression
+	vars       []string //表达式里引用到的变量名
+	err        error    //上一次求值的错误
+}
+
+// buildItemExpression 编译子表达式：优先直接编译；
+// 本仓库的 govaluate 不支持 item.age 这种点号访问，编译失败时再转成 [item.age] 重试一次
+func (r *customerFunc) buildItemExpression(exprStr string) (*govaluate.EvaluableExpression, error) {
+	if r.engLogic != nil {
+		expression, err := r.engLogic.getExpressionByRuleString(exprStr)
+		if err == nil && expression != nil {
+			return expression, nil
+		}
+	} else {
+		expression, err := govaluate.NewEvaluableExpression(exprStr)
+		if err == nil && expression != nil {
+			return expression, nil
+		}
+	}
+	//点号访问不被支持，转成 [item.xxx] 的写法再试一次
+	if escaped := escapeItemAccessor(exprStr); escaped != exprStr {
+		if r.engLogic != nil {
+			return r.engLogic.getExpressionByRuleString(escaped)
+		}
+		return govaluate.NewEvaluableExpression(escaped)
+	}
+	return nil, fmt.Errorf("表达式格式错误：%s", exprStr)
+}
+
+// newItemExprChecker 将 exprStr 编译成对元素求值的表达式，无法当成表达式时返回 nil
+func (r *customerFunc) newItemExprChecker(exprStr string) *itemExprChecker {
+	if exprStr == "" {
+		return nil
+	}
+	expression, err := r.buildItemExpression(exprStr)
+	if err != nil || expression == nil {
+		return nil //不是合法的表达式，交给原来的相等比较处理
+	}
+
+	varList := make([]string, 0)
+	for _, token := range expression.Tokens() {
+		if token.Kind != govaluate.VARIABLE {
+			continue
+		}
+		varName, ok := token.Value.(string)
+		if !ok || varName == "" {
+			continue
+		}
+		//形如 item.age、item.a.b 的变量，取根变量名即可
+		if pos := strings.IndexAny(varName, ".[ "); pos >= 0 {
+			varName = varName[:pos]
+		}
+		if varName != "" {
+			varList = utils.AppendUniq(varList, varName)
+		}
+	}
+	if len(varList) == 0 {
+		return nil //没有引用任何变量，说明不是针对元素的表达式
+	}
+	return &itemExprChecker{expression: expression, vars: varList}
+}
+
+// match 返回 (是否符合条件, 表达式是否生效)
+func (i *itemExprChecker) match(params map[string]any) (bool, bool) {
+	//表达式引用的变量在当前元素里一个都不存在时，认为该表达式不适用
+	applicable := false
+	for _, varName := range i.vars {
+		if _, ok := params[varName]; ok {
+			applicable = true
+			break
+		}
+	}
+	if !applicable {
+		return false, false
+	}
+
+	retVal, err := i.expression.Evaluate(params)
+	if err != nil {
+		i.err = fmt.Errorf("Find表达式执行失败：%w", err)
+		return false, true
+	}
+	if boolVal, ok := retVal.(bool); ok {
+		return boolVal, true
+	}
+	if boolVal, err1 := conv.Convert[bool](retVal); err1 == nil {
+		return boolVal, true
+	}
+	return false, true
+}
+
+// itemParams 构造元素求值时的变量表：
+// 元素本身绑定到 item 变量；元素是 map/结构体时，它的字段也一并作为变量暴露出来
+func itemParams(item any) map[string]any {
+	params := make(map[string]any, 8)
+	if itemMap, ok := item.(map[string]any); ok {
+		fillItemParams(params, itemMap, "")
+	} else if item != nil {
+		val := reflect.ValueOf(item)
+		if val.Kind() == reflect.Struct {
+			var itemMap map[string]any
+			if err := conv.Unmarshal(item, &itemMap); err == nil {
+				fillItemParams(params, itemMap, "")
+			}
+		}
+	}
+	params[itemVarName] = item //item 变量名优先级最高，避免元素里刚好有个字段叫 item
+	return params
+}
+
+// fillItemParams 把元素的字段铺到变量表里：
+// 一级字段既能直接用（age），也能按 [item.age] 的方式用；嵌套字段按 a.b / item.a.b 铺开
+func fillItemParams(params map[string]any, itemMap map[string]any, prefix string) {
+	for key, val := range itemMap {
+		fullKey := key
+		if prefix != "" {
+			fullKey = prefix + "." + key
+		}
+		if _, ok := params[fullKey]; !ok {
+			params[fullKey] = val
+		}
+		params[itemVarName+"."+fullKey] = val
+		if subMap, ok := val.(map[string]any); ok {
+			fillItemParams(params, subMap, fullKey)
+		}
+	}
+}
+
+// escapeItemAccessor 把 item.a.b 这种点号访问，转成本引擎支持的 [item.a.b] 写法。
+// 只处理引号外面的内容，避免把字符串字面量里的点也改掉。
+func escapeItemAccessor(exprStr string) string {
+	var buf strings.Builder
+	inQuote := byte(0)
+	for idx := 0; idx < len(exprStr); idx++ {
+		char := exprStr[idx]
+		if inQuote != 0 {
+			buf.WriteByte(char)
+			if char == '\\' && idx+1 < len(exprStr) { //转义字符原样保留
+				idx++
+				buf.WriteByte(exprStr[idx])
+				continue
+			}
+			if char == inQuote {
+				inQuote = 0
+			}
+			continue
+		}
+		if char == '\'' || char == '"' {
+			inQuote = char
+			buf.WriteByte(char)
+			continue
+		}
+		//找到一个独立的 item 变量，且后面跟着点号
+		if strings.HasPrefix(exprStr[idx:], itemVarName+".") &&
+			(idx == 0 || !isVarChar(exprStr[idx-1])) {
+			end := idx + len(itemVarName) + 1
+			for end < len(exprStr) && isVarCharOrDot(exprStr[end]) {
+				end++
+			}
+			chain := strings.TrimRight(exprStr[idx+len(itemVarName)+1:end], ".")
+			if chain != "" {
+				buf.WriteString("[" + itemVarName + "." + chain + "]")
+				idx = end - 1
+				continue
+			}
+		}
+		buf.WriteByte(char)
+	}
+	return buf.String()
+}
+
+func isVarChar(char byte) bool {
+	return char == '_' || (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9')
+}
+
+func isVarCharOrDot(char byte) bool {
+	return char == '.' || isVarChar(char)
+}
+
+// anySlice 把任意类型的切片/数组统一转成 []any，非切片或 nil 返回 nil
+func anySlice(src any) []any {
+	if list, ok := src.([]any); ok {
+		return list
+	}
+	if src == nil {
+		return nil
+	}
+	val := reflect.ValueOf(src)
+	if val.Kind() != reflect.Slice && val.Kind() != reflect.Array {
+		return nil
+	}
+	if val.Kind() == reflect.Slice && val.IsNil() {
+		return nil
+	}
+	if val.Type().Elem().Kind() == reflect.Uint8 { //[]byte 之类不当成数组处理
+		return nil
+	}
+	list := make([]any, 0, val.Len())
+	for idx := 0; idx < val.Len(); idx++ {
+		list = append(list, val.Index(idx).Interface())
+	}
+	return list
+}
+
 func (r *customerFunc) JsonGet(args ...any) (any, error) {
 	if len(args) != 2 {
 		return false, fmt.Errorf("参数数量不对：%v", args)
@@ -278,6 +598,22 @@ func (r *customerFunc) Join(args ...any) (any, error) {
 		retStr = append(retStr, conv.String(item))
 	})
 	return strings.Join(retStr, sep), nil
+}
+
+// MaskMatch 含有掩码的字符串比较
+// MaskMatch("a", "b", "*")
+func (r *customerFunc) MaskMatch(args ...any) (any, error) {
+	if len(args) < 2 {
+		return false, fmt.Errorf("参数数量不对：%v", args)
+	}
+	args0 := conv.String(args[0])
+	args1 := conv.String(args[1])
+
+	maskStr := ""
+	if len(args) >= 3 {
+		maskStr = conv.String(args[2])
+	}
+	return mask.IsMatch(args0, args1, maskStr), nil
 }
 
 // If 三元运算符

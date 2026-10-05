@@ -55,6 +55,9 @@ func NewEngineLogic() *EngineLogic {
 		"In":      ruleLogicFunc.In,
 		"Between": ruleLogicFunc.Between, // 新增区间判断
 		"Array":   ruleLogicFunc.Array,
+		"Find":    ruleLogicFunc.Find,
+		"Filter":  ruleLogicFunc.Filter,
+		"Len":     ruleLogicFunc.Len,
 		// 类型相关
 		"Is": ruleLogicFunc.Is,
 		"As": ruleLogicFunc.As,
@@ -63,12 +66,22 @@ func NewEngineLogic() *EngineLogic {
 		"Switch":     ruleLogicFunc.Switch,
 		"SwitchExpr": ruleLogicFunc.SwitchExpr,
 		// 字符串相关
-		"Replace":  ruleLogicFunc.Replace,
-		"Split":    ruleLogicFunc.Split,
-		"Contains": ruleLogicFunc.Contains,
-		"JsonGet":  ruleLogicFunc.JsonGet,
-		"Join":     ruleLogicFunc.Join,
+		"Replace":   ruleLogicFunc.Replace,
+		"Split":     ruleLogicFunc.Split,
+		"Contains":  ruleLogicFunc.Contains,
+		"JsonGet":   ruleLogicFunc.JsonGet,
+		"Join":      ruleLogicFunc.Join,
+		"MaskMatch": ruleLogicFunc.MaskMatch,
+		// 时间相关
+		"Now":        ruleLogicFunc.Now,
+		"DateFormat": ruleLogicFunc.DateFormat,
+		"DateAdd":    ruleLogicFunc.DateAdd,
+		"DateDiff":   ruleLogicFunc.DateDiff,
+		//"DateIsAfter":  ruleLogicFunc.DateIsAfter,
+		//"DateIsBefore": ruleLogicFunc.DateIsBefore,
 	}
+	// Find 等函数需要对子表达式求值，这里把引擎回挂进去（复用函数表和表达式缓存）
+	ruleLogicFunc.engLogic = ruleLogic
 	return ruleLogic
 }
 
