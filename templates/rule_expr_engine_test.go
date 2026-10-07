@@ -82,6 +82,17 @@ func TestRunStringNonExpr22(t *testing.T) {
 		"list": got,
 	}
 	fmt.Println(conv.String(aa), err)
+	got, err = e.RunString("[arguments.int_param1] ==1&&[arguments.float_param1] >10000", map[string]any{
+		"arguments": map[string]any{
+			"int_param1":   int64(3),
+			"float_param1": float64(10001),
+		},
+	})
+
+	aa = map[string]any{
+		"list": got,
+	}
+	fmt.Println(conv.String(aa), err)
 }
 
 // TestRunStringPureReplace 验证 isReplaceString：仅需替换变量的字符串直接返回替换结果，

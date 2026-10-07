@@ -147,12 +147,52 @@ func (r *EngineLogic) getExpressionByRuleString(ruleString string) (*govaluate.E
 				ruleString)
 		} else if err.Error() == "Unbalanced parenthesis" {
 			errHasOccurred = fmt.Sprintf("格式错误: 括号不匹配, RunString: %s", ruleString)
+		} else if strings.Contains(err.Error(), "Invalid token") {
+			if strings.Contains(err.Error(), "[") || strings.Contains(err.Error(), "]") {
+				newRuleString := addSpaceAroundBracket(ruleString)
+				if newRuleString != ruleString { //自动在[]外侧补空格后重新编译
+					if r.functions != nil && len(r.functions) > 0 {
+						expression, err = govaluate.NewEvaluableExpressionWithFunctions(newRuleString, r.functions)
+					} else {
+						expression, err = govaluate.NewEvaluableExpression(newRuleString)
+					}
+					if err == nil {
+						expressCache.Store(ruleString, expression)
+						return expression, nil
+					}
+				}
+			}
 		}
 		return nil, fmt.Errorf("err: 【%w】, 【%s】", err, errHasOccurred)
 	}
 
 	expressCache.Store(ruleString, expression)
 	return expression, nil
+}
+
+// addSpaceAroundBracket 在中括号的"外侧"补空格：'[' 前面没有空格时补一个，']' 后面没有空格时补一个。
+// 目的是避免 [] 和相邻的函数名/变量粘连后被当成一个 token（如 "Len(a)[0]"、"Map(a,b)[1]"）。
+// 括号内不做任何改动，保证 [item.age] 这类变量写法仍然可用。
+// 该函数是幂等的：已经补过空格的字符串再次调用会原样返回，因此可以用"结果串 != 原串"来判断是否需要重试。
+func addSpaceAroundBracket(ruleString string) string {
+	var builder strings.Builder
+	changed := false
+	for i := 0; i < len(ruleString); i++ {
+		one := ruleString[i]
+		if one == '[' && i > 0 && ruleString[i-1] != ' ' {
+			builder.WriteByte(' ')
+			changed = true
+		}
+		builder.WriteByte(one)
+		if one == ']' && i < len(ruleString)-1 && ruleString[i+1] != ' ' {
+			builder.WriteByte(' ')
+			changed = true
+		}
+	}
+	if !changed {
+		return ruleString
+	}
+	return builder.String()
 }
 
 // numberArrayRegex 匹配纯数字数组字面量：[1,2,3]、[1.5, -2, 3e2]
