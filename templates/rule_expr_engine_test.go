@@ -56,6 +56,15 @@ func TestRunStringNonExpr(t *testing.T) {
 		t.Errorf("RunString({{a}}) = %v, want 5", got)
 	}
 }
+func TestRunStringNonExpr11(t *testing.T) {
+	e := templates.NewRuleExprEngine()
+	got, err := e.RunString("Len([responses.bank_no_list])>0", map[string]any{
+		"responses": map[string]any{
+			"bank_no_list": []any{"1111", "22222"},
+		},
+	})
+	fmt.Println(got, err)
+}
 
 // TestRunStringPureReplace 验证 isReplaceString：仅需替换变量的字符串直接返回替换结果，
 // 不再进入表达式引擎（避免日期/编号/纯文本被误算或误报错）

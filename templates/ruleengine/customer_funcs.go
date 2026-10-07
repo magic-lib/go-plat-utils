@@ -335,7 +335,7 @@ func (r *customerFunc) Filter(args ...any) (any, error) {
 }
 func (r *customerFunc) Len(args ...any) (any, error) {
 	if len(args) == 0 {
-		return 0, nil
+		return float64(0), nil
 	}
 	var list []any
 	if oneList := anySlice(args[0]); oneList != nil {
@@ -343,7 +343,7 @@ func (r *customerFunc) Len(args ...any) (any, error) {
 	} else {
 		list = args
 	}
-	return len(list), nil
+	return float64(len(list)), nil
 }
 
 // itemVarName 表达式里指代“当前元素”的变量名
