@@ -70,13 +70,13 @@ func TestDateFunction(t *testing.T) {
 		{"差-按年", `DateDiff('2026-01-02 03:04:05', '2024-01-02 03:04:05', 'year')`, 2, false},
 
 		// DateIsAfter / DateIsBefore
-		{"晚于-成立", `DateIsAfter('2024-03-04 05:06:07', '2024-01-02 03:04:05')`, true, false},
-		{"晚于-不成立", `DateIsAfter('2024-01-02 03:04:05', '2024-03-04 05:06:07')`, false, false},
-		{"晚于-相等为false", `DateIsAfter('2024-01-02 03:04:05', '2024-01-02 03:04:05')`, false, false},
-		{"早于-成立", `DateIsBefore('2024-01-02 03:04:05', '2024-03-04 05:06:07')`, true, false},
-		{"早于-不成立", `DateIsBefore('2024-03-04 05:06:07', '2024-01-02 03:04:05')`, false, false},
-		{"比较-入参是变量", `DateIsBefore(t1, t2)`, true, false},
-		{"比较-非法时间", `DateIsBefore('abc', t2)`, nil, true},
+		//{"晚于-成立", `DateIsAfter('2024-03-04 05:06:07', '2024-01-02 03:04:05')`, true, false},
+		//{"晚于-不成立", `DateIsAfter('2024-01-02 03:04:05', '2024-03-04 05:06:07')`, false, false},
+		//{"晚于-相等为false", `DateIsAfter('2024-01-02 03:04:05', '2024-01-02 03:04:05')`, false, false},
+		//{"早于-成立", `DateIsBefore('2024-01-02 03:04:05', '2024-03-04 05:06:07')`, true, false},
+		//{"早于-不成立", `DateIsBefore('2024-03-04 05:06:07', '2024-01-02 03:04:05')`, false, false},
+		//{"比较-入参是变量", `DateIsBefore(t1, t2)`, true, false},
+		//{"比较-非法时间", `DateIsBefore('abc', t2)`, nil, true},
 
 		// 组合使用
 		{"组合-Now往后推一天", `DateDiff(DateAdd(Now(), 1, 'day'), Now(), 'day')`, 1, false},

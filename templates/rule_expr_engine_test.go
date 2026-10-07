@@ -2,6 +2,7 @@ package templates_test
 
 import (
 	"fmt"
+	"github.com/magic-lib/go-plat-utils/conv"
 	"testing"
 
 	"github.com/magic-lib/go-plat-utils/templates"
@@ -15,12 +16,12 @@ func TestRunStringPureNumericExpr(t *testing.T) {
 		expr string
 		want any
 	}{
-		{"日期字符串", "2026-08-14", "2026-08-14"},
-		{"纯加减", "1+2", "1+2"},
-		{"带空格运算", "3 * 4", "3 * 4"},
-		{"小数乘除", "1.5*2/0.5", "1.5*2/0.5"},
-		{"括号", "(1+2)*3", "(1+2)*3"},
-		{"取余", "10%3", "10%3"},
+		{"日期字符串", "'2026-08-14'", "2026-08-14"},
+		{"纯加减", "1+2", float64(3)},
+		{"带空格运算", "3 * 4", float64(12)},
+		{"小数乘除", "1.5*2/0.5", float64(6)},
+		{"括号", "(1+2)*3", float64(9)},
+		{"取余", "10%3", float64(1)},
 	}
 	for _, c := range cases {
 		got, err := e.RunString(c.expr, map[string]any{})
@@ -64,6 +65,23 @@ func TestRunStringNonExpr11(t *testing.T) {
 		},
 	})
 	fmt.Println(got, err)
+}
+func TestRunStringNonExpr22(t *testing.T) {
+	e := templates.NewRuleExprEngine()
+	got, err := e.RunString("If('{{steps.N000060__i1cc3.responses.account_no}}'!='',Array('{{steps.N000060__i1cc3.responses.account_no}}'), Array())", map[string]any{
+		"steps": map[string]any{
+			"N000060__i1cc3": map[string]any{
+				"responses": map[string]any{
+					"account_no": "7777",
+				},
+			},
+		},
+	})
+
+	aa := map[string]any{
+		"list": got,
+	}
+	fmt.Println(conv.String(aa), err)
 }
 
 // TestRunStringPureReplace 验证 isReplaceString：仅需替换变量的字符串直接返回替换结果，
@@ -117,8 +135,8 @@ func TestRunStringRealExpr(t *testing.T) {
 	if err != nil {
 		t.Errorf("RunString({{a}}+1) err = %v", err)
 	}
-	if got != "2+1" {
-		t.Errorf("RunString({{a}}+1) = %v, want 2+1", got)
+	if got != float64(3) {
+		t.Errorf("RunString({{a}}+1) = %v, want 3", got)
 	}
 }
 func TestJsonMapTemplate(t *testing.T) {

@@ -50,7 +50,7 @@ func (e *RuleExprEngine) RunString(expr string, args any, noEvaluate ...bool) (a
 		err := conv.Unmarshal(args, &argMap)
 		argAny = argMap
 		if err != nil {
-			fmt.Println("RuleExprEngine RunString Unmarshal expr:", expr, "args:", conv.String(args), "err:", err)
+			log.Println("RuleExprEngine RunString Unmarshal expr:", expr, "args:", conv.String(args), "err:", err)
 			if !cond.IsJsonObject(conv.String(args)) {
 				argAny = args //如果不是json格式，就用原始格式
 			}

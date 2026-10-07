@@ -277,7 +277,7 @@ func (r *customerFunc) Find(args ...any) (any, error) {
 
 	for _, one := range list {
 		if itemCheck != nil {
-			ok, matched := itemCheck.match(itemParams(one))
+			ok, matched := itemCheck.match(itemParams(one), "Find")
 			if matched { //表达式确实生效了，以表达式的结果为准
 				if ok {
 					return one, nil
@@ -317,7 +317,7 @@ func (r *customerFunc) Filter(args ...any) (any, error) {
 	retList := make([]any, 0)
 	for _, one := range list {
 		if itemCheck != nil {
-			ok, matched := itemCheck.match(itemParams(one))
+			ok, matched := itemCheck.match(itemParams(one), "Filter")
 			if matched { //表达式确实生效了，以表达式的结果为准
 				if ok {
 					retList = append(retList, one)
@@ -330,6 +330,64 @@ func (r *customerFunc) Filter(args ...any) (any, error) {
 			retList = append(retList, one)
 			continue
 		}
+	}
+	return retList, nil
+}
+
+// Map 把数组映射成新数组，功能类似 lo.Map，输入多长输出就多长。
+// 两种用法：
+//  1. 表达式：第二个参数是表达式，对每个元素逐个求值，结果组成新数组。
+//     例：Map(Array(1,2,3), 'item + 1')、Map(users, 'item.age * 2')
+//  2. 取字段：第二个参数是字段名，取每个元素该字段的值组成新数组。
+//     例：Map(users, 'name')、Map(users, 'addr.city')（支持点号取嵌套字段）
+//
+// 表达式里用变量 item 指代“当前正在遍历的元素”，元素的字段也会作为变量直接暴露，
+// 所以 Map(users, 'item.name')、Map(users, '[item.name]')、Map(users, 'name') 三种写法等价。
+//
+// 兜底规则：第二个参数不是字符串时报错；字符串无法当成表达式时按字段名处理；
+// 字段名在元素里不存在时，该位置填 nil（数组长度保持不变）。
+func (r *customerFunc) Map(args ...any) (any, error) {
+	//第一个参数是空数组时，govaluate 摊平后只会剩下表达式一个参数，映射结果也是空数组
+	if len(args) == 1 {
+		if _, ok := args[0].(string); ok {
+			return []any{}, nil
+		}
+	}
+	if len(args) < 2 {
+		return nil, fmt.Errorf("参数数量不对：%v", args)
+	}
+
+	var list []any
+	var exprArg any
+	if oneList := anySlice(args[0]); oneList != nil { //没有摊平
+		list, exprArg = oneList, args[1]
+	} else { //发生了摊平
+		list, exprArg = args[:len(args)-1], args[len(args)-1]
+	}
+
+	exprStr, ok := exprArg.(string)
+	if !ok {
+		return nil, fmt.Errorf("第二个参数必须是表达式或字段名：%v", exprArg)
+	}
+
+	//第二个参数是字符串时，先尝试把它当成“对当前元素求值”的表达式
+	var itemCheck *itemExprChecker
+	if exprStr != "" {
+		itemCheck = r.newItemExprChecker(exprStr)
+	}
+
+	retList := make([]any, 0, len(list))
+	for _, one := range list {
+		params := itemParams(one)
+		if itemCheck != nil {
+			retVal, matched := itemCheck.eval(params, "Map")
+			if matched { //表达式确实生效了，用它的求值结果
+				retList = append(retList, retVal)
+				continue
+			}
+		}
+		//表达式没生效（或压根不是表达式），当成字段名取值，取不到填 nil
+		retList = append(retList, params[exprStr])
 	}
 	return retList, nil
 }
@@ -413,8 +471,25 @@ func (r *customerFunc) newItemExprChecker(exprStr string) *itemExprChecker {
 	return &itemExprChecker{expression: expression, vars: varList}
 }
 
-// match 返回 (是否符合条件, 表达式是否生效)
-func (i *itemExprChecker) match(params map[string]any) (bool, bool) {
+// match 返回 (是否符合条件, 表达式是否生效)，供 Find / Filter 使用。
+// funcName 只用于拼错误信息，方便区分是哪个函数调用失败了。
+func (i *itemExprChecker) match(params map[string]any, funcName string) (bool, bool) {
+	retVal, matched := i.eval(params, funcName)
+	if !matched {
+		return false, false
+	}
+	if boolVal, ok := retVal.(bool); ok {
+		return boolVal, true
+	}
+	if boolVal, err1 := conv.Convert[bool](retVal); err1 == nil {
+		return boolVal, true
+	}
+	return false, true
+}
+
+// eval 返回 (表达式的原始求值结果, 表达式是否生效)，供 Map 使用。
+// funcName 只用于拼错误信息，方便区分是哪个函数调用失败了。
+func (i *itemExprChecker) eval(params map[string]any, funcName string) (any, bool) {
 	//表达式引用的变量在当前元素里一个都不存在时，认为该表达式不适用
 	applicable := false
 	for _, varName := range i.vars {
@@ -424,21 +499,15 @@ func (i *itemExprChecker) match(params map[string]any) (bool, bool) {
 		}
 	}
 	if !applicable {
-		return false, false
+		return nil, false
 	}
 
 	retVal, err := i.expression.Evaluate(params)
 	if err != nil {
-		i.err = fmt.Errorf("Find表达式执行失败：%w", err)
-		return false, true
+		i.err = fmt.Errorf("%s表达式执行失败：%w", funcName, err)
+		return nil, true
 	}
-	if boolVal, ok := retVal.(bool); ok {
-		return boolVal, true
-	}
-	if boolVal, err1 := conv.Convert[bool](retVal); err1 == nil {
-		return boolVal, true
-	}
-	return false, true
+	return retVal, true
 }
 
 // itemParams 构造元素求值时的变量表：

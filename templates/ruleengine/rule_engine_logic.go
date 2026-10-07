@@ -57,6 +57,7 @@ func NewEngineLogic() *EngineLogic {
 		"Array":   ruleLogicFunc.Array,
 		"Find":    ruleLogicFunc.Find,
 		"Filter":  ruleLogicFunc.Filter,
+		"Map":     ruleLogicFunc.Map,
 		"Len":     ruleLogicFunc.Len,
 		// 类型相关
 		"Is": ruleLogicFunc.Is,
