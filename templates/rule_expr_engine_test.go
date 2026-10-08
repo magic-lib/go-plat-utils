@@ -94,6 +94,47 @@ func TestRunStringNonExpr22(t *testing.T) {
 	}
 	fmt.Println(conv.String(aa), err)
 }
+func TestRunStringNonExprMax(t *testing.T) {
+	e := templates.NewRuleExprEngine()
+	users := []any{
+		map[string]any{
+			"name": "222",
+			"age":  10,
+		},
+		map[string]any{
+			"name": "7777",
+			"age":  30,
+		},
+		map[string]any{
+			"name": "lisi",
+			"age":  20,
+		},
+		map[string]any{
+			"name": "zhangsan",
+			"age":  30,
+		},
+	}
+
+	//第二个参数必须是"表达式字符串"：govaluate 会先把函数实参算完再调用 Filter，
+	//写成 age==... 会在顶层就去找 age 变量（不存在）而报错。
+	//用 + 把最大值拼进表达式字符串，即可一条表达式过滤出 age 最大的元素列表
+	got, err := e.RunString("Filter(users, 'age==' + As('string', Max(Map(users, 'age'))))", map[string]any{
+		"users": users,
+	})
+	fmt.Println(conv.String(got), err)
+
+	//等价写法：用 [item.age] 访问当前元素
+	got, err = e.RunString("Filter(users, '[item.age]==' + As('string', Max(Map(users, 'age'))))", map[string]any{
+		"users": users,
+	})
+	fmt.Println(conv.String(got), err)
+
+	//对比：最小值
+	got, err = e.RunString("Filter(users, 'age==' + As('string', Min(Map(users, 'age'))))", map[string]any{
+		"users": users,
+	})
+	fmt.Println(conv.String(got), err)
+}
 
 // TestRunStringPureReplace 验证 isReplaceString：仅需替换变量的字符串直接返回替换结果，
 // 不再进入表达式引擎（避免日期/编号/纯文本被误算或误报错）

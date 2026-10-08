@@ -176,13 +176,7 @@ func (r *customerFunc) As(args ...any) (any, error) {
 	if typeName == "string" {
 		return conv.String(args[1]), nil
 	}
-	if typeName == "int" {
-		if intTemp, err1 := conv.Convert[int](args[1]); err1 == nil {
-			return intTemp, nil
-		}
-		return 0, fmt.Errorf("参数不是int类型：%v", args[1])
-	}
-	if typeName == "int64" {
+	if typeName == "int" || typeName == "int64" {
 		if intTemp, err := conv.Convert[int64](args[1]); err == nil {
 			return intTemp, nil
 		}
@@ -199,6 +193,12 @@ func (r *customerFunc) As(args ...any) (any, error) {
 			return timeTemp, nil
 		}
 		return time.Time{}, fmt.Errorf("参数不是time类型：%v", args[1])
+	}
+	if typeName == "float" || typeName == "float64" {
+		if timeTemp, err1 := conv.Convert[float64](args[1]); err1 == nil {
+			return timeTemp, nil
+		}
+		return time.Time{}, fmt.Errorf("参数不是float类型：%v", args[1])
 	}
 	return false, fmt.Errorf("不支持的格式：%s", typeName)
 }
