@@ -394,6 +394,104 @@ func TestStructToTime(t *testing.T) {
 	fmt.Println(mm, ok)
 }
 
+func TestTimestampToTime(t *testing.T) {
+	mm, ok := conv.Convert[time.Time](1788190240)
+	fmt.Println(mm, ok)
+}
+
+// TestStringToSlice 验证 slice 转换能兼容"用单引号定界"的 JSON 文本（如 ['K1']）。
+// 表达式/规则里的字符串参数无法嵌套双引号，只能写成单引号形态，标准 json 解析不了。
+func TestStringToSlice(t *testing.T) {
+	cases := []struct {
+		name string
+		raw  string
+		want []any
+	}{
+		{"单引号字符串元素", "['K1']", []any{"K1"}},
+		{"多个元素", "['K1','K2','K3']", []any{"K1", "K2", "K3"}},
+		{"单引号+数字", "['K1',2,true]", []any{"K1", float64(2), true}},
+		{"标准双引号不受影响", `["K1","K2"]`, []any{"K1", "K2"}},
+		{"双引号内含撇号", `["it's ok"]`, []any{"it's ok"}},
+		{"单引号内含转义撇号", `['it\'s ok']`, []any{"it's ok"}},
+		{"单引号内含双引号", `['say "hi"']`, []any{`say "hi"`}},
+		{"空数组", "[]", []any{}},
+	}
+	for _, c := range cases {
+		got, ok := conv.ConvertForTypeString("slice", c.raw)
+		if !ok {
+			t.Errorf("%s: ConvertForTypeString(slice, %s) ok = false, want true", c.name, c.raw)
+			continue
+		}
+		gotList, isList := got.([]any)
+		if !isList {
+			t.Errorf("%s: 返回类型 %T, want []any", c.name, got)
+			continue
+		}
+		if len(gotList) != len(c.want) {
+			t.Errorf("%s: = %v, want %v", c.name, gotList, c.want)
+			continue
+		}
+		for i := range c.want {
+			if gotList[i] != c.want[i] {
+				t.Errorf("%s: = %v, want %v", c.name, gotList, c.want)
+				break
+			}
+		}
+	}
+
+	// 非 JSON 字符串：仍然失败，返回 (raw, false)
+	if got, ok := conv.ConvertForTypeString("slice", "K1"); ok || got != "K1" {
+		t.Errorf("ConvertForTypeString(slice, K1) = (%v, %v), want (K1, false)", got, ok)
+	}
+}
+
+// TestStringToMap 验证 map 转换同样兼容"用单引号定界"的 JSON 文本。
+func TestStringToMap(t *testing.T) {
+	cases := []struct {
+		name string
+		raw  string
+		want map[string]any
+	}{
+		{"单引号键与值", "{'name':'jack'}", map[string]any{"name": "jack"}},
+		{"多个键", "{'name':'jack','age':18}", map[string]any{"name": "jack", "age": float64(18)}},
+		{"混合类型", "{'name':'jack','ok':true,'score':9.5}", map[string]any{"name": "jack", "ok": true, "score": 9.5}},
+		{"标准双引号不受影响", `{"name":"jack"}`, map[string]any{"name": "jack"}},
+		{"双引号内含撇号", `{"say":"it's ok"}`, map[string]any{"say": "it's ok"}},
+		{"单引号内含转义撇号", `{'say':'it\'s ok'}`, map[string]any{"say": "it's ok"}},
+		{"单引号内含双引号", `{'say':'he said "hi"'}`, map[string]any{"say": `he said "hi"`}},
+		{"空对象", "{}", map[string]any{}},
+	}
+	for _, c := range cases {
+		got, ok := conv.ConvertForTypeString("map", c.raw)
+		if !ok {
+			t.Errorf("%s: ConvertForTypeString(map, %s) ok = false, want true", c.name, c.raw)
+			continue
+		}
+		gotMap, isMap := got.(map[string]any)
+		if !isMap {
+			t.Errorf("%s: 返回类型 %T, want map[string]any", c.name, got)
+			continue
+		}
+		if len(gotMap) != len(c.want) {
+			t.Errorf("%s: = %v, want %v", c.name, gotMap, c.want)
+			continue
+		}
+		for k, v := range c.want {
+			if gotMap[k] != v {
+				t.Errorf("%s: key %s = %v, want %v", c.name, k, gotMap[k], v)
+			}
+		}
+	}
+
+	// 数组文本不该被当成 map；非 JSON 字符串仍然失败，返回 (raw, false)
+	if got, ok := conv.ConvertForTypeString("map", "['K1']"); ok {
+		t.Errorf("ConvertForTypeString(map, ['K1']) = (%v, %v), want ok=false", got, ok)
+	}
+	if got, ok := conv.ConvertForTypeString("map", "K1"); ok || got != "K1" {
+		t.Errorf("ConvertForTypeString(map, K1) = (%v, %v), want (K1, false)", got, ok)
+	}
+}
+
 type userAffiliationCacheValue struct {
 	*UserAffiliationResp
 	UserResp           *userAffiliationCacheValue `json:"user_resp,omitempty"`

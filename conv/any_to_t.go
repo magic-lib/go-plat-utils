@@ -286,19 +286,118 @@ func ConvertForTypeString(targetType string, raw any) (any, bool) {
 		}
 	case GoTypeSlice:
 		var expAny = make([]any, 0)
-		err := Unmarshal(raw, &expAny)
-		if err == nil {
+		if err := unmarshalWithSingleQuoteFix(raw, &expAny); err == nil {
 			return expAny, true
 		}
 	case GoTypeMap:
 		var expMap = make(map[string]any)
-		err := Unmarshal(raw, &expMap)
-		if err == nil {
+		if err := unmarshalWithSingleQuoteFix(raw, &expMap); err == nil {
 			return expMap, true
 		}
 	}
 	return raw, false
 }
+
+// unmarshalWithSingleQuoteFix 把 raw 解析到 dst，兼容「用单引号定界」的 JSON 文本。
+// 先按原值解析，成功就直接返回；失败且 raw 是 string/[]byte 时，
+// 用 jsonSingleQuoteToDouble 把单引号归一成双引号再重试一次。
+// 因此本来就是标准 JSON 的输入，走的路径与直接 Unmarshal 完全一致。
+func unmarshalWithSingleQuoteFix(raw any, dst any) error {
+	err := Unmarshal(raw, dst)
+	if err == nil || raw == nil {
+		return err
+	}
+	rawStr, isStr := checkIsString(raw)
+	if !isStr {
+		return err
+	}
+	if fixed := jsonSingleQuoteToDouble(rawStr); fixed != rawStr {
+		if retryErr := Unmarshal(fixed, dst); retryErr == nil {
+			return nil
+		}
+	}
+	return err
+}
+
+// jsonSingleQuoteToDouble 把「用单引号当字符串定界符」的 JSON 文本归一成标准 JSON（双引号定界）。
+// 例：['K1','K2'] -> ["K1","K2"]；{'name':'jack','say':'he\'s ok'} -> {"name":"jack","say":"he's ok"}。
+//
+// 场景：规则引擎/表达式里的字符串参数无法嵌套双引号，只能写成 ['K1'] 这种单引号形态，
+// 而 json.Unmarshal 只认双引号，直接解析会失败。
+//
+// 规则：
+//   - 双引号字符串内部原样保留（合法的 JSON 里，单引号只会作为普通字符出现在双引号内），
+//     因此已经是标准 JSON 的文本（哪怕字符串里含引号）不会被破坏；
+//   - 单引号字符串内部：\' 还原成 '；" 转义成 \"；悬空的 \ 补成 \\；
+//   - 不含单引号时原样返回（调用方可用 "结果 != 入参" 判断是否需要重试解析）。
+func jsonSingleQuoteToDouble(s string) string {
+	if !strings.Contains(s, "'") {
+		return s
+	}
+	const (
+		stateNormal = iota //普通位置（不在字符串内）
+		stateDouble        //双引号字符串内
+		stateSingle        //单引号字符串内
+	)
+	var builder strings.Builder
+	builder.Grow(len(s) + 8)
+	state := stateNormal
+	for i := 0; i < len(s); i++ {
+		one := s[i]
+		switch state {
+		case stateDouble: //双引号内：整段照抄，只处理转义与收尾引号
+			builder.WriteByte(one)
+			switch one {
+			case '\\':
+				if i+1 < len(s) {
+					i++
+					builder.WriteByte(s[i])
+				}
+			case '"':
+				state = stateNormal
+			}
+		case stateSingle: //单引号内：转成双引号字符串，按需转义
+			switch one {
+			case '\\':
+				if i+1 >= len(s) {
+					builder.WriteString(`\\`) //悬空的反斜杠
+					continue
+				}
+				i++
+				next := s[i]
+				switch next {
+				case '\'': //\' 就是普通的单引号字符
+					builder.WriteByte('\'')
+				case '"': //\" 保持转义
+					builder.WriteString(`\"`)
+				default: //\\、\n 等其他转义原样保留
+					builder.WriteByte('\\')
+					builder.WriteByte(next)
+				}
+			case '\'': //单引号收尾
+				builder.WriteByte('"')
+				state = stateNormal
+			case '"':
+				builder.WriteString(`\"`)
+			default:
+				builder.WriteByte(one)
+			}
+		default:
+			switch one {
+			case '\'':
+				builder.WriteByte('"')
+				state = stateSingle
+			case '"':
+				builder.WriteByte(one)
+				state = stateDouble
+			default:
+				builder.WriteByte(one)
+			}
+		}
+	}
+	return builder.String()
+}
+
 func ZeroForTypeString(targetType string, defaultValues ...any) any {
 	var defaultValue any
 	if len(defaultValues) > 0 {
