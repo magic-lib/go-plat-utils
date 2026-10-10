@@ -391,6 +391,52 @@ func (r *customerFunc) Map(args ...any) (any, error) {
 	}
 	return retList, nil
 }
+
+// Index 取数组中指定下标的元素，下标越界或数组为空时返回 nil。
+// 用法：Index(Array('a','b','c'), 1) => 'b'；Index(Array(), 0) => nil
+// 下标从 0 开始，负数一律视为越界，返回 nil。
+// 说明：与 Find/Filter/Map 一样，第一个参数是 []any 时会被 govaluate 摊平成变长参数，
+// 这里做了对应的还原；另外也兼容 `["a","b"]` 这种字符串形式的数组。
+func (r *customerFunc) Index(args ...any) (any, error) {
+	//第一个参数是空数组时，govaluate 摊平后只剩下标一个参数，此时必然取不到元素
+	if len(args) == 1 {
+		if _, err := conv.Convert[int](args[0]); err == nil {
+			return nil, nil
+		}
+	}
+	if len(args) < 2 {
+		return nil, fmt.Errorf("参数数量不对：%v", args)
+	}
+
+	var list []any
+	var indexArg any
+	if strArg, ok := args[0].(string); ok { //字符串形式的数组：`["a", "b"]`
+		list = make([]any, 0)
+		if err := conv.Unmarshal(strArg, &list); err != nil {
+			return nil, fmt.Errorf("第一个参数不是数组：%v", strArg)
+		}
+		indexArg = args[len(args)-1]
+	} else if oneList := anySlice(args[0]); oneList != nil { //没有摊平
+		list, indexArg = oneList, args[1]
+	} else { //发生了摊平
+		list, indexArg = args[:len(args)-1], args[len(args)-1]
+	}
+
+	index, err := conv.Convert[int](indexArg)
+	if err != nil {
+		return nil, fmt.Errorf("下标参数不是整数：%v", indexArg)
+	}
+	if index < 0 || index >= len(list) {
+		return nil, nil
+	}
+	return list[index], nil
+}
+
+// At Index 的别名，按下标取元素，取不到返回 nil
+func (r *customerFunc) At(args ...any) (any, error) {
+	return r.Index(args...)
+}
+
 func (r *customerFunc) Len(args ...any) (any, error) {
 	if len(args) == 0 {
 		return float64(0), nil
