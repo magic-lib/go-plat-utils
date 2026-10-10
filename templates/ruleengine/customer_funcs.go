@@ -394,7 +394,8 @@ func (r *customerFunc) Map(args ...any) (any, error) {
 
 // Index 取数组中指定下标的元素，下标越界或数组为空时返回 nil。
 // 用法：Index(Array('a','b','c'), 1) => 'b'；Index(Array(), 0) => nil
-// 下标从 0 开始，负数一律视为越界，返回 nil。
+// 下标从 0 开始；负数表示从末尾倒数：-1 取最后一个，-2 取倒数第二个，依次类推。
+// 例：Index(Array('a','b','c'), -1) => 'c'；Index(Array('a','b','c'), -4) => nil
 // 说明：与 Find/Filter/Map 一样，第一个参数是 []any 时会被 govaluate 摊平成变长参数，
 // 这里做了对应的还原；另外也兼容 `["a","b"]` 这种字符串形式的数组。
 func (r *customerFunc) Index(args ...any) (any, error) {
@@ -425,6 +426,9 @@ func (r *customerFunc) Index(args ...any) (any, error) {
 	index, err := conv.Convert[int](indexArg)
 	if err != nil {
 		return nil, fmt.Errorf("下标参数不是整数：%v", indexArg)
+	}
+	if index < 0 { //负数下标：从末尾倒数，-1 是最后一个
+		index += len(list)
 	}
 	if index < 0 || index >= len(list) {
 		return nil, nil
