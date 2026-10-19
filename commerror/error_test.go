@@ -19,13 +19,13 @@ func TestError(t *testing.T) {
 	t.Log(err1.Error(), err1.Code())
 	t.Log(code, code.String())
 
-	err = commerror.GrpcError(codes.NotFound, "aaaaa", commerror.New("bbbbb", 51005))
+	err = commerror.GrpcError(codes.NotFound, "aaaaa", commerror.New("bbbbb", commerror.WithCode(10051)))
 	t.Log(err)
 	err1, code = commerror.FromGrpcError(err)
 	t.Log(err1.Error(), err1.Code())
 	t.Log(code, code.String())
 
-	err = commerror.New("aaaaaaaffffff", 10051)
+	err = commerror.New("aaaaaaaffffff", commerror.WithCode(10051))
 	err1, code = commerror.FromGrpcError(err)
 	t.Log(err1.Error(), err1.Code())
 	t.Log(code, code.String())
