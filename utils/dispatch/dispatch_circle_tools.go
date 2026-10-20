@@ -2,39 +2,7 @@ package dispatch
 
 import (
 	"context"
-	"sort"
 )
-
-// weightQuota 用最大余数法把 n 个名额按 slots 分摊，返回每个位置分到的数量，总和恰好为 n。
-func weightQuota(slots []uint64, total uint64, n int) []uint64 {
-	quota := make([]uint64, len(slots))
-	if n <= 0 || total == 0 || len(slots) == 0 {
-		return quota
-	}
-
-	type remItem struct {
-		idx uint64
-		rem uint64
-	}
-	items := make([]remItem, 0, len(slots))
-	used := uint64(0)
-	for i, slot := range slots {
-		prod := uint64(n) * slot
-		quota[i] = prod / total
-		used += quota[i]
-		items = append(items, remItem{idx: uint64(i), rem: prod % total})
-	}
-
-	// 取整后剩下的名额，按余数从大到小依次补 1（余数相同则下标小的优先）
-	rest := uint64(n) - used
-	if rest > 0 {
-		sort.SliceStable(items, func(a, b int) bool { return items[a].rem > items[b].rem })
-		for k := uint64(0); k < rest; k++ {
-			quota[items[int(k)%len(items)].idx]++
-		}
-	}
-	return quota
-}
 
 // indexOf 返回列表中第一个等于 id 的实例位置，不存在返回 -1。
 func indexOf(agents []Agent, id uint64) int {

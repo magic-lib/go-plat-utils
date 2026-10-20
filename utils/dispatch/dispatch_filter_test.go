@@ -21,7 +21,7 @@ func TestAssignSkipFunc(t *testing.T) {
 
 	got := make([]uint64, 0, 4)
 	for i := 0; i < 4; i++ {
-		a := d.Assign(context.Background())
+		a, _ := d.Assign(context.Background())
 		if a == nil {
 			t.Fatalf("assign %d 返回 nil", i)
 		}
@@ -47,19 +47,19 @@ func TestAssignSkipFuncDynamic(t *testing.T) {
 		return skip && a.GetAgentId() == 20
 	})
 
-	if a := d.Assign(context.Background()); a.GetAgentId() != 10 {
+	if a, _ := d.Assign(context.Background()); a.GetAgentId() != 10 {
 		t.Fatalf("期望 10，实际 %d", a.GetAgentId())
 	}
 	skip = true // 20 从现在起不接单
-	if a := d.Assign(context.Background()); a.GetAgentId() != 30 {
+	if a, _ := d.Assign(context.Background()); a.GetAgentId() != 30 {
 		t.Fatalf("20 被跳过后期望 30，实际 %d", a.GetAgentId())
 	}
 	// 此时 cursor 停在 30，下一单回绕到 10
-	if a := d.Assign(context.Background()); a.GetAgentId() != 10 {
+	if a, _ := d.Assign(context.Background()); a.GetAgentId() != 10 {
 		t.Fatalf("回绕期望 10，实际 %d", a.GetAgentId())
 	}
 	skip = false // 恢复，20 重新参与
-	if a := d.Assign(context.Background()); a.GetAgentId() != 20 {
+	if a, _ := d.Assign(context.Background()); a.GetAgentId() != 20 {
 		t.Fatalf("恢复后期望 20，实际 %d", a.GetAgentId())
 	}
 }
@@ -73,11 +73,11 @@ func TestAssignAllSkipped(t *testing.T) {
 	allSkip := true
 	d.SetSkipFunc(func(_ context.Context, _ Agent) bool { return allSkip })
 
-	if a := d.Assign(context.Background()); a != nil {
+	if a, _ := d.Assign(context.Background()); a != nil {
 		t.Fatalf("全部跳过时应返回 nil，实际 %d", a.GetAgentId())
 	}
 	allSkip = false
-	if a := d.Assign(context.Background()); a == nil || a.GetAgentId() != 10 {
+	if a, _ := d.Assign(context.Background()); a == nil || a.GetAgentId() != 10 {
 		t.Fatalf("恢复后首次应回到 10，实际 %v", a)
 	}
 }
@@ -96,7 +96,7 @@ func TestAssignQuotaSkip(t *testing.T) {
 
 	// 第一轮：10,20,30 各一单
 	for i, want := range []uint64{10, 20, 30} {
-		a := d.Assign(context.Background())
+		a, _ := d.Assign(context.Background())
 		if a == nil {
 			t.Fatalf("assign %d 返回 nil", i)
 		}
@@ -106,12 +106,12 @@ func TestAssignQuotaSkip(t *testing.T) {
 		used[a.GetAgentId()]++
 	}
 	// 第二轮：全部已达上限，无人可分
-	if a := d.Assign(context.Background()); a != nil {
+	if a, _ := d.Assign(context.Background()); a != nil {
 		t.Fatalf("全部达限量时应返回 nil，实际 %d", a.GetAgentId())
 	}
 	// 30 释放一单后，只有 30 可分
 	used[30] = 0
-	if a := d.Assign(context.Background()); a == nil || a.GetAgentId() != 30 {
+	if a, _ := d.Assign(context.Background()); a == nil || a.GetAgentId() != 30 {
 		t.Fatalf("放量后期望 30，实际 %v", a)
 	}
 }
@@ -160,15 +160,16 @@ func TestAssignNSkipRedistribute(t *testing.T) {
 	}
 }
 
-// TestAssignNAllSkipped 验证所有人都不分单时 AssignN 返回 nil。
+// TestAssignNAllSkipped 验证所有人都不分单时 AssignN 返回空切片。
 func TestAssignNAllSkipped(t *testing.T) {
 	d, err := newDispatcher(context.Background(), 10, fixedFetch(agents(10, 20)), 0)
 	if err != nil {
 		t.Fatal(err)
 	}
 	d.SetSkipFunc(func(_ context.Context, _ Agent) bool { return true })
-	if got := d.AssignN(context.Background(), 3); len(got) != 0 {
-		t.Fatalf("全部限量时应返回空，实际 %v", got)
+	got := d.AssignN(context.Background(), 3)
+	if len(got) != 0 {
+		t.Fatalf("全部跳过时期望空切片，实际 %v", got)
 	}
 }
 
@@ -186,7 +187,7 @@ func TestAssignWithCtx(t *testing.T) {
 		}
 		return false
 	})
-	d.AssignWithCtx(context.WithValue(context.Background(), ctxKey{}, "trace"))
+	d.Assign(context.WithValue(context.Background(), ctxKey{}, "trace"))
 	if !gotCtx {
 		t.Fatal("ctx 未透传给 Skip 回调")
 	}
@@ -205,7 +206,7 @@ func TestDynamicAgentList(t *testing.T) {
 	d.SetAgentList(agents(10, 25, 30))
 	got := make([]uint64, 0, 3)
 	for i := 0; i < 3; i++ {
-		a := d.Assign(context.Background())
+		a, _ := d.Assign(context.Background())
 		if a == nil {
 			t.Fatalf("assign %d 返回 nil", i)
 		}
@@ -323,7 +324,7 @@ func TestInitWithAgentsField(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if a := d.Assign(context.Background()); a == nil || a.GetAgentId() != 20 {
+	if a, _ := d.Assign(context.Background()); a == nil || a.GetAgentId() != 20 {
 		t.Fatalf("期望从 20 开始，实际 %v", a)
 	}
 }

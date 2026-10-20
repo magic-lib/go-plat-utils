@@ -43,7 +43,7 @@ func TestAssignRingNoDuplicate(t *testing.T) {
 
 	got := make([]uint64, 0, 4)
 	for i := 0; i < 4; i++ {
-		a := d.Assign(context.Background())
+		a, _ := d.Assign(context.Background())
 		if a == nil {
 			t.Fatalf("assign %d failed, no agent", i)
 		}
@@ -56,7 +56,7 @@ func TestAssignRingNoDuplicate(t *testing.T) {
 		}
 	}
 
-	if a := d.Assign(context.Background()); a == nil || a.GetAgentId() != 10 {
+	if a, _ := d.Assign(context.Background()); a == nil || a.GetAgentId() != 10 {
 		t.Fatalf("回绕错误: got=%v", a)
 	}
 }
@@ -71,7 +71,7 @@ func TestAssignUniform(t *testing.T) {
 
 	count := map[uint64]int{}
 	for i := 0; i < len(ids); i++ {
-		a := d.Assign(context.Background())
+		a, _ := d.Assign(context.Background())
 		if a == nil {
 			t.Fatalf("assign %d failed", i)
 		}
@@ -96,7 +96,7 @@ func TestDuplicateID(t *testing.T) {
 	// 一轮应轮到：10,10,20,30（两个 10 都出现一次）
 	got := make([]uint64, 0, 4)
 	for i := 0; i < 4; i++ {
-		a := d.Assign(context.Background())
+		a, _ := d.Assign(context.Background())
 		if a == nil {
 			t.Fatalf("assign %d failed", i)
 		}
@@ -116,7 +116,7 @@ func TestDuplicateID(t *testing.T) {
 	}
 
 	// 下一轮继续成环：回绕到 10,10,20,30
-	if a := d.Assign(context.Background()); a == nil || a.GetAgentId() != 10 {
+	if a, _ := d.Assign(context.Background()); a == nil || a.GetAgentId() != 10 {
 		t.Fatalf("第二轮首个应回绕到 10，实际 %v", a)
 	}
 }
@@ -132,7 +132,7 @@ func TestDuplicateIDUniform(t *testing.T) {
 
 	c10, c20 := 0, 0
 	for i := 0; i < len(ids); i++ {
-		a := d.Assign(context.Background())
+		a, _ := d.Assign(context.Background())
 		if a == nil {
 			t.Fatalf("assign %d failed", i)
 		}
@@ -170,7 +170,7 @@ func TestAddAgentNoDuplicate(t *testing.T) {
 
 	seen := map[uint64]bool{}
 	for i := 0; i < 4; i++ {
-		a := d.Assign(context.Background())
+		a, _ := d.Assign(context.Background())
 		if a == nil {
 			t.Fatalf("assign %d failed", i)
 		}
@@ -197,16 +197,16 @@ func TestRemoveAgentNoDuplicate(t *testing.T) {
 	current = agents(10, 20, 40)
 	d.SetAgentList(current)
 
-	if a := d.Assign(context.Background()); a == nil || a.GetAgentId() != 40 {
+	if a, _ := d.Assign(context.Background()); a == nil || a.GetAgentId() != 40 {
 		t.Fatalf("期望 40，实际 %v", a)
 	}
-	if a := d.Assign(context.Background()); a == nil || a.GetAgentId() != 10 {
+	if a, _ := d.Assign(context.Background()); a == nil || a.GetAgentId() != 10 {
 		t.Fatalf("期望 10，实际 %v", a)
 	}
-	if a := d.Assign(context.Background()); a == nil || a.GetAgentId() != 20 {
+	if a, _ := d.Assign(context.Background()); a == nil || a.GetAgentId() != 20 {
 		t.Fatalf("期望 20，实际 %v", a)
 	}
-	if a := d.Assign(context.Background()); a == nil || a.GetAgentId() != 40 {
+	if a, _ := d.Assign(context.Background()); a == nil || a.GetAgentId() != 40 {
 		t.Fatalf("回绕期望 40，实际 %v", a)
 	}
 }
@@ -228,10 +228,10 @@ func TestRestartContinue(t *testing.T) {
 	}
 	d2.SetLastAssigned(lastDone) // 设置上一单完成的ID=30
 
-	if a := d2.Assign(context.Background()); a == nil || a.GetAgentId() != 40 {
+	if a, _ := d2.Assign(context.Background()); a == nil || a.GetAgentId() != 40 {
 		t.Fatalf("重启后期望下一个=40，实际 %v", a)
 	}
-	if a := d2.Assign(context.Background()); a == nil || a.GetAgentId() != 10 {
+	if a, _ := d2.Assign(context.Background()); a == nil || a.GetAgentId() != 10 {
 		t.Fatalf("重启后续期望 10，实际 %v", a)
 	}
 }
@@ -246,10 +246,10 @@ func TestSetLastAssignedOffline(t *testing.T) {
 	// 该客服 (30) 被设置成最后分配的，但随后下线（列表里无 30）
 	d.SetLastAssigned(30)
 
-	if a := d.Assign(context.Background()); a == nil || a.GetAgentId() != 40 {
+	if a, _ := d.Assign(context.Background()); a == nil || a.GetAgentId() != 40 {
 		t.Fatalf("下线后期望下一个=40，实际 %v", a)
 	}
-	if a := d.Assign(context.Background()); a == nil || a.GetAgentId() != 10 {
+	if a, _ := d.Assign(context.Background()); a == nil || a.GetAgentId() != 10 {
 		t.Fatalf("回绕后期望 10，实际 %v", a)
 	}
 }
@@ -263,7 +263,7 @@ func TestSetLastAssignedOfflineIsMax(t *testing.T) {
 	}
 	d.SetLastAssigned(40) // 40 不在列表，且是“最大”的那个
 
-	if a := d.Assign(context.Background()); a == nil || a.GetAgentId() != 10 {
+	if a, _ := d.Assign(context.Background()); a == nil || a.GetAgentId() != 10 {
 		t.Fatalf("下线且为最大时，期望回绕到 startID=10，实际 %v", a)
 	}
 }
@@ -274,7 +274,7 @@ func TestStartIDNotExists(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if a := d.Assign(context.Background()); a == nil || a.GetAgentId() != 10 {
+	if a, _ := d.Assign(context.Background()); a == nil || a.GetAgentId() != 10 {
 		t.Fatalf("startID 不存在时，期望最小 10，实际 %v", a)
 	}
 }
@@ -285,7 +285,7 @@ func TestEmptyAgents(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if a := d.Assign(context.Background()); a != nil {
+	if a, _ := d.Assign(context.Background()); a != nil {
 		t.Fatalf("空列表应返回 nil，实际 %v", a)
 	}
 }
@@ -359,7 +359,7 @@ func TestDefaultAgentFromString(t *testing.T) {
 	}
 	seen := map[uint64]bool{}
 	for i := 0; i < 3; i++ {
-		a := d.Assign(context.Background())
+		a, _ := d.Assign(context.Background())
 		if a == nil {
 			t.Fatalf("assign %d failed", i)
 		}
@@ -379,13 +379,13 @@ func TestCurrentAgentFromString(t *testing.T) {
 	dispatchInstance, _ := NewDispatcher(context.Background(), &Dispatcher{StartID: uint64(2)})
 	dispatchInstance.SetAgentList(agentList)
 
-	kk := dispatchInstance.Assign(context.Background())
+	kk, _ := dispatchInstance.Assign(context.Background())
 	fmt.Println(kk.GetAgentId())
-	kk = dispatchInstance.Assign(context.Background())
+	kk, _ = dispatchInstance.Assign(context.Background())
 	fmt.Println(kk.GetAgentId())
-	kk = dispatchInstance.Assign(context.Background())
+	kk, _ = dispatchInstance.Assign(context.Background())
 	fmt.Println(kk.GetAgentId())
-	kk = dispatchInstance.Assign(context.Background())
+	kk, _ = dispatchInstance.Assign(context.Background())
 	fmt.Println(kk.GetAgentId())
 
 	fmt.Println("--------------------")
@@ -394,13 +394,13 @@ func TestCurrentAgentFromString(t *testing.T) {
 	dispatchInstance2.SetAgentList(agentList)
 	dispatchInstance2.SetLastAssigned(uint64(2))
 
-	kk = dispatchInstance2.Assign(context.Background())
+	kk, _ = dispatchInstance2.Assign(context.Background())
 	fmt.Println(kk.GetAgentId())
-	kk = dispatchInstance2.Assign(context.Background())
+	kk, _ = dispatchInstance2.Assign(context.Background())
 	fmt.Println(kk.GetAgentId())
-	kk = dispatchInstance2.Assign(context.Background())
+	kk, _ = dispatchInstance2.Assign(context.Background())
 	fmt.Println(kk.GetAgentId())
-	kk = dispatchInstance2.Assign(context.Background())
+	kk, _ = dispatchInstance2.Assign(context.Background())
 	fmt.Println(kk.GetAgentId())
 
 }

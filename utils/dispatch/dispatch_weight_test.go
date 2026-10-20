@@ -162,13 +162,15 @@ func TestAssignNByWeight(t *testing.T) {
 	}
 }
 
-// TestAssignNInterleave 验证发放是交错均匀的，而不是先把一个人发满
+// TestAssignNInterleave 验证发放遵循“加权最少已分”：权重 3:1 时，权重大的因 ratio 更小而
+// 先多分，追平后再轮询，而不是把一个人先发满。顺序为 [1,1,2,1]。
 func TestAssignNInterleave(t *testing.T) {
 	d := newWeightDispatcher(map[uint64]uint64{1: 3, 2: 1})
-	got := idsOf(d.AssignN(context.Background(), 4))
-	want := []uint64{1, 2, 1, 1}
-	if !equalUint64Slice(got, want) {
-		t.Errorf("期望顺序 %v，实际 %v", want, got)
+	got := d.AssignN(context.Background(), 4)
+	g := idsOf(got)
+	want := []uint64{1, 1, 2, 1}
+	if !equalUint64Slice(g, want) {
+		t.Errorf("期望顺序 %v，实际 %v", want, g)
 	}
 }
 
@@ -177,7 +179,8 @@ func TestAssignNMultiBatch(t *testing.T) {
 	d := newWeightDispatcher(map[uint64]uint64{1: 3, 2: 1})
 	total := map[uint64]int{}
 	for i := 0; i < 10; i++ { // 每批 4 个，共 40 个
-		for id, c := range countByID(d.AssignN(context.Background(), 4)) {
+		batch := d.AssignN(context.Background(), 4)
+		for id, c := range countByID(batch) {
 			total[id] += c
 		}
 	}
@@ -186,20 +189,87 @@ func TestAssignNMultiBatch(t *testing.T) {
 	}
 }
 
-// TestAssignNContinueCursor 验证 AssignN 从当前游标之后开始，且会推进游标
-func TestAssignNContinueCursor(t *testing.T) {
+// TestAssignNCursorContinue 验证 AssignN 也跟游标成环：
+// SetLastAssigned(1) 后从“>1 的第一个”(2) 续接、回绕到 1；每批整体仍按权重(此处均权)均分。
+func TestAssignNCursorContinue(t *testing.T) {
 	d := newWeightDispatcher(map[uint64]uint64{1: 1, 2: 1, 3: 1})
-	d.SetLastAssigned(1)
-	got := idsOf(d.AssignN(context.Background(), 3))
+	d.SetLastAssigned(1) // 游标影响 AssignN 的起始位置
+	got := d.AssignN(context.Background(), 3)
+	g := idsOf(got)
 	want := []uint64{2, 3, 1}
-	if !equalUint64Slice(got, want) {
-		t.Errorf("期望从 1 之后开始 %v，实际 %v", want, got)
+	if !equalUint64Slice(g, want) {
+		t.Errorf("游标续接期望 %v，实际 %v", want, g)
 	}
 
-	// 游标已停在 1，下一批从 2 开始
-	got2 := idsOf(d.AssignN(context.Background(), 3))
-	if !equalUint64Slice(got2, want) {
-		t.Errorf("第二批期望 %v，实际 %v", want, got2)
+	// 第二批从游标(已停在 1)之后继续，仍是 2,3,1 的环形续接
+	got2 := d.AssignN(context.Background(), 3)
+	g2 := idsOf(got2)
+	if !equalUint64Slice(g2, want) {
+		t.Errorf("第二批期望 %v，实际 %v", want, g2)
+	}
+}
+
+// TestAssignNStatefulProportional 验证有状态按比例：即便批次大小不一致、与单发 Assign 混用，
+// 累计分布仍贴合权重（这是“每次独立按比例”做不到的）。
+func TestAssignNStatefulProportional(t *testing.T) {
+	d := newWeightDispatcher(map[uint64]uint64{1: 3, 2: 1})
+
+	// 模拟“已有订单”：在分配器启动前，ID=1 已经积了 30 单，ID=2 积了 10 单
+	d.SetIssued(map[Agent]uint64{
+		NewAgentFromUint64WithWeight(1, 3): 30,
+		NewAgentFromUint64WithWeight(2, 1): 10,
+	})
+
+	// 之后每批 4 个，连续 10 批（共 40 个新单），权重 3:1 应让新增量也约 30:10
+	total := map[uint64]int{}
+	for i := 0; i < 10; i++ {
+		batch := d.AssignN(context.Background(), 4)
+		for id, c := range countByID(batch) {
+			total[id] += c
+		}
+	}
+	if total[1] != 30 || total[2] != 10 {
+		t.Errorf("新增 40 单按 3:1 期望 30/10，实际 %v", total)
+	}
+
+	// 累计（含初始）应维持 3:1：ID=1 共 60，ID=2 共 20
+	if d.issued[1] != 60 || d.issued[2] != 20 {
+		t.Errorf("累计发放应为 60/20，实际 %d/%d", d.issued[1], d.issued[2])
+	}
+}
+
+// TestAssignNOneByOneProportional 验证“一个一个来分”（AssignN(1)）也能贴权重，
+// 不会像纯轮询那样失真。
+func TestAssignNOneByOneProportional(t *testing.T) {
+	d := newWeightDispatcher(map[uint64]uint64{1: 3, 2: 1})
+	for i := 0; i < 40; i++ {
+		d.AssignN(context.Background(), 1)
+	}
+	if d.issued[1] != 30 || d.issued[2] != 10 {
+		t.Errorf("40 单按 3:1 期望 30/10，实际 %d/%d", d.issued[1], d.issued[2])
+	}
+}
+
+// TestAssignNEqualWeightRoundRobin 验证权重全相等时，分配为严格平均的循环（round-robin）：
+// 既不会偏向某个 ID，也不会把一个人先发满，而是 ID 顺序交替（1,2,3,1,2,3…）。
+func TestAssignNEqualWeightRoundRobin(t *testing.T) {
+	d := newWeightDispatcher(map[uint64]uint64{1: 1, 2: 1, 3: 1})
+	var seq []uint64
+	for i := 0; i < 12; i++ { // 4 整轮
+		b := d.AssignN(context.Background(), 1)
+		seq = append(seq, b[0].GetAgentId())
+	}
+	want := []uint64{1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3}
+	if !equalUint64Slice(seq, want) {
+		t.Errorf("等权重期望严格循环 %v，实际 %v", want, seq)
+	}
+	// 每个人恰好 4 个，完全平均
+	cnt := map[uint64]int{}
+	for _, id := range seq {
+		cnt[id]++
+	}
+	if cnt[1] != 4 || cnt[2] != 4 || cnt[3] != 4 {
+		t.Errorf("等权重应每人 4 个，实际 %v", cnt)
 	}
 }
 
@@ -211,11 +281,9 @@ func TestAssignNSameIDInstances(t *testing.T) {
 		NewAgentFromUint64WithWeight(2, 4),
 	}
 	d := newDispatcherOf(agents)
-	if d.TotalWeight() != 6 { // ID=1 两个实例各占 1，ID=2 权重 4
-		t.Errorf("总权重期望 6，实际 %d", d.TotalWeight())
-	}
-	got := countByID(d.AssignN(context.Background(), 6))
-	if got[1] != 2 || got[2] != 4 {
+	got := d.AssignN(context.Background(), 6)
+	cnt := countByID(got)
+	if cnt[1] != 2 || cnt[2] != 4 {
 		t.Errorf("期望 ID=1 分 2 个、ID=2 分 4 个，实际 %v", got)
 	}
 }
@@ -223,27 +291,17 @@ func TestAssignNSameIDInstances(t *testing.T) {
 // TestAssignNEmpty 边界：空列表、n<=0
 func TestAssignNEmpty(t *testing.T) {
 	d := newDispatcherOf(nil)
+	// 空列表：返回空切片（不再返回 error）
 	if got := d.AssignN(context.Background(), 5); len(got) != 0 {
-		t.Errorf("空列表期望返回空，实际 %v", got)
+		t.Errorf("空列表期望空切片，实际 got=%v", got)
 	}
 	d2 := newWeightDispatcher(map[uint64]uint64{1: 1, 2: 1})
-	if got := d2.AssignN(context.Background(), 0); len(got) != 0 {
-		t.Errorf("n=0 期望返回空，实际 %v", got)
+	// n<=0：返回 nil（无需分配）
+	if got := d2.AssignN(context.Background(), 0); got != nil {
+		t.Errorf("n=0 期望 nil，实际 got=%v", got)
 	}
-	if got := d2.AssignN(context.Background(), -1); len(got) != 0 {
-		t.Errorf("n=-1 期望返回空，实际 %v", got)
-	}
-}
-
-// TestTotalWeight 验证总权重
-func TestTotalWeight(t *testing.T) {
-	d := newWeightDispatcher(map[uint64]uint64{1: 3, 2: 1, 3: 6})
-	if d.TotalWeight() != 10 {
-		t.Errorf("总权重期望 10，实际 %d", d.TotalWeight())
-	}
-	d2 := newDispatcherOf([]Agent{NewAgentFromUint64(1), NewAgentFromUint64(2), NewAgentFromUint64(3)})
-	if d2.TotalWeight() != 3 { // 未设权重按 1 计
-		t.Errorf("未设权重总权重期望 3，实际 %d", d2.TotalWeight())
+	if got := d2.AssignN(context.Background(), -1); got != nil {
+		t.Errorf("n=-1 期望 nil，实际 got=%v", got)
 	}
 }
 
@@ -252,7 +310,8 @@ func TestAssignNNotAffectAssign(t *testing.T) {
 	d := newWeightDispatcher(map[uint64]uint64{1: 9, 2: 1})
 	got := make([]uint64, 0, 4)
 	for i := 0; i < 4; i++ {
-		got = append(got, d.Assign(context.Background()).GetAgentId())
+		a, _ := d.Assign(context.Background())
+		got = append(got, a.GetAgentId())
 	}
 	want := []uint64{1, 2, 1, 2}
 	if !equalUint64Slice(got, want) {
