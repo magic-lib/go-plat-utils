@@ -148,7 +148,7 @@ func TestAssignNByWeight(t *testing.T) {
 
 	for _, tc := range testCases {
 		d := newWeightDispatcher(tc.weights)
-		got := d.AssignN(tc.n)
+		got := d.AssignN(context.Background(), tc.n)
 		if len(got) != tc.n {
 			t.Errorf("%s: 期望分配 %d 个，实际 %d 个", tc.name, tc.n, len(got))
 			continue
@@ -165,7 +165,7 @@ func TestAssignNByWeight(t *testing.T) {
 // TestAssignNInterleave 验证发放是交错均匀的，而不是先把一个人发满
 func TestAssignNInterleave(t *testing.T) {
 	d := newWeightDispatcher(map[uint64]uint64{1: 3, 2: 1})
-	got := idsOf(d.AssignN(4))
+	got := idsOf(d.AssignN(context.Background(), 4))
 	want := []uint64{1, 2, 1, 1}
 	if !equalUint64Slice(got, want) {
 		t.Errorf("期望顺序 %v，实际 %v", want, got)
@@ -177,7 +177,7 @@ func TestAssignNMultiBatch(t *testing.T) {
 	d := newWeightDispatcher(map[uint64]uint64{1: 3, 2: 1})
 	total := map[uint64]int{}
 	for i := 0; i < 10; i++ { // 每批 4 个，共 40 个
-		for id, c := range countByID(d.AssignN(4)) {
+		for id, c := range countByID(d.AssignN(context.Background(), 4)) {
 			total[id] += c
 		}
 	}
@@ -190,14 +190,14 @@ func TestAssignNMultiBatch(t *testing.T) {
 func TestAssignNContinueCursor(t *testing.T) {
 	d := newWeightDispatcher(map[uint64]uint64{1: 1, 2: 1, 3: 1})
 	d.SetLastAssigned(1)
-	got := idsOf(d.AssignN(3))
+	got := idsOf(d.AssignN(context.Background(), 3))
 	want := []uint64{2, 3, 1}
 	if !equalUint64Slice(got, want) {
 		t.Errorf("期望从 1 之后开始 %v，实际 %v", want, got)
 	}
 
 	// 游标已停在 1，下一批从 2 开始
-	got2 := idsOf(d.AssignN(3))
+	got2 := idsOf(d.AssignN(context.Background(), 3))
 	if !equalUint64Slice(got2, want) {
 		t.Errorf("第二批期望 %v，实际 %v", want, got2)
 	}
@@ -214,7 +214,7 @@ func TestAssignNSameIDInstances(t *testing.T) {
 	if d.TotalWeight() != 6 { // ID=1 两个实例各占 1，ID=2 权重 4
 		t.Errorf("总权重期望 6，实际 %d", d.TotalWeight())
 	}
-	got := countByID(d.AssignN(6))
+	got := countByID(d.AssignN(context.Background(), 6))
 	if got[1] != 2 || got[2] != 4 {
 		t.Errorf("期望 ID=1 分 2 个、ID=2 分 4 个，实际 %v", got)
 	}
@@ -223,14 +223,14 @@ func TestAssignNSameIDInstances(t *testing.T) {
 // TestAssignNEmpty 边界：空列表、n<=0
 func TestAssignNEmpty(t *testing.T) {
 	d := newDispatcherOf(nil)
-	if got := d.AssignN(5); len(got) != 0 {
+	if got := d.AssignN(context.Background(), 5); len(got) != 0 {
 		t.Errorf("空列表期望返回空，实际 %v", got)
 	}
 	d2 := newWeightDispatcher(map[uint64]uint64{1: 1, 2: 1})
-	if got := d2.AssignN(0); len(got) != 0 {
+	if got := d2.AssignN(context.Background(), 0); len(got) != 0 {
 		t.Errorf("n=0 期望返回空，实际 %v", got)
 	}
-	if got := d2.AssignN(-1); len(got) != 0 {
+	if got := d2.AssignN(context.Background(), -1); len(got) != 0 {
 		t.Errorf("n=-1 期望返回空，实际 %v", got)
 	}
 }
@@ -252,7 +252,7 @@ func TestAssignNNotAffectAssign(t *testing.T) {
 	d := newWeightDispatcher(map[uint64]uint64{1: 9, 2: 1})
 	got := make([]uint64, 0, 4)
 	for i := 0; i < 4; i++ {
-		got = append(got, d.Assign().GetAgentId())
+		got = append(got, d.Assign(context.Background()).GetAgentId())
 	}
 	want := []uint64{1, 2, 1, 2}
 	if !equalUint64Slice(got, want) {

@@ -2,198 +2,58 @@ package dispatch
 
 import (
 	"context"
-	"github.com/magic-lib/go-plat-utils/goroutines"
-	"hash/fnv"
-	"log"
-	"sort"
 	"sync"
 	"time"
 )
 
-// Agent 表示一个分配目标。环形分配以 GetUint64() 返回的 uint64 作为排序与定位依据。
-type Agent interface {
-	GetAgentId() uint64
-}
-
-// AgentWeighter 可选的权重接口。
-// 实现了它的 Agent 会按权重参与分配（见 AssignN）；未实现、或返回 0 时按权重 1 处理。
-// 用可选接口而不是把 GetWeight 塞进 Agent，是为了让已有的 Agent 实现零成本兼容。
-type AgentWeighter interface {
-	GetWeight() uint64
-}
-
-// AgentWeight 取 Agent 的权重：未实现 AgentWeighter、或权重为 0 时按 1 处理。
-func AgentWeight(a Agent) uint64 {
-	if a == nil {
-		return 0
-	}
-	weighter, ok := a.(AgentWeighter)
-	if !ok {
-		return 1
-	}
-	if weight := weighter.GetWeight(); weight > 0 {
-		return weight
-	}
-	return 1
-}
-
-// DefaultAgent 是 Agent 的默认实现，可直接以数字或字符串构造。
-//
-// 以字符串构造时（NewAgentFromString），会通过 FNV-64a 哈希稳定地生成一个 uint64，
-// 使得“没有明确数字ID”的对象（如工号、姓名、任意字符串）也能参与均匀的环形分配，
-// 应用场景更广。相同字符串始终映射到相同的 uint64。
-type DefaultAgent struct {
-	id     uint64
-	weight uint64 // 分配权重，0 等价于 1
-}
-
-// NewAgentFromUint64 以数字直接构造（权重默认 1）。
-func NewAgentFromUint64(id uint64) *DefaultAgent {
-	return &DefaultAgent{id: id}
-}
-
-// NewAgentFromString 以字符串构造，自动哈希出稳定的 uint64 ID（权重默认 1）。
-func NewAgentFromString(s string) *DefaultAgent {
-	return &DefaultAgent{id: hashStringToUint64(s)}
-}
-
-// NewAgentFromUint64WithWeight 以数字 + 权重构造。
-func NewAgentFromUint64WithWeight(id, weight uint64) *DefaultAgent {
-	return &DefaultAgent{id: id, weight: weight}
-}
-
-// NewAgentFromStringWithWeight 以字符串 + 权重构造。
-func NewAgentFromStringWithWeight(s string, weight uint64) *DefaultAgent {
-	return &DefaultAgent{id: hashStringToUint64(s), weight: weight}
-}
-
-// GetAgentId 返回底层 uint64（字符串构造时即为其哈希值）。
-func (a *DefaultAgent) GetAgentId() uint64 {
-	return a.id
-}
-
-// GetWeight 返回权重，未设置时为 0（按 1 参与分配）。
-func (a *DefaultAgent) GetWeight() uint64 {
-	return a.weight
-}
-
-// SetWeight 设置权重，返回自身便于链式调用；传 0 表示恢复成默认权重 1。
-func (a *DefaultAgent) SetWeight(weight uint64) *DefaultAgent {
-	a.weight = weight
-	return a
-}
-
-// hashStringToUint64 将字符串稳定地哈希为 uint64。
-func hashStringToUint64(s string) uint64 {
-	h := fnv.New64a()
-	_, _ = h.Write([]byte(s))
-	return h.Sum64()
-}
-
-// FetchAgentsFunc 拉取最新列表的函数。
-type FetchAgentsFunc func(ctx context.Context) ([]Agent, error)
-
-// equals 统计列表中与给定 id 相等的实例个数。
-func occurrenceCount(agents []Agent, id uint64) int {
-	c := 0
-	for _, a := range agents {
-		if a.GetAgentId() == id {
-			c++
-		}
-	}
-	return c
-}
-
-// indexOfNth 返回列表中第 n 个（0-based）等于 id 的实例的位置，不存在返回 -1。
-func indexOfNth(agents []Agent, id uint64, n int) int {
-	c := 0
-	for i, a := range agents {
-		if a.GetAgentId() == id {
-			if c == n {
-				return i
-			}
-			c++
-		}
-	}
-	return -1
-}
-
-// nextGreaterFirstIndex 返回第一个 id 严格大于给定 id 的实例位置；不存在返回 -1。
-func nextGreaterFirstIndex(agents []Agent, id uint64) int {
-	for i, a := range agents {
-		if a.GetAgentId() > id {
-			return i
-		}
-	}
-	return -1
-}
-
-// instanceIndexAt 返回位置 pos 处实例在“相同 id 组”内的实例序号（0-based）。
-func instanceIndexAt(agents []Agent, pos int) int {
-	id := agents[pos].GetAgentId()
-	c := 0
-	for i := 0; i < pos; i++ {
-		if agents[i].GetAgentId() == id {
-			c++
-		}
-	}
-	return c
-}
-
-// Dispatcher 环形分配器。
-//
-// 设计要点：
-//   - fetch 后按 GetUint64() 升序排序，保证轮询顺序稳定、可预期；
-//   - cursor 记录（上一次已分配的客服 ID, 该 ID 内的实例序号）二元组，
-//     因此即便列表中存在多个相同 ID 的客服，也能逐一轮到，不会因 ID 相同而被整体跳过；
-//   - 列表增删、程序重启都不影响成环逻辑（cursor 基于 ID+实例序号，跨刷新稳定）；
-//   - Assign() 优先在同一 ID 的后续实例间推进，没有则跳到更大的 ID（回绕到最小），
-//     从而真正成环、不重复、分配均匀；
-//   - 程序重启时，调用 SetLastAssigned(上一单完成的ID)，下次 Assign() 直接拿下一个，不会重复；
-//   - Agent 可实现可选的 AgentWeighter 接口声明权重，AssignN(n) 会按权重比例一次性分摊 n 个，
-//     权重未设置（0）或没实现该接口时按 1 处理，Assign() 仍是逐个的环形轮询。
+// Dispatcher 环形分配器
 type Dispatcher struct {
-	mu       sync.RWMutex
-	agents   []Agent // 仅包含在线客服，按 GetUint64() 升序排列
-	lastID   uint64  // 上一次已分配的客服 ID
-	lastIdx  int     // lastID 内已分配到的实例序号（0-based）
-	assigned bool    // 是否已分配过（区分首次）
-	StartID  uint64  // 默认起始客服ID（首次分配从此客服开始）
-	Fetch    FetchAgentsFunc
-	Period   time.Duration
+	mu           sync.RWMutex
+	refreshMu    sync.Mutex // 串行化刷新：手动 Refresh 与后台定时刷新互斥，避免并发 fetch / 旧数据覆盖新数据
+	agents       []Agent    // 当前参与分配的客服，按 GetUint64() 升序排列
+	lastID       uint64     // 上一次已分配的客服 ID
+	lastIdx      int        // lastID 内已分配到的实例序号（0-based）
+	assigned     bool       // 是否已分配过（区分首次）
+	StartID      uint64     // 默认起始客服ID（首次分配从此客服开始）
+	Agents       []Agent    // 初始客服列表（也可事后用 SetAgentList 动态设置）
+	Fetch        FetchAgentsFunc
+	Period       time.Duration // 定时拉取列表
+	FetchTimeout time.Duration // 单次 Fetch 的超时（<=0 表示不限制），防止慢查询把刷新循环卡死
+	Skip         SkipAgentFunc // 可选：跳过条件，返回 true 表示该客服不分单
 }
 
 // NewDispatcher 创建分配器。
 //   - startID：默认值，表示环形队列的起始客服（首单分配给它）；
 //   - fetch：拉取在线客服列表的回调函数；
-//   - period：定时刷新间隔。
+//   - period：定时刷新间隔（>0 且 fetch != nil 时启动后台定时拉取）。
 func NewDispatcher(ctx context.Context, dConfig *Dispatcher) (*Dispatcher, error) {
 	if dConfig == nil {
 		dConfig = new(Dispatcher)
 	}
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = ctxOr(ctx)
 	err := dConfig.init(ctx)
 
 	if dConfig.Period > 0 && dConfig.Fetch != nil {
 		dConfig.start(ctx)
 	}
-
 	return dConfig, err
 }
 
-func (d *Dispatcher) init(ctx context.Context) error {
-	if d.Fetch == nil {
-		return nil
-	}
+// SetSkipFunc 设置跳过条件（返回 true 表示该客服不分单），返回自身便于链式调用。
+func (d *Dispatcher) SetSkipFunc(f SkipAgentFunc) *Dispatcher {
+	d.mu.Lock()
+	d.Skip = f
+	d.mu.Unlock()
+	return d
+}
 
-	agents, err := d.Fetch(ctx)
-	if err != nil {
-		return err
-	}
-	d.apply(agents)
-	return nil
+// AgentList 返回当前的客服列表副本（按分配顺序）。
+func (d *Dispatcher) AgentList() []Agent {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	out := make([]Agent, len(d.agents))
+	copy(out, d.agents)
+	return out
 }
 
 // SetLastAssigned 设置“上一次已完成的客服 ID”（用于程序重启后恢复进度）。
@@ -206,24 +66,12 @@ func (d *Dispatcher) SetLastAssigned(id uint64) *Dispatcher {
 	d.mu.Unlock()
 	return d
 }
+
+// SetAgentList 动态设置（整体替换）参与分配的客服列表，人员变动时调用即可立即生效。
+// 列表会按 ID 升序重排，cursor 不变，因此下一次分配仍能正确成环。
 func (d *Dispatcher) SetAgentList(agents []Agent) *Dispatcher {
 	d.apply(agents)
 	return d
-}
-
-// apply 用拉取到的最新列表刷新环形队列：仅按 GetUint64() 升序排序，不改变 cursor。
-// 由于 cursor 记录的是（ID, 实例序号），列表增删后下一次 Assign() 仍能正确取到下一个。
-func (d *Dispatcher) apply(fetched []Agent) {
-	// 复制后再排序，避免修改外部切片
-	online := make([]Agent, len(fetched))
-	copy(online, fetched)
-	sort.Slice(online, func(i, j int) bool {
-		return online[i].GetAgentId() < online[j].GetAgentId()
-	})
-
-	d.mu.Lock()
-	d.agents = online
-	d.mu.Unlock()
 }
 
 // nextPos 在不加锁的前提下，依据当前 cursor 计算下一次应分配实例在 agents 中的位置。
@@ -267,18 +115,56 @@ func (d *Dispatcher) nextPos() int {
 	return pos
 }
 
+// available 判断某个 Agent 当前是否可分单：命中 Skip（跳过条件）则不可分。
+// 回调在持锁状态下调用，因此回调里不要再反向调用 Dispatcher 的加锁方法，否则会死锁。
+func (d *Dispatcher) available(ctx context.Context, a Agent) bool {
+	if a == nil {
+		return false
+	}
+	if d.Skip != nil && d.Skip(ctx, a) {
+		return false
+	}
+	return true
+}
+
+// nextAvailablePos 从 nextPos() 开始沿环形向后找第一个“可分单”的实例位置，
+// 全部被跳过或已达限量时返回 -1。调用方需持锁。
+func (d *Dispatcher) nextAvailablePos(ctx context.Context) int {
+	if len(d.agents) == 0 {
+		return -1
+	}
+	start := d.nextPos()
+	for k := 0; k < len(d.agents); k++ {
+		pos := (start + k) % len(d.agents)
+		if d.available(ctx, d.agents[pos]) {
+			return pos
+		}
+	}
+	return -1
+}
+
 // nextAssign 在不加锁的前提下，依据当前 cursor 计算下一次应分配的实例，
 // 返回 (目标, 新的lastID, 新的lastIdx)。调用方需自行加锁。
-func (d *Dispatcher) nextAssign() (Agent, uint64, int) {
-	pos := d.nextPos()
+func (d *Dispatcher) nextAssign(ctx context.Context) (Agent, uint64, int) {
+	pos := d.nextAvailablePos(ctx)
+	if pos < 0 {
+		return nil, 0, 0
+	}
 	t := d.agents[pos]
 	return t, t.GetAgentId(), instanceIndexAt(d.agents, pos)
 }
 
 // Assign 分配一单：返回排序后“同一 ID 的下一个实例，否则大于 cursor 的第一个”客服，
 // 并把 cursor 更新为该客服的（ID, 实例序号），使之成环。
-// 当没有可用客服时返回 ok=false。
-func (d *Dispatcher) Assign() Agent {
+// 命中 Skip/Limited 的客服会被跳过；当没有可用客服时返回 nil（cursor 不动，下次可重新尝试）。
+func (d *Dispatcher) Assign(ctx context.Context) Agent {
+	return d.AssignWithCtx(ctx)
+}
+
+// AssignWithCtx 同 Assign，但显式指定传给 Skip/Limited 回调的 ctx；ctx 为 nil 时回退到默认 ctx。
+func (d *Dispatcher) AssignWithCtx(ctx context.Context) Agent {
+	ctx = ctxOr(ctx)
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -286,7 +172,10 @@ func (d *Dispatcher) Assign() Agent {
 		return nil
 	}
 
-	target, newID, newIdx := d.nextAssign()
+	target, newID, newIdx := d.nextAssign(ctx)
+	if target == nil {
+		return nil
+	}
 	d.lastID = newID
 	d.lastIdx = newIdx
 	d.assigned = true
@@ -303,19 +192,46 @@ func (d *Dispatcher) Assign() Agent {
 // 例：两个 Agent 权重为 3 和 1，AssignN(4) 得到 [A, B, A, A]。
 // 分配完成后游标停在最后被分配的实例上，连续多次调用整体仍是按权重分摊的。
 //
-// 返回切片长度 <= n；Agent 为空或 n<=0 时返回 nil。
-func (d *Dispatcher) AssignN(n int) []Agent {
+// ErrNoAvailableAgent 表示当前没有任何可分单的客服（列表为空，或所有人被 Skip/Limited 剔除）。
+var ErrNoAvailableAgent = errors.New("dispatch: 没有可分单的客服")
+
+// AssignN 批量分配 n 个：按权重把 n 个名额分摊到各 Agent，返回分配结果切片。
+// 命中 Skip/Limited 的客服不参与分摊（其权重被剔除后再按剩余权重重新分摊）。
+//
+// 返回：
+//   - n<=0：返回 (nil, nil)（无需分配）；
+//   - 列表为空或所有人都被跳过/限量（一圈下来没人可分）：返回 (nil, ErrNoAvailableAgent)；
+//   - 正常：返回长度恰好为 n 的切片与 nil。
+func (d *Dispatcher) AssignN(ctx context.Context, n int) ([]Agent, error) {
+	return d.AssignNWithCtx(ctx, n)
+}
+
+// AssignNWithCtx 同 AssignN，但显式指定传给 Skip/Limited 回调的 ctx。
+func (d *Dispatcher) AssignNWithCtx(ctx context.Context, n int) ([]Agent, error) {
 	if n <= 0 {
-		return nil
+		return nil, nil
 	}
+	ctx = ctxOr(ctx)
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	if len(d.agents) == 0 {
-		return nil
+		return nil, ErrNoAvailableAgent
 	}
 
-	slots, total := d.weightSlots()
+	slots, _ := d.weightSlots()
+	// 被跳过/已达限量的客服槽位清零，剩余名额在其他人之间按权重重新分摊
+	total := uint64(0)
+	for i, a := range d.agents {
+		if !d.available(ctx, a) {
+			slots[i] = 0
+		}
+		total += slots[i]
+	}
+	if total == 0 {
+		return nil, ErrNoAvailableAgent
+	}
 	quota := weightQuota(slots, total, n)
 
 	// 从游标之后开始，按环形顺序多轮发放，直到配额发完
@@ -377,76 +293,10 @@ func (d *Dispatcher) ringOrder() []int {
 	return order
 }
 
-// weightQuota 用最大余数法把 n 个名额按 slots 分摊，返回每个位置分到的数量，总和恰好为 n。
-func weightQuota(slots []uint64, total uint64, n int) []uint64 {
-	quota := make([]uint64, len(slots))
-	if n <= 0 || total == 0 || len(slots) == 0 {
-		return quota
-	}
-
-	type remItem struct {
-		idx uint64
-		rem uint64
-	}
-	items := make([]remItem, 0, len(slots))
-	used := uint64(0)
-	for i, slot := range slots {
-		prod := uint64(n) * slot
-		quota[i] = prod / total
-		used += quota[i]
-		items = append(items, remItem{idx: uint64(i), rem: prod % total})
-	}
-
-	// 取整后剩下的名额，按余数从大到小依次补 1（余数相同则下标小的优先）
-	rest := uint64(n) - used
-	if rest > 0 {
-		sort.SliceStable(items, func(a, b int) bool { return items[a].rem > items[b].rem })
-		for k := uint64(0); k < rest; k++ {
-			quota[items[int(k)%len(items)].idx]++
-		}
-	}
-	return quota
-}
-
 // TotalWeight 返回当前所有 Agent 的权重之和（未设置权重按 1 计，同一 ID 的多个实例权重叠加）。
 func (d *Dispatcher) TotalWeight() uint64 {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	_, total := d.weightSlots()
 	return total
-}
-
-// start 启动定时刷新：每隔 period 拉取一次最新在线客服列表并刷新环形队列。
-// 刷新在独立的执行体中串行执行，不会与自身重叠；
-// 若某次 fetch 耗时超过 period，期间到达的 tick 会被 time.Ticker 直接丢弃，
-// 因此不会出现刷新任务堆积，也不会有并发的 fetch。
-func (d *Dispatcher) start(ctx context.Context) {
-	goroutines.GoAsync(func(params ...any) {
-		ticker := time.NewTicker(d.Period)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				d.refreshOnce(ctx)
-			}
-		}
-	})
-}
-
-// refreshOnce 拉取一次最新的客服列表并刷新环形队列，由定时循环调用。
-func (d *Dispatcher) refreshOnce(ctx context.Context) {
-	agents, err := d.Fetch(ctx)
-	if err != nil {
-		log.Println("[dispatch] 刷新客服列表失败:", err)
-		return
-	}
-	d.apply(agents)
-	log.Printf("[dispatch] 客服列表已刷新，在线客服数=%d\n", len(agents))
-}
-
-// indexOf 返回列表中第一个等于 id 的实例位置，不存在返回 -1。
-func indexOf(agents []Agent, id uint64) int {
-	return indexOfNth(agents, id, 0)
 }
