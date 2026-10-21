@@ -2,6 +2,7 @@ package crontab
 
 import (
 	"fmt"
+	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/goroutines"
 	"github.com/robfig/cron/v3"
 	"log"
@@ -92,7 +93,7 @@ func StartJobs(immediateRun bool, jobs ...map[string]JobFunc) error {
 	}
 
 	//没有添加成功，则不用启动
-	log.Println("[crontab] StartJobs loaded times:", allKey)
+	log.Println("[crontab] StartJobs loaded success:", conv.String(allKey))
 
 	//立即执行：每次调用都要执行本次传入的任务（不能放在 isStart 判断之后，否则第二次调用会被跳过）
 	if immediateRun {
