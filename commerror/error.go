@@ -124,9 +124,14 @@ func Wrap(err error, opts ...Option) CommError {
 	// 如果已经是CommError，直接添加选项
 	var commError CommError
 	if errors.As(err, &commError) {
+		// 优先取原始 message，避免把已有的 Error()（JSON 字符串）当作 message 再次包装导致嵌套膨胀
+		message := commError.Error()
+		if ce, ok := commError.(*commErr); ok {
+			message = ce.message
+		}
 		newErr := &commErr{
 			code:    commError.Code(),
-			message: commError.Error(),
+			message: message,
 			cause:   commError.Cause(),
 			details: commError.Details(),
 		}
@@ -185,7 +190,11 @@ func GrpcError(code codes.Code, msg string, details ...CommError) error {
 			Message: item.Error(),
 		})
 	})
-	s, _ = s.WithDetails(errDetails...)
+	s, errDetailsWrap := s.WithDetails(errDetails...)
+	if errDetailsWrap != nil {
+		// 详情过大无法编码，退回不带 details 的状态，避免静默丢失错误
+		return status.New(codesCode, codesMsg).Err()
+	}
 	return s.Err()
 }
 func FromGrpcError(err error) (CommError, codes.Code) {

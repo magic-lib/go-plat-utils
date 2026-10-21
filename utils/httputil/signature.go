@@ -152,16 +152,21 @@ func GenWxPayV2Sign(params map[string]string, apiKey string) string {
 	// key 字典序升序排序
 	sort.Strings(keys)
 
-	var str string
+	var b strings.Builder
 	for _, k := range keys {
 		v := params[k]
 		if v == "" {
 			continue // 空值不参与拼接
 		}
-		str += fmt.Sprintf("%s=%s&", k, v)
+		b.WriteString(k)
+		b.WriteString("=")
+		b.WriteString(v)
+		b.WriteString("&")
 	}
 	// 拼接 &key=xxx
-	str = str + "key=" + apiKey
+	b.WriteString("key=")
+	b.WriteString(apiKey)
+	str := b.String()
 
 	h := md5.New()
 	h.Write([]byte(str))

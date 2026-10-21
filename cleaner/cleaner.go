@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
-	"time"
 )
 
 // Cleanable 清理器
@@ -93,17 +92,11 @@ func terminateIf(ctx context.Context, onCancel onCancel, onSignal onSignal) {
 	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGILL, syscall.SIGTERM,
 		syscall.SIGTRAP, syscall.SIGQUIT, syscall.SIGABRT)
 	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				onCancel()
-				return
-			case s := <-sig:
-				onSignal(s)
-				return
-			default:
-				time.Sleep(time.Millisecond * 10)
-			}
+		select {
+		case <-ctx.Done():
+			onCancel()
+		case s := <-sig:
+			onSignal(s)
 		}
 	}()
 }

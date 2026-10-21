@@ -125,10 +125,14 @@ func (_ *GrpcClient) TraceUnaryClientInterceptor() grpc.UnaryClientInterceptor {
 		invoker grpc.UnaryInvoker,
 		opts ...grpc.CallOption,
 	) error {
-		traceID := ctx.Value("traceId")
+		// 使用自定义类型作为 context key，避免与其它包用字符串字面量 "traceId" 冲突
+		type traceIDKeyType string
+		const traceIDKey traceIDKeyType = "traceId"
+
+		traceID := ctx.Value(traceIDKey)
 		if traceID == nil {
 			traceID = fmt.Sprintf("trace-%d", time.Now().UnixNano())
-			ctx = context.WithValue(ctx, "traceId", traceID)
+			ctx = context.WithValue(ctx, traceIDKey, traceID)
 		}
 
 		md, ok := metadata.FromOutgoingContext(ctx)
@@ -137,7 +141,9 @@ func (_ *GrpcClient) TraceUnaryClientInterceptor() grpc.UnaryClientInterceptor {
 		} else {
 			md = md.Copy()
 		}
-		md.Set("x-trace-id", traceID.(string))
+		if id, ok := traceID.(string); ok {
+			md.Set("x-trace-id", id)
+		}
 		ctx = metadata.NewOutgoingContext(ctx, md)
 
 		return invoker(ctx, method, req, reply, cc, opts...)

@@ -8,14 +8,18 @@ import (
 	"sync"
 )
 
+// JobFunc 定时任务函数
+type JobFunc func()
+
 type cronInstance struct {
-	isStart bool
-	c       *cron.Cron
+	running  bool
+	c        *cron.Cron
+	entryMap map[string]cron.EntryID // expr -> entryID
+	mu       sync.RWMutex
 }
 
 var (
 	oneCrontab *cronInstance
-	runningMu  sync.Mutex
 	cOnce      sync.Once
 )
 
@@ -23,8 +27,9 @@ var (
 func getCron() *cronInstance {
 	cOnce.Do(func() {
 		oneCrontab = &cronInstance{
-			isStart: false,
-			c:       cron.New(),
+			running:  false,
+			c:        cron.New(),
+			entryMap: make(map[string]cron.EntryID),
 		}
 	})
 	return oneCrontab
@@ -43,67 +48,82 @@ month      = field(fields[4], months)
 dayOfWeek  = field(fields[5], dow)
 */
 
-// StartJobs 启动定时任务，格式：分钟 小时 天 月 星期
-func StartJobs(immediateRun bool, jobs ...map[string]func()) error {
-	runningMu.Lock()
-	defer runningMu.Unlock()
+// StartJobs 批量添加定时任务
+// expr格式：分 时 日 月 周
+// immediateRun：是否添加成功后立刻执行一遍
+func StartJobs(immediateRun bool, jobs ...map[string]JobFunc) error {
+	oneCron := getCron()
+	oneCron.mu.Lock()
+	defer oneCron.mu.Unlock()
 
 	if len(jobs) == 0 {
 		return nil
 	}
-	oneCron := getCron()
 
-	allKey := make([]string, 0)
+	log.Println("[crontab] StartJobs start:")
+
+	var (
+		allKey   = make([]string, 0)
+		runList  = make([]JobFunc, 0)
+		rollback = make([]cron.EntryID, 0)
+		failExpr string
+	)
+
 	for _, jobMap := range jobs {
-		for key, _ := range jobMap {
-			allKey = append(allKey, key)
-		}
-	}
-
-	log.Println("[crontab] StartJobs start:", allKey)
-
-	runList := make([]func(), 0)
-
-	allSuccess := true //如果全部出错的，则不用启动
-	for _, jobMap := range jobs {
-		for times := range jobMap {
-			var err error
+		for times, fn := range jobMap {
+			allKey = append(allKey, times)
 			if immediateRun {
-				runList = append(runList, jobMap[times])
+				runList = append(runList, fn)
 			}
 			//列表里需要将所有的内容保存一份，这样就可以到时候进行删除了
-			_, err = oneCron.c.AddFunc(times, jobMap[times])
+			eid, err := oneCron.c.AddFunc(times, fn)
 			if err != nil {
-				log.Println("[crontab] StartJobs error:", times, err.Error())
-				allSuccess = false
+				failExpr = times
+				log.Printf("[crontab] StartJobs add fail, times=%s, err=%s", times, err.Error())
+				// 回滚：删掉本次已经加上的任务
+				for _, rid := range rollback {
+					oneCron.c.Remove(rid)
+				}
+				return fmt.Errorf("crontab add job failed, expr=%s: %w", failExpr, err)
 			}
+			rollback = append(rollback, eid)
+			oneCron.entryMap[times] = eid
 		}
 	}
 
 	//没有添加成功，则不用启动
-	if !allSuccess {
-		return fmt.Errorf("[crontab] StartJobs allSuccess Fail")
-	}
+	log.Println("[crontab] StartJobs loaded times:", allKey)
 
 	//立即执行：每次调用都要执行本次传入的任务（不能放在 isStart 判断之后，否则第二次调用会被跳过）
 	if immediateRun {
 		goroutines.GoAsync(func(params ...any) {
-			for _, runFunc := range runList {
-				runFunc()
+			for _, runFn := range runList {
+				runFn()
 			}
 		})
 	}
 
 	//cron 的调度循环只会启动一次，后续调用只是向已运行的调度器追加任务
-	if oneCron.isStart {
+	if oneCron.running {
 		return nil
 	}
-	oneCron.isStart = true
+	oneCron.running = true
 
 	//异步启动
 	goroutines.GoAsync(func(params ...any) {
 		oneCron.c.Run()
-		select {}
 	})
 	return nil
+}
+
+// Stop 优雅停止，等待正在运行任务全部结束
+func Stop() {
+	oneCron := getCron()
+	oneCron.mu.Lock()
+	defer oneCron.mu.Unlock()
+
+	ctx := oneCron.c.Stop()
+	<-ctx.Done()
+	oneCron.running = false
+	log.Println("[crontab] cron stopped, all running jobs finished")
 }

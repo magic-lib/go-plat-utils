@@ -9,7 +9,20 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
 )
+
+// compileRe 按 pattern 缓存已编译的正则，避免模板替换时重复编译相同的 prefix/suffix 模式
+var reCache sync.Map // map[string]*regexp.Regexp
+
+func compileRe(pattern string) *regexp.Regexp {
+	if v, ok := reCache.Load(pattern); ok {
+		return v.(*regexp.Regexp)
+	}
+	re := regexp.MustCompile(pattern)
+	reCache.Store(pattern, re)
+	return re
+}
 
 type JsonMapTemplate struct {
 	prefixString string
@@ -101,7 +114,7 @@ func trimTemplateSpaces(prefixString, suffixString string, input string) string 
 	escapedPrefix := regexp.QuoteMeta(prefixString)
 	escapedSuffix := regexp.QuoteMeta(suffixString)
 	compileStr := fmt.Sprintf(`%s\s+(\S.*?)\s+%s`, escapedPrefix, escapedSuffix)
-	re := regexp.MustCompile(compileStr)
+	re := compileRe(compileStr)
 	return re.ReplaceAllString(input, fmt.Sprintf("%s$1%s", prefixString, suffixString))
 }
 
@@ -109,6 +122,5 @@ func hasTemplatePatternStrict(prefixString, suffixString, input string) bool {
 	escapedPrefix := regexp.QuoteMeta(prefixString)
 	escapedSuffix := regexp.QuoteMeta(suffixString)
 	pattern := fmt.Sprintf(`%s\s*\S+?\s*%s`, escapedPrefix, escapedSuffix)
-	matched, _ := regexp.MatchString(pattern, input)
-	return matched
+	return compileRe(pattern).MatchString(input)
 }

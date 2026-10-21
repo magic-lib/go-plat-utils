@@ -86,6 +86,13 @@ func (t *impl) Replace(data ...any) string {
 		regexp.QuoteMeta(t.prefix),
 		regexp.QuoteMeta(t.suffix))
 
+	// 预编译每个占位符 key 的正则（key 集合与 data 无关，避免在内层循环重复编译 K×N 次）
+	type keyRe struct {
+		key string
+		re  *regexp.Regexp
+	}
+	keyResMap := make(map[string]*keyRe)
+
 	// 遍历所有数据源，替换对应变量
 	for _, item := range data {
 		// 将数据项转换为JSON字符串，便于通过gjson解析
@@ -106,10 +113,18 @@ func (t *impl) Replace(data ...any) string {
 			if !exists {
 				continue // 键不存在则跳过
 			}
+			repStr := fmt.Sprintf(regexPattern, regexp.QuoteMeta(oldKey))
 
+			keyRegex, ok := keyResMap[repStr]
+			if !ok || keyRegex == nil {
+				keyRegex = &keyRe{
+					key: oldKey,
+					re:  regexp.MustCompile(repStr),
+				}
+				keyResMap[repStr] = keyRegex
+			}
 			// 编译当前key的正则表达式并执行替换
-			keyRegex := regexp.MustCompile(fmt.Sprintf(regexPattern, regexp.QuoteMeta(oldKey)))
-			templateStr = keyRegex.ReplaceAllString(templateStr, value.String())
+			templateStr = keyRegex.re.ReplaceAllString(templateStr, value.String())
 		}
 	}
 

@@ -44,7 +44,7 @@ func RandomStringInt(l int) string {
 	if l <= 0 {
 		return ""
 	}
-	return lo.RandomString(l, append(lo.NumbersCharset))
+	return lo.RandomString(l, lo.NumbersCharset)
 }
 
 // UnicodeDecodeString 解码unicode

@@ -123,7 +123,7 @@ func (l *LogData) String() string {
 			logList = append(logList, fmt.Sprintf("[%s %s]", l.Path, l.Method))
 		} else if l.Path != "" {
 			logList = append(logList, fmt.Sprintf("[%s]", l.Path))
-		} else if l.Path != "" && l.Method != "" {
+		} else if l.Method != "" {
 			logList = append(logList, fmt.Sprintf("[%s]", l.Method))
 		}
 	}

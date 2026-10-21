@@ -160,7 +160,7 @@ func isReplaceString(s, prefix, suffix string) bool {
 	if s == "" || prefix == "" || suffix == "" {
 		return false
 	}
-	pat := regexp.MustCompile(regexp.QuoteMeta(prefix) + `.*?` + regexp.QuoteMeta(suffix))
+	pat := compileRe(regexp.QuoteMeta(prefix) + `.*?` + regexp.QuoteMeta(suffix))
 	rest := pat.ReplaceAllString(s, "")
 	if rest == "" {
 		return true // 整个字符串就是占位符，如 {{a}}

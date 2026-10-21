@@ -128,7 +128,7 @@ func (m *NodeConsistentSelector[N]) GetNode(anyKey string) (t N, err error) {
 	if node, ok := m.hashMap[hashCode]; ok {
 		return node, nil
 	}
-	return t, nil
+	return t, fmt.Errorf("node mapping not found for hash code: %v", hashCode)
 }
 
 // RemoveNode 移除节点（生产环境必备）

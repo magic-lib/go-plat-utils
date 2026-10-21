@@ -177,7 +177,9 @@ func (c *Container) injectWithField(context context.Context, objValue reflect.Va
 
 		// 检查字段是否是通过组合包含在当前结构体中的，即嵌套结构体
 		if field.Anonymous && structx.IndirectType(field.Type).Kind() == reflect.Struct {
-			c.injectWithField(context, fieldValue)
+			if err := c.injectWithField(context, fieldValue); err != nil {
+				return err
+			}
 			continue
 		}
 
@@ -269,7 +271,7 @@ func (c *Container) injectWithMethod(context context.Context, objValue reflect.V
 		componentName := methodName[6:]
 
 		injectInfo := fmt.Sprintf("ioc method inject [%s.%s#%s(%s)]", objType.Elem().PkgPath(), objType.Elem().Name(), methodName, componentName)
-		log.Printf(injectInfo)
+		log.Printf("%s", injectInfo)
 
 		if method.Type.NumIn() != 2 {
 			log.Printf("%s error: the method cannot be injected if it does not have one parameter", injectInfo)
