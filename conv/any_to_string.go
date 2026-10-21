@@ -120,8 +120,20 @@ func getBySpecialType(src any, ignoreOmitempty bool) (any, string, bool) {
 
 	// 常用特殊类型：直接用类型断言判定，避免 strValue.Type().String()
 	// 每次生成完整类型名字符串（一次分配 + 字符串比较）后再与紧随其后的断言重复判断
-	if synMap, ok := src.(sync.Map); ok {
-		newMap, keyIsString := getBySyncMap(&synMap)
+	// 同时支持 *sync.Map（指针，安全/推荐）与 sync.Map 值（兼容按值传入的历史调用方）。
+	// 注意：sync.Map 内含 sync.Mutex，`src.(sync.Map)` 的值断言会复制它（go vet 的 copylocks
+	// 告警即来源于此），且复制后副本与原件共享内部 map 指针却用各自的锁，并发下不安全。
+	// 因此优先用指针断言；值分支仅用于兼容，且此处只做读取（Range/Load）。
+	var newMap map[any]any
+	var keyIsString bool
+	switch m := src.(type) {
+	case *sync.Map:
+		newMap, keyIsString = getBySyncMap(m)
+	case sync.Map:
+		newMap, keyIsString = getBySyncMap(&m)
+	}
+
+	if keyIsString || newMap != nil {
 		if keyIsString {
 			//key 全是 string：按 key 升序排好序再输出，避免 Range/map 遍历顺序随机导致输出不稳定
 			strKeys := make([]string, 0, len(newMap))
@@ -174,8 +186,13 @@ func getBySpecialType(src any, ignoreOmitempty bool) (any, string, bool) {
 		strValue = reflect.ValueOf(src)
 	}
 	if src != nil {
-		if v, ok := src.(timestamppb.Timestamp); ok {
-			src = v.AsTime()
+		// timestamppb.Timestamp 可能按值或指针传入，二者均支持（值场景仅做读取，安全）
+		switch ts := src.(type) {
+		case timestamppb.Timestamp:
+			src = ts.AsTime()
+			return src, String(src), true
+		case *timestamppb.Timestamp:
+			src = ts.AsTime()
 			return src, String(src), true
 		}
 	}

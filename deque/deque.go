@@ -20,6 +20,8 @@ func (s *SafeDeque[T]) GetDeque() deque.Deque[T] {
 }
 
 func (s *SafeDeque[T]) Items() []T {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	return slices.Collect(s.d.Iter())
 }
 
@@ -57,9 +59,13 @@ func (s *SafeDeque[T]) PopBack() (T, bool) {
 	return zero, false
 }
 func (s *SafeDeque[T]) Len() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	return s.d.Len()
 }
 func (s *SafeDeque[T]) Front() (T, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	if s.d.Len() > 0 {
 		return s.d.Front(), true
 	}
@@ -67,6 +73,8 @@ func (s *SafeDeque[T]) Front() (T, bool) {
 	return zero, false
 }
 func (s *SafeDeque[T]) Back() (T, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	if s.d.Len() > 0 {
 		return s.d.Back(), true
 	}
@@ -74,6 +82,8 @@ func (s *SafeDeque[T]) Back() (T, bool) {
 	return zero, false
 }
 func (s *SafeDeque[T]) At(i int) (T, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	if s.d.Len() > 0 {
 		return s.d.At(i), true
 	}

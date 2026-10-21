@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+var timePatternRe = regexp.MustCompile(`^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})Z$`)
+
 const (
 	ShortTimeForm10   = "0102150405"
 	ShortTimeForm12   = "060102150405"
@@ -64,8 +66,12 @@ func Time(val any) (time.Time, bool) {
 		return timeRet, false
 	}
 
-	if v, ok := val.(timestamppb.Timestamp); ok {
-		val = v.AsTime()
+	// timestamppb.Timestamp 可能按值或指针传入，二者均支持（值场景仅做读取，安全）
+	switch ts := val.(type) {
+	case timestamppb.Timestamp:
+		val = ts.AsTime()
+	case *timestamppb.Timestamp:
+		val = ts.AsTime()
 	}
 
 	if v, ok := val.(time.Time); ok {
@@ -197,22 +203,16 @@ func toTimeFromString(v string) (time.Time, bool) {
 		}
 
 		{ //2023-04-14T10:09:00Z
-			timePattern := "^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})Z$"
-			isFind, err := regexp.MatchString(timePattern, v)
-			if err == nil {
-				if isFind {
-					regPattern, _ := regexp.Compile(timePattern)
-					patternList := regPattern.FindAllStringSubmatch(v, -1)
-					if len(patternList) == 1 {
-						if len(patternList[0]) == 7 {
-							v1 := fmt.Sprintf("%s-%s-%sT%s:%s:%s+00:00", patternList[0][1],
-								patternList[0][2], patternList[0][3],
-								patternList[0][4], patternList[0][5], patternList[0][6])
-							return toTimeFromString(v1)
-						}
-					}
-					return t, false
+			isFind := timePatternRe.MatchString(v)
+			if isFind {
+				patternList := timePatternRe.FindAllStringSubmatch(v, -1)
+				if len(patternList) == 1 && len(patternList[0]) == 7 {
+					v1 := fmt.Sprintf("%s-%s-%sT%s:%s:%s+00:00", patternList[0][1],
+						patternList[0][2], patternList[0][3],
+						patternList[0][4], patternList[0][5], patternList[0][6])
+					return toTimeFromString(v1)
 				}
+				return t, false
 			}
 		}
 		{

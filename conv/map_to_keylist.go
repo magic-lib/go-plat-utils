@@ -53,14 +53,14 @@ func toStringFromList(oneList []any, lastKey string, keyList []string, index int
 			index = index + 1
 			toStringFromMap(target2, keyList, index, allMap)
 			index = index - 1
-			keyList = append(keyList[:index])
+			keyList = keyList[:index]
 		} else if target3, ok := one.([]any); ok {
 			toStringFromList(target3, newKey, keyList, index, allMap)
 		} else {
 			keyList = append(keyList, newKey)
 			keyStr := strings.Join(keyList, ".")
 			allMap[keyStr] = one
-			keyList = append(keyList[:index])
+			keyList = keyList[:index]
 		}
 	}
 }
@@ -75,7 +75,7 @@ func toStringFromMap(oneMap map[string]any, keyList []string, index int, allMap 
 			index = index + 1
 			toStringFromMap(target, keyList, index, allMap)
 			index = index - 1
-			keyList = append(keyList[:index])
+			keyList = keyList[:index]
 		} else {
 			if list, ok := val.([]any); ok {
 				toStringFromList(list, key, keyList, index, allMap)
@@ -84,7 +84,7 @@ func toStringFromMap(oneMap map[string]any, keyList []string, index int, allMap 
 			keyList = append(keyList, key)
 			keyStr := strings.Join(keyList, ".")
 			allMap[keyStr] = val
-			keyList = append(keyList[:index])
+			keyList = keyList[:index]
 		}
 	}
 	return

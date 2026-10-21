@@ -21,8 +21,10 @@ func MapFromKeyList(keyMapJsonObject any) map[string]any {
 	return newMap
 }
 
+var indexRe = regexp.MustCompile(`\[[0-9]+]$`)
+
 func toMapFromString(keyList []string, val any, oneMap map[string]any) {
-	var re, _ = regexp.Compile(`\[[0-9]+]$`)
+	re := indexRe
 
 	for i, key := range keyList {
 		if key == "" {

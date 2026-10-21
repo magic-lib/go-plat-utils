@@ -108,6 +108,10 @@ func UnZipFile(zipFile string, dest string) (err error) {
 			}(rc)
 
 			filePath := filepath.Join(dest, f.Name)
+			// 防止 Zip Slip 路径穿越：确保解压目标始终落在 dest 目录内
+			if rel, errRel := filepath.Rel(dest, filePath); errRel != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+				return fmt.Errorf("illegal file path in zip: %q", f.Name)
+			}
 			if f.FileInfo().IsDir() {
 				err = os.MkdirAll(filePath, os.ModePerm)
 			} else {
