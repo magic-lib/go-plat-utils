@@ -8,6 +8,19 @@ import (
 	"time"
 )
 
+// skipBatchFromPred 将“逐 Agent 谓词”转换为批量跳过回调，便于编写基于单个 Agent 判断的用例。
+func skipBatchFromPred(pred func(a Agent) bool) SkipAgentsFunc {
+	return func(_ context.Context, ags []Agent) map[uint64]bool {
+		res := make(map[uint64]bool)
+		for _, a := range ags {
+			if pred(a) {
+				res[a.GetAgentId()] = true
+			}
+		}
+		return res
+	}
+}
+
 // TestAssignSkipFunc 验证设置了跳过条件后，被跳过的客服永远分不到单，其余仍成环。
 func TestAssignSkipFunc(t *testing.T) {
 	d, err := newDispatcher(context.Background(), 10, fixedFetch(agents(10, 20, 30)), 0)
@@ -15,9 +28,9 @@ func TestAssignSkipFunc(t *testing.T) {
 		t.Fatal(err)
 	}
 	// 20 休假，永远跳过
-	d.SetSkipFunc(func(_ context.Context, a Agent) bool {
+	d.SetSkipBatchFunc(skipBatchFromPred(func(a Agent) bool {
 		return a.GetAgentId() == 20
-	})
+	}))
 
 	got := make([]uint64, 0, 4)
 	for i := 0; i < 4; i++ {
@@ -43,9 +56,9 @@ func TestAssignSkipFuncDynamic(t *testing.T) {
 		t.Fatal(err)
 	}
 	skip := false
-	d.SetSkipFunc(func(_ context.Context, a Agent) bool {
+	d.SetSkipBatchFunc(skipBatchFromPred(func(a Agent) bool {
 		return skip && a.GetAgentId() == 20
-	})
+	}))
 
 	if a, _ := d.Assign(context.Background()); a.GetAgentId() != 10 {
 		t.Fatalf("期望 10，实际 %d", a.GetAgentId())
@@ -71,7 +84,7 @@ func TestAssignAllSkipped(t *testing.T) {
 		t.Fatal(err)
 	}
 	allSkip := true
-	d.SetSkipFunc(func(_ context.Context, _ Agent) bool { return allSkip })
+	d.SetSkipBatchFunc(skipBatchFromPred(func(_ Agent) bool { return allSkip }))
 
 	if a, _ := d.Assign(context.Background()); a != nil {
 		t.Fatalf("全部跳过时应返回 nil，实际 %d", a.GetAgentId())
@@ -90,9 +103,9 @@ func TestAssignQuotaSkip(t *testing.T) {
 	}
 	limit := map[uint64]uint64{10: 1, 20: 1, 30: 1} // 每人最多 1 单
 	used := map[uint64]uint64{}
-	d.SetSkipFunc(func(_ context.Context, a Agent) bool {
+	d.SetSkipBatchFunc(skipBatchFromPred(func(a Agent) bool {
 		return used[a.GetAgentId()] >= limit[a.GetAgentId()]
-	})
+	}))
 
 	// 第一轮：10,20,30 各一单
 	for i, want := range []uint64{10, 20, 30} {
@@ -123,7 +136,7 @@ func TestAssignNWithSkip(t *testing.T) {
 		t.Fatal(err)
 	}
 	// 30 不参与分单
-	d.SetSkipFunc(func(_ context.Context, a Agent) bool { return a.GetAgentId() == 30 })
+	d.SetSkipBatchFunc(skipBatchFromPred(func(a Agent) bool { return a.GetAgentId() == 30 }))
 
 	got := d.AssignN(context.Background(), 4)
 	if len(got) != 4 {
@@ -147,7 +160,7 @@ func TestAssignNSkipRedistribute(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	d.SetSkipFunc(func(_ context.Context, a Agent) bool { return a.GetAgentId() == 20 })
+	d.SetSkipBatchFunc(skipBatchFromPred(func(a Agent) bool { return a.GetAgentId() == 20 }))
 
 	got := d.AssignN(context.Background(), 3)
 	if len(got) != 3 {
@@ -166,7 +179,7 @@ func TestAssignNAllSkipped(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	d.SetSkipFunc(func(_ context.Context, _ Agent) bool { return true })
+	d.SetSkipBatchFunc(skipBatchFromPred(func(_ Agent) bool { return true }))
 	got := d.AssignN(context.Background(), 3)
 	if len(got) != 0 {
 		t.Fatalf("全部跳过时期望空切片，实际 %v", got)
@@ -181,11 +194,11 @@ func TestAssignWithCtx(t *testing.T) {
 	}
 	type ctxKey struct{}
 	gotCtx := false
-	d.SetSkipFunc(func(ctx context.Context, _ Agent) bool {
+	d.SetSkipBatchFunc(func(ctx context.Context, _ []Agent) map[uint64]bool {
 		if v, ok := ctx.Value(ctxKey{}).(string); ok && v == "trace" {
 			gotCtx = true
 		}
-		return false
+		return nil
 	})
 	d.Assign(context.WithValue(context.Background(), ctxKey{}, "trace"))
 	if !gotCtx {
@@ -234,6 +247,83 @@ func TestAgentListGetter(t *testing.T) {
 	for i, want := range []uint64{10, 20, 30} {
 		if list[i].GetAgentId() != want {
 			t.Fatalf("列表顺序错误: got[%d]=%d want=%d", i, list[i].GetAgentId(), want)
+		}
+	}
+}
+
+// TestAssignSkipBatchFunc 验证批量跳过：一次性给定全部 Agent 判断（N 次 IO → 1 次），
+// 且每次分配只调用一次，行为等价于逐 Agent 的 Skip。
+func TestAssignSkipBatchFunc(t *testing.T) {
+	d, err := newDispatcher(context.Background(), 10, fixedFetch(agents(10, 20, 30)), 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var calls int
+	mu := sync.Mutex{}
+	d.SetSkipBatchFunc(func(_ context.Context, ags []Agent) map[uint64]bool {
+		mu.Lock()
+		calls++
+		mu.Unlock()
+		res := make(map[uint64]bool)
+		for _, a := range ags {
+			if a.GetAgentId() == 20 { // 20 休假
+				res[a.GetAgentId()] = true
+			}
+		}
+		return res
+	})
+
+	got := make([]uint64, 0, 6)
+	for i := 0; i < 6; i++ {
+		a, _ := d.Assign(context.Background())
+		if a == nil {
+			t.Fatalf("assign %d 返回 nil", i)
+		}
+		got = append(got, a.GetAgentId())
+	}
+	// 20 被跳过，只在 10/30 之间成环
+	want := []uint64{10, 30, 10, 30, 10, 30}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("批量跳过顺序错误: got=%v want=%v", got, want)
+		}
+	}
+	// 每次 Assign 只触发一次批量判断（6 次分配 → 6 次，而非 6×N 次逐 Agent 查询）
+	mu.Lock()
+	if calls != 6 {
+		t.Fatalf("SkipBatch 调用次数应为 6，实际 %d（未做到每分配只查一次）", calls)
+	}
+	mu.Unlock()
+}
+
+// TestAssignSkipBatchOnly 验证仅使用批量跳过（已移除旧的逐 Agent Skip）：只跳过 30，其余成环。
+func TestAssignSkipBatchOnly(t *testing.T) {
+	d, err := newDispatcher(context.Background(), 10, fixedFetch(agents(10, 20, 30)), 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d.SetSkipBatchFunc(func(_ context.Context, ags []Agent) map[uint64]bool {
+		res := make(map[uint64]bool)
+		for _, a := range ags {
+			if a.GetAgentId() == 30 { // 仅 30 跳过
+				res[a.GetAgentId()] = true
+			}
+		}
+		return res
+	})
+
+	got := make([]uint64, 0, 4)
+	for i := 0; i < 4; i++ {
+		a, _ := d.Assign(context.Background())
+		if a == nil {
+			t.Fatalf("assign %d 返回 nil", i)
+		}
+		got = append(got, a.GetAgentId())
+	}
+	want := []uint64{10, 20, 10, 20}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("SkipBatch 优先性验证失败: got=%v want=%v", got, want)
 		}
 	}
 }

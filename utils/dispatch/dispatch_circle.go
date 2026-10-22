@@ -20,9 +20,9 @@ type Dispatcher struct {
 	StartID      uint64  // 默认起始客服ID（首次分配从此客服开始）
 	Agents       []Agent // 初始客服列表（也可事后用 SetAgentList 动态设置）
 	Fetch        FetchAgentsFunc
-	Period       time.Duration // 定时拉取列表
-	FetchTimeout time.Duration // 单次 Fetch 的超时（<=0 表示不限制），防止慢查询把刷新循环卡死
-	Skip         SkipAgentFunc // 可选：跳过条件，返回 true 表示该客服不分单
+	Period       time.Duration  // 定时拉取列表
+	FetchTimeout time.Duration  // 单次 Fetch 的超时（<=0 表示不限制），防止慢查询把刷新循环卡死
+	SkipBatch    SkipAgentsFunc // 可选：批量跳过条件，一次给定全部 Agent 并一次性判断（避免逐 Agent 查库）
 }
 
 // NewDispatcher 创建分配器。
@@ -42,10 +42,12 @@ func NewDispatcher(ctx context.Context, dConfig *Dispatcher) (*Dispatcher, error
 	return dConfig, err
 }
 
-// SetSkipFunc 设置跳过条件（返回 true 表示该客服不分单），返回自身便于链式调用。
-func (d *Dispatcher) SetSkipFunc(f SkipAgentFunc) *Dispatcher {
+// SetSkipBatchFunc 设置批量跳过条件：一次性给定全部 Agent 并一次性判断，返回自身便于链式调用。
+// 适合跳过判断依赖查库/远程调用的场景（N 次 IO → 1 次批量）：一次查询拿到所有 Agent 的状态，
+// 远优于逐 Agent 查询。返回 map[uint64]bool，key 为 Agent.GetAgentId()，value=true 表示该 Agent 不分单。
+func (d *Dispatcher) SetSkipBatchFunc(f SkipAgentsFunc) *Dispatcher {
 	d.mu.Lock()
-	d.Skip = f
+	d.SkipBatch = f
 	d.mu.Unlock()
 	return d
 }
@@ -118,28 +120,45 @@ func (d *Dispatcher) nextPos() int {
 	return pos
 }
 
-// available 判断某个 Agent 当前是否可分单：命中 Skip（跳过条件）则不可分。
+// computeSkip 在持锁状态下一次性计算所有 Agent 的“跳过标记”（key=Agent.GetAgentId()，value=true 表示跳过）：
+// 调用一次 SkipBatch 批量判断（适合查库/远程调用，N 次 IO → 1 次批量）。
+//
+// 用 map[uint64]bool 而非 []bool：避免“返回切片长度与 agents 不一致导致下标错位/越界”；
+// 缺失的 Agent 一律视作“不跳过”。之后可用 available(skipMap, pos) 在内存中 O(1) 查表，
+// 避免在分配循环里对每个 Agent 重复查库。
 // 回调在持锁状态下调用，因此回调里不要再反向调用 Dispatcher 的加锁方法，否则会死锁。
-func (d *Dispatcher) available(ctx context.Context, a Agent) bool {
-	if a == nil {
+func (d *Dispatcher) computeSkip(ctx context.Context) map[uint64]bool {
+	skipMap := make(map[uint64]bool)
+	if d.SkipBatch != nil {
+		res := d.SkipBatch(ctx, d.agents)
+		for id, skip := range res {
+			if skip {
+				skipMap[id] = true
+			}
+		}
+	}
+	return skipMap
+}
+
+// available 依据预先计算好的跳过标记（key 为 Agent.GetAgentId()）判断某个位置是否可分单。
+// pos 越界或命中跳过条件时返回 false。skipMap 由 computeSkip 在分配入口一次性算出。
+func (d *Dispatcher) available(skipMap map[uint64]bool, pos int) bool {
+	if pos < 0 || pos >= len(d.agents) {
 		return false
 	}
-	if d.Skip != nil && d.Skip(ctx, a) {
-		return false
-	}
-	return true
+	return !skipMap[d.agents[pos].GetAgentId()]
 }
 
 // nextAvailablePos 从 nextPos() 开始沿环形向后找第一个“可分单”的实例位置，
 // 全部被跳过或已达限量时返回 -1。调用方需持锁。
-func (d *Dispatcher) nextAvailablePos(ctx context.Context) int {
+func (d *Dispatcher) nextAvailablePos(skipMap map[uint64]bool) int {
 	if len(d.agents) == 0 {
 		return -1
 	}
 	start := d.nextPos()
 	for k := 0; k < len(d.agents); k++ {
 		pos := (start + k) % len(d.agents)
-		if d.available(ctx, d.agents[pos]) {
+		if d.available(skipMap, pos) {
 			return pos
 		}
 	}
@@ -148,8 +167,8 @@ func (d *Dispatcher) nextAvailablePos(ctx context.Context) int {
 
 // nextAssign 在不加锁的前提下，依据当前 cursor 计算下一次应分配的实例，
 // 返回 (目标, 新的lastID, 新的lastIdx)。调用方需自行加锁。
-func (d *Dispatcher) nextAssign(ctx context.Context) (Agent, uint64, int) {
-	pos := d.nextAvailablePos(ctx)
+func (d *Dispatcher) nextAssign(skipMap map[uint64]bool) (Agent, uint64, int) {
+	pos := d.nextAvailablePos(skipMap)
 	if pos < 0 {
 		return nil, 0, 0
 	}
@@ -171,7 +190,8 @@ func (d *Dispatcher) Assign(ctx context.Context) (Agent, error) {
 		return nil, sql.ErrNoRows
 	}
 
-	target, newID, newIdx := d.nextAssign(ctx)
+	flags := d.computeSkip(ctx)
+	target, newID, newIdx := d.nextAssign(flags)
 	if target == nil {
 		return nil, sql.ErrNoRows
 	}
@@ -227,8 +247,9 @@ func (d *Dispatcher) AssignN(ctx context.Context, n int) []Agent {
 	avail := make([]int, 0, len(d.agents))
 	byWeight := make(map[uint64]*wgroup)
 	var order []uint64 // 稳定的权重遍历顺序（升序）
+	flags := d.computeSkip(ctx)
 	for i, a := range d.agents {
-		if !d.available(ctx, a) {
+		if !d.available(flags, i) {
 			continue
 		}
 		avail = append(avail, i)
@@ -256,7 +277,7 @@ func (d *Dispatcher) AssignN(ctx context.Context, n int) []Agent {
 	}
 
 	// 从游标续接：取“游标之后第一个可分单”的实例作为起点
-	startPos := d.nextAvailablePos(ctx)
+	startPos := d.nextAvailablePos(flags)
 	cursor := posIndex[startPos] // 同分比较 / 推进的基准（avail 下标）
 
 	findAgent := make([]Agent, 0, n)

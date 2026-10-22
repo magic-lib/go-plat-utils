@@ -34,6 +34,10 @@ func AgentWeight(a Agent) uint64 {
 // FetchAgentsFunc 拉取最新列表的函数。
 type FetchAgentsFunc func(ctx context.Context) ([]Agent, error)
 
-// SkipAgentFunc 跳过条件：返回 true 表示该 Agent 本次不参与分单（如休假、停用、不在班次等）。
-// 每次分配时实时调用，因此人员状态变化无需刷新列表即可立即生效。
-type SkipAgentFunc func(ctx context.Context, agent Agent) bool
+// SkipAgentsFunc 批量跳过条件：一次性给定当前全部 Agent，返回每个是否跳过（key=Agent.GetAgentId()，value=true 表示该 Agent 不分单）。
+// 返回 nil 或为空 map 时视作“都不跳过”；只返回的某些 key 时，缺失的 Agent 视作不跳过，因此
+// 不存在“返回切片长度和入参不一致导致下标错位/越界”的问题。
+//
+// 它在每次分配入口只调用一次，适合回调里需要查库/远程调用的场景：
+// 一次查询拿到所有 Agent 的状态，远优于逐 Agent 查询（N 次串行 IO → 1 次批量）。
+type SkipAgentsFunc func(ctx context.Context, agents []Agent) map[uint64]bool
