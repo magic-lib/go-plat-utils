@@ -41,3 +41,17 @@ type FetchAgentsFunc func(ctx context.Context) ([]Agent, error)
 // 它在每次分配入口只调用一次，适合回调里需要查库/远程调用的场景：
 // 一次查询拿到所有 Agent 的状态，远优于逐 Agent 查询（N 次串行 IO → 1 次批量）。
 type SkipAgentsFunc func(ctx context.Context, agents []Agent) map[uint64]bool
+
+// SkipFuncFromPred 将“单 Agent 是否跳过”的谓词适配为 SkipAgentsFunc（批量跳过函数）。
+// 返回的 SkipAgentsFunc 会在分配入口一次性遍历所有 Agent，把满足 skipCond 的 Agent 标记为跳过。
+func SkipFuncFromPred(skipCond func(a Agent) bool) SkipAgentsFunc {
+	return func(_ context.Context, ags []Agent) map[uint64]bool {
+		res := make(map[uint64]bool)
+		for _, a := range ags {
+			if skipCond(a) {
+				res[a.GetAgentId()] = true
+			}
+		}
+		return res
+	}
+}

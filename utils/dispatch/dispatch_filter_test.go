@@ -3,22 +3,15 @@ package dispatch
 import (
 	"context"
 	"errors"
+	"log"
 	"sync"
 	"testing"
 	"time"
 )
 
-// skipBatchFromPred 将“逐 Agent 谓词”转换为批量跳过回调，便于编写基于单个 Agent 判断的用例。
+// skipBatchFromPred 复用导出的 SkipFuncFromPred，便于编写基于单个 Agent 判断的用例。
 func skipBatchFromPred(pred func(a Agent) bool) SkipAgentsFunc {
-	return func(_ context.Context, ags []Agent) map[uint64]bool {
-		res := make(map[uint64]bool)
-		for _, a := range ags {
-			if pred(a) {
-				res[a.GetAgentId()] = true
-			}
-		}
-		return res
-	}
+	return SkipFuncFromPred(pred)
 }
 
 // TestAssignSkipFunc 验证设置了跳过条件后，被跳过的客服永远分不到单，其余仍成环。
@@ -41,6 +34,38 @@ func TestAssignSkipFunc(t *testing.T) {
 		got = append(got, a.GetAgentId())
 	}
 	want := []uint64{10, 30, 10, 30}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("跳过后的顺序错误: got=%v want=%v", got, want)
+		}
+	}
+}
+
+// TestAssignSkipFuncNil 验证设置了跳过条件后，被跳过的客服永远分不到单，其余仍成环。
+func TestAssignSkipFuncNil(t *testing.T) {
+	d, err := newDispatcher(context.Background(), 10, fixedFetch(agents(10, 20, 30)), 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	//全限制
+	d.SetSkipBatchFunc(func(ctx context.Context, agents []Agent) map[uint64]bool {
+		res := make(map[uint64]bool)
+		for _, a := range agents {
+			res[a.GetAgentId()] = true
+		}
+		return res
+	})
+
+	got := make([]uint64, 0, 4)
+	for i := 0; i < 4; i++ {
+		a, err := d.Assign(context.Background())
+		if err != nil {
+			log.Printf("assign %d 返回 nil", i)
+			continue
+		}
+		got = append(got, a.GetAgentId())
+	}
+	want := []uint64{}
 	for i := range want {
 		if got[i] != want[i] {
 			t.Fatalf("跳过后的顺序错误: got=%v want=%v", got, want)
