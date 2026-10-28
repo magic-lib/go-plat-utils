@@ -2,13 +2,14 @@ package crontab_test
 
 import (
 	"github.com/magic-lib/go-plat-utils/crontab"
+	"github.com/robfig/cron/v3"
 	"testing"
 )
 import "fmt"
 
 func TestCrontab(t *testing.T) {
 
-	_ = crontab.StartJobs(true, map[string]func(){
+	_ = crontab.StartJobs(true, map[string]cron.FuncJob{
 		"*/2 * * * *": func() {
 			fmt.Println("1分钟1")
 		},
@@ -20,12 +21,12 @@ func TestCrontab(t *testing.T) {
 	select {}
 }
 func TestCrontabLockKey(t *testing.T) {
-	_ = crontab.StartJobs(true, map[string]func(){
+	_ = crontab.StartJobs(true, map[string]cron.FuncJob{
 		"* * * * *": func() {
 			fmt.Println("1分钟1")
 		},
 	})
-	_ = crontab.StartJobs(true, map[string]func(){
+	_ = crontab.StartJobs(true, map[string]cron.FuncJob{
 		"* * * * *": func() {
 			fmt.Println("1分钟2")
 		},

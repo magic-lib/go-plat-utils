@@ -9,9 +9,6 @@ import (
 	"sync"
 )
 
-// JobFunc 定时任务函数
-type JobFunc func()
-
 type cronInstance struct {
 	running  bool
 	c        *cron.Cron
@@ -52,7 +49,7 @@ dayOfWeek  = field(fields[5], dow)
 // StartJobs 批量添加定时任务
 // expr格式：分 时 日 月 周
 // immediateRun：是否添加成功后立刻执行一遍
-func StartJobs(immediateRun bool, jobs ...map[string]JobFunc) error {
+func StartJobs(immediateRun bool, jobs ...map[string]cron.FuncJob) error {
 	oneCron := getCron()
 	oneCron.mu.Lock()
 	defer oneCron.mu.Unlock()
@@ -65,7 +62,7 @@ func StartJobs(immediateRun bool, jobs ...map[string]JobFunc) error {
 
 	var (
 		allKey   = make([]string, 0)
-		runList  = make([]JobFunc, 0)
+		runList  = make([]cron.FuncJob, 0)
 		rollback = make([]cron.EntryID, 0)
 		failExpr string
 	)
@@ -96,12 +93,10 @@ func StartJobs(immediateRun bool, jobs ...map[string]JobFunc) error {
 	log.Println("[crontab] StartJobs loaded success:", conv.String(allKey))
 
 	//立即执行：每次调用都要执行本次传入的任务（不能放在 isStart 判断之后，否则第二次调用会被跳过）
-	if immediateRun {
-		goroutines.GoAsync(func(params ...any) {
-			for _, runFn := range runList {
-				runFn()
-			}
-		})
+	if immediateRun && len(runList) > 0 {
+		for _, runFn := range runList {
+			runFn()
+		}
 	}
 
 	//cron 的调度循环只会启动一次，后续调用只是向已运行的调度器追加任务
