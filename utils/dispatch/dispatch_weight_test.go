@@ -318,3 +318,77 @@ func TestAssignNNotAffectAssign(t *testing.T) {
 		t.Errorf("单个 Assign 期望仍是 1:1 轮询 %v，实际 %v", want, got)
 	}
 }
+
+// TestAssignNPerAgentRatio 验证按个人（而非按权重值分组）计算比例：
+// 同权重的 B 积压很多单，不应拖累同权重、零单的 C。
+func TestAssignNPerAgentRatio(t *testing.T) {
+	A := NewAgentFromUint64WithWeight(1, 2)
+	B := NewAgentFromUint64WithWeight(2, 1)
+	C := NewAgentFromUint64WithWeight(3, 1)
+	d := newDispatcherOf([]Agent{A, B, C})
+	d.SetIssued(map[Agent]uint64{B: 100})
+
+	cnt := countByID(d.AssignN(context.Background(), 9))
+	if cnt[1] != 6 || cnt[2] != 0 || cnt[3] != 3 {
+		t.Errorf("A(w2):C(w1) 期望 6:3、B 不分，实际 %v", cnt)
+	}
+}
+
+// TestAssignNNewcomerJoinsRotation 验证新加入的人直接加入轮转，而不是因历史欠账被连续灌单。
+func TestAssignNNewcomerJoinsRotation(t *testing.T) {
+	d := newWeightDispatcher(map[uint64]uint64{1: 1, 2: 1})
+	d.AssignN(context.Background(), 200)
+	d.SetAgentList([]Agent{NewAgentFromUint64(1), NewAgentFromUint64(2), NewAgentFromUint64(3)})
+
+	cnt := countByID(d.AssignN(context.Background(), 9))
+	if cnt[1] != 3 || cnt[2] != 3 || cnt[3] != 3 {
+		t.Errorf("新人加入后期望三人轮流各 3 单，实际 %v", cnt)
+	}
+}
+
+// TestAssignNReturnerJoinsRotation 验证被跳过（下线）后回归的人直接加入轮转。
+func TestAssignNReturnerJoinsRotation(t *testing.T) {
+	d := newWeightDispatcher(map[uint64]uint64{1: 1, 2: 1, 3: 1})
+	ctx := context.Background()
+	d.AssignN(ctx, 30)
+	d.SetSkipBatchFunc(SkipFuncFromPred(func(a Agent) bool { return a.GetAgentId() == 3 }))
+	d.AssignN(ctx, 100)
+	d.SetSkipBatchFunc(nil)
+
+	cnt := countByID(d.AssignN(ctx, 9))
+	if cnt[1] != 3 || cnt[2] != 3 || cnt[3] != 3 {
+		t.Errorf("回归后期望三人轮流各 3 单，实际 %v", cnt)
+	}
+}
+
+// TestAssignNNewcomerWeighted 验证新人按自身权重折算对齐，之后按权重比例接单。
+func TestAssignNNewcomerWeighted(t *testing.T) {
+	d := newWeightDispatcher(map[uint64]uint64{1: 1, 2: 1})
+	ctx := context.Background()
+	d.AssignN(ctx, 100) // 每人 50
+	d.SetAgentList([]Agent{
+		NewAgentFromUint64WithWeight(1, 1),
+		NewAgentFromUint64WithWeight(2, 1),
+		NewAgentFromUint64WithWeight(3, 2),
+	})
+
+	cnt := countByID(d.AssignN(ctx, 40))
+	if cnt[1] != 10 || cnt[2] != 10 || cnt[3] != 20 {
+		t.Errorf("新人权重 2 期望 10/10/20，实际 %v", cnt)
+	}
+}
+
+// TestSetIssuedNotAligned 验证 SetIssued 显式设置过的人不被对齐，其历史欠账照常补齐。
+func TestSetIssuedNotAligned(t *testing.T) {
+	d := newWeightDispatcher(map[uint64]uint64{1: 1, 2: 1})
+	ctx := context.Background()
+	d.AssignN(ctx, 20) // 每人 10
+	C := NewAgentFromUint64(3)
+	d.SetAgentList([]Agent{NewAgentFromUint64(1), NewAgentFromUint64(2), C})
+	d.SetIssued(map[Agent]uint64{C: 4})
+
+	cnt := countByID(d.AssignN(ctx, 6))
+	if cnt[3] != 6 {
+		t.Errorf("C 显式设置为 4 单，期望先补 6 单追平，实际 %v", cnt)
+	}
+}

@@ -73,7 +73,7 @@ func (d *Dispatcher) init(ctx context.Context) error {
 	return d.Refresh(ctx)
 }
 
-// apply 用最新列表刷新环形队列：过滤 nil、按 GetUint64() 升序排序，不改变 cursor。
+// apply 用最新列表刷新环形队列：过滤 nil、按 GetAgentId() 升序排序，不改变 cursor。
 // 由于 cursor 记录的是（ID, 实例序号），列表增删后下一次 Assign() 仍能正确取到下一个。
 func (d *Dispatcher) apply(fetched []Agent) {
 	// 复制后再排序，避免修改外部切片；顺带过滤掉 nil，防止分配时 panic

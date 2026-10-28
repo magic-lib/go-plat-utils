@@ -9,7 +9,7 @@ func indexOf(agents []Agent, id uint64) int {
 	return indexOfNth(agents, id, 0)
 }
 
-// equals 统计列表中与给定 id 相等的实例个数。
+// occurrenceCount 统计列表中与给定 id 相等的实例个数。
 func occurrenceCount(agents []Agent, id uint64) int {
 	c := 0
 	for _, a := range agents {
@@ -56,7 +56,7 @@ func instanceIndexAt(agents []Agent, pos int) int {
 	return c
 }
 
-// ctxOr 返回实际使用的 ctx：优先入参，其次分配器自身的 ctx，最后 Background。
+// ctxOr 返回实际使用的 ctx：入参为 nil 时取 Background。
 func ctxOr(ctx context.Context) context.Context {
 	if ctx != nil {
 		return ctx

@@ -11,11 +11,13 @@ import (
 type Dispatcher struct {
 	mu        sync.RWMutex
 	refreshMu sync.Mutex        // 串行化刷新：手动 Refresh 与后台定时刷新互斥，避免并发 fetch / 旧数据覆盖新数据
-	agents    []Agent           // 当前参与分配的客服，按 GetUint64() 升序排列
+	agents    []Agent           // 当前参与分配的客服，按 GetAgentId() 升序排列
 	lastID    uint64            // 上一次已分配的客服 ID
 	lastIdx   int               // lastID 内已分配到的实例序号（0-based）
 	assigned  bool              // 是否已分配过（区分首次）
 	issued    map[uint64]uint64 // 每人（按 GetAgentId）已发放的单数累计，用于跨批次按比例分摊
+	active    map[uint64]bool   // 上一次分配时可分单的 ID 集合，用于识别新加入/回归的人；nil 表示尚未分配过
+	pinned    map[uint64]bool   // 经 SetIssued 显式设置过、尚未加入在岗集合的 ID，不参与对齐
 
 	StartID      uint64  // 默认起始客服ID（首次分配从此客服开始）
 	Agents       []Agent // 初始客服列表（也可事后用 SetAgentList 动态设置）
@@ -95,14 +97,10 @@ func (d *Dispatcher) nextPos() int {
 
 	cnt := occurrenceCount(agents, d.lastID)
 	if cnt == 0 {
-		// 该 ID 已不存在（全线下），跳到更大的 ID；没有则回退 startID，再兜底最小
+		// 该 ID 已不存在（全线下），跳到更大的 ID；没有则回绕到最小（与正常成环一致）
 		pos := nextGreaterFirstIndex(agents, d.lastID)
 		if pos < 0 {
-			if s := indexOf(agents, d.StartID); s >= 0 {
-				pos = s
-			} else {
-				pos = 0
-			}
+			pos = 0
 		}
 		return pos
 	}
@@ -195,11 +193,10 @@ func (d *Dispatcher) Assign(ctx context.Context) (Agent, error) {
 	if target == nil {
 		return nil, sql.ErrNoRows
 	}
-	// 同步累计发放计数，使 Assign 与 AssignN 共用同一本“账”，
-	// AssignN 的按比例分摊才能把 Assign 发出去的单也纳入考虑。
-	if d.issued == nil {
-		d.issued = make(map[uint64]uint64)
-	}
+	// 同步累计发放计数与在岗集合，使 Assign 与 AssignN 共用同一本“账”，
+	// AssignN 的按比例分摊才能把 Assign 发出去的单也纳入考虑。Assign 本身不看权重。
+	_, weights := d.availables(flags)
+	d.alignNewcomers(weights)
 	d.issued[newID]++
 	d.lastID = newID
 	d.lastIdx = newIdx
@@ -207,19 +204,18 @@ func (d *Dispatcher) Assign(ctx context.Context) (Agent, error) {
 	return target, nil
 }
 
-// AssignN 一次性分配 n 个（如 n 个订单）。分配遵循“加权最少已分”的贪心 + 游标环形续接：
+// AssignN 一次性分配 n 个（如 n 个订单）。分配遵循“个人加权最少已分”的贪心 + 游标环形续接：
 //
-//   - 权重相同：先给已分单数最少的人；当其追平“倒数第二”后，二人开始轮询；
-//     再追平“倒数第三”后，三人依次轮询……即“同分时取游标之后最先遇到的”，自然成环。
-//   - 权重不同：ratio = (已分单数+1) / 权重，ratio 越小越“落后”越优先，权重大的自然多分；
-//     长期累计严格贴合权重比例（与最大余数法等价），但发放顺序更平滑、且跟游标成环。
-//   - 始终从“当前游标之后下一个可分单的 Agent”出发向后扫描，选最落后的一个，
-//     再把游标推进到该实例之后——保证每单都从当前轮询的下一个续接，不回退、不成环断点。
+//   - 每人 ratio = (已分单数+1) / 权重，ratio 越小越“落后”越优先，权重大的自然多分，
+//     长期累计贴合权重比例；同一 ID 的多个实例共享一本账，有效权重为各实例权重之和。
+//   - 权重相同：先给已分单数最少的人；追平后依次轮询，自然成环。
+//   - ratio 相同时取“游标之后最先遇到的”，再把游标推进到该实例之后——每单都从当前轮询的下一个续接。
 //   - 命中 Skip 的客服不参与；其名额在剩余人中按上述规则重分。
+//   - 新加入、或下线/被跳过后回归的人，已分单数会对齐到在岗者的最低水平，直接加入轮转，
+//     不会因历史欠账被连续灌单（见 alignNewcomers）。
 //
 // 返回：
-//   - n<=0：返回 nil；
-//   - 列表为空或所有人都被跳过：返回空切片；
+//   - n<=0、列表为空或所有人都被跳过：返回 nil；
 //   - 正常：返回长度恰好为 n 的切片。
 func (d *Dispatcher) AssignN(ctx context.Context, n int) []Agent {
 	if n <= 0 {
@@ -233,156 +229,122 @@ func (d *Dispatcher) AssignN(ctx context.Context, n int) []Agent {
 	if len(d.agents) == 0 {
 		return nil
 	}
-	if d.issued == nil {
-		d.issued = make(map[uint64]uint64)
-	}
 
-	// 一步到位：遍历 agents，直接收集可分单实例（环形位置）并就地按“权重值”分组。
-	// 权重组 = 所有相同权重值的可分单实例；组权重 = 组内各实例权重之和；组已发 = 组内已发之和。
-	type wgroup struct {
-		weight  uint64
-		members []int // 组内实例在 d.agents 中的位置
-		issued  uint64
-	}
-	avail := make([]int, 0, len(d.agents))
-	byWeight := make(map[uint64]*wgroup)
-	var order []uint64 // 稳定的权重遍历顺序（升序）
 	flags := d.computeSkip(ctx)
-	for i, a := range d.agents {
-		if !d.available(flags, i) {
-			continue
-		}
-		avail = append(avail, i)
-		w := AgentWeight(a)
-		g, ok := byWeight[w]
-		if !ok {
-			g = &wgroup{}
-			byWeight[w] = g
-			order = append(order, w)
-		}
-		g.members = append(g.members, i)
-		g.issued += d.issued[a.GetAgentId()]
-		g.weight += w
-	}
+	avail, weights := d.availables(flags)
 	if len(avail) == 0 {
 		return nil
 	}
+	d.alignNewcomers(weights)
+
 	posIndex := make(map[int]int, len(avail)) // 位置 -> 在 avail 中的下标
 	for ai, p := range avail {
 		posIndex[p] = ai
 	}
-	wgroups := make([]*wgroup, 0, len(order))
-	for _, w := range order {
-		wgroups = append(wgroups, byWeight[w])
-	}
-
 	// 从游标续接：取“游标之后第一个可分单”的实例作为起点
-	startPos := d.nextAvailablePos(flags)
-	cursor := posIndex[startPos] // 同分比较 / 推进的基准（avail 下标）
+	cursor := posIndex[d.nextAvailablePos(flags)]
 
 	findAgent := make([]Agent, 0, n)
 	lastPos := -1
-	excluded := make(map[int]bool) // 本批次内“所有 Agent 都无法分配”的权重组，直接跳过
 	for step := 0; step < n; step++ {
-		// 内层循环：选权重组 -> 选组内 Agent；若该组无任何可分单 Agent，
-		// 则将其排除后重试，落到下一个待分配的权重组（不占用本次名额）。
-		var g *wgroup
-		var bestPos int
-		for {
-			// 第二步：判断本单落到哪个权重组。
-			//   ratio = (组已发+1)/组权重：ratio 越小越“落后”越优先。
-			//   —— 所有组都未达标时，按权重比例轮循（ratio 最小的组按权重频次出现）；
-			//   —— 部分组已达标时，未达标组 ratio 更小，单直接落到“不满足的权重”上。
-			//   同 ratio 时取“游标之后最先遇到的组”，从当前轮询的下一个 Agent 续接。
-			bestG := -1
-			var bestRatio float64
-			bestDist := 0
-			for gi, wg := range wgroups {
-				if excluded[gi] || len(wg.members) == 0 {
-					continue
-				}
-				ratio := float64(wg.issued+1) / float64(wg.weight)
-				dist := len(avail)
-				for _, p := range wg.members {
-					dd := (posIndex[p] - cursor + len(avail)) % len(avail)
-					if dd < dist {
-						dist = dd
-					}
-				}
-				if bestG == -1 || ratio < bestRatio || (ratio == bestRatio && dist < bestDist) {
-					bestRatio = ratio
-					bestG = gi
-					bestDist = dist
-				}
+		// 选 (已分+1)/权重 最小的实例；用交叉相乘比较，避免浮点误差。同值取游标之后最近的
+		bestPos, bestDist := -1, 0
+		var bestIss, bestW uint64
+		for _, p := range avail {
+			id := d.agents[p].GetAgentId()
+			iss, w := d.issued[id]+1, weights[id]
+			dist := (posIndex[p] - cursor + len(avail)) % len(avail)
+			if bestPos == -1 || iss*bestW < bestIss*w || (iss*bestW == bestIss*w && dist < bestDist) {
+				bestPos, bestDist, bestIss, bestW = p, dist, iss, w
 			}
-			if bestG == -1 {
-				g = nil
-				break
-			}
-			g = wgroups[bestG]
+		}
+		findAgent = append(findAgent, d.agents[bestPos])
+		d.issued[d.agents[bestPos].GetAgentId()]++
+		lastPos = bestPos
+		cursor = (posIndex[bestPos] + 1) % len(avail) // 游标推进到本实例之后
+	}
 
-			// 第三步：在该权重组内，按“已分最少”的 Agent 分配；已分相同时取游标之后最近的，
-			// 实现组内轮询，且每次轮询起点都从上一次分完以后的 Agent 开始。
-			// （“同一 Agent 分到超过 2 个后才轮询”由“始终选最少”自然保证：不会在有人更少时
-			//   还把单堆给同一人，达到均匀轮询的效果。）
-			bestPos = -1
-			var bestIssued uint64
-			bd := 0
-			for _, p := range g.members {
-				id := d.agents[p].GetAgentId()
-				iss := d.issued[id]
-				dist := (posIndex[p] - cursor + len(avail)) % len(avail)
-				if bestPos == -1 || iss < bestIssued || (iss == bestIssued && dist < bd) {
-					bestIssued = iss
-					bestPos = p
-					bd = dist
-				}
-			}
-			if bestPos == -1 {
-				// 该权重下所有 Agent 都无法分配：本批次后续直接跳过该权重，落到下一个权重组
-				excluded[bestG] = true
+	d.assigned = true
+	d.lastID = d.agents[lastPos].GetAgentId()
+	d.lastIdx = instanceIndexAt(d.agents, lastPos)
+	return findAgent
+}
+
+// availables 返回可分单实例在 agents 中的位置，以及每个 ID 的有效权重（同 ID 各实例权重之和）。
+// 调用方需持锁。
+func (d *Dispatcher) availables(skipMap map[uint64]bool) ([]int, map[uint64]uint64) {
+	avail := make([]int, 0, len(d.agents))
+	weights := make(map[uint64]uint64)
+	for i, a := range d.agents {
+		if !d.available(skipMap, i) {
+			continue
+		}
+		avail = append(avail, i)
+		weights[a.GetAgentId()] += AgentWeight(a)
+	}
+	return avail, weights
+}
+
+// alignNewcomers 把“新加入 / 下线或被跳过后回归”的人的已分单数，对齐到本次仍在岗老成员中的最低水平
+// （按 已分/权重 折算），使其直接加入轮转，而不是因历史欠账被连续灌单。
+// 以下情况不对齐：首次分配（尚无在岗基准）、经 SetIssued 显式设置过的人。
+// weights 为本次可分单的 ID -> 有效权重；调用后它成为新的在岗集合。调用方需持锁。
+func (d *Dispatcher) alignNewcomers(weights map[uint64]uint64) {
+	if d.issued == nil {
+		d.issued = make(map[uint64]uint64)
+	}
+	if d.active != nil {
+		// 基准：本次仍在岗的老成员中 issued/weight 最小者
+		var baseIss, baseW uint64
+		for id, w := range weights {
+			if !d.active[id] {
 				continue
 			}
-			break
+			if iss := d.issued[id]; baseW == 0 || iss*baseW < baseIss*w {
+				baseIss, baseW = iss, w
+			}
 		}
-		if g == nil {
-			break // 没有可用权重组了
+		if baseW > 0 {
+			for id, w := range weights {
+				if d.active[id] || d.pinned[id] {
+					continue
+				}
+				d.issued[id] = baseIss * w / baseW
+			}
 		}
-		pos := bestPos
-		findAgent = append(findAgent, d.agents[pos])
-		id := d.agents[pos].GetAgentId()
-		d.issued[id]++
-		g.issued++
-		lastPos = pos
-		cursor = (posIndex[pos] + 1) % len(avail) // 游标推进到本实例之后
 	}
-
-	if lastPos >= 0 {
-		d.assigned = true
-		d.lastID = d.agents[lastPos].GetAgentId()
-		d.lastIdx = instanceIndexAt(d.agents, lastPos)
+	d.active = make(map[uint64]bool, len(weights))
+	for id := range weights {
+		d.active[id] = true
+		delete(d.pinned, id)
 	}
-	return findAgent
 }
 
 // SetIssued 初始化（或覆盖）每个人的“已发放单数”（即当前已有的订单数）。
 // AssignN 会把它纳入比例计算，因此即便分配器启动前系统里已经存在订单，
-// 之后按比例分摊也不会偏向“历史订单少”的人。传 nil 表示清空后重新统计。
+// 之后按比例分摊也不会偏向“历史订单少”的人；这里显式设置过的人也不会被 alignNewcomers 对齐。
+// 传 nil 表示清空后重新统计（同时清空在岗记录，下一次分配视作首次）。
 func (d *Dispatcher) SetIssued(usedInitNum map[Agent]uint64) *Dispatcher {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	if usedInitNum == nil {
 		d.issued = make(map[uint64]uint64)
+		d.active = nil
+		d.pinned = nil
 		return d
 	}
 	if d.issued == nil {
 		d.issued = make(map[uint64]uint64)
+	}
+	if d.pinned == nil {
+		d.pinned = make(map[uint64]bool)
 	}
 	for one, c := range usedInitNum {
 		if one == nil {
 			continue
 		}
 		d.issued[one.GetAgentId()] = c
+		d.pinned[one.GetAgentId()] = true
 	}
 	return d
 }

@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-// Agent 表示一个分配目标。环形分配以 GetUint64() 返回的 uint64 作为排序与定位依据。
+// Agent 表示一个分配目标。环形分配以 GetAgentId() 返回的 uint64 作为排序与定位依据。
 type Agent interface {
 	GetAgentId() uint64
 }

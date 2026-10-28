@@ -255,16 +255,16 @@ func TestSetLastAssignedOffline(t *testing.T) {
 }
 
 // TestSetLastAssignedOfflineIsMax 验证 SetLastAssigned 的 ID 是最大值且已下线时，
-// 回绕到 startID（存在）或最小 ID。
+// 与正常成环一致回绕到最小 ID（而不是 startID）。
 func TestSetLastAssignedOfflineIsMax(t *testing.T) {
-	d, err := newDispatcher(context.Background(), 10, fixedFetch(agents(10, 20, 30)), 0)
+	d, err := newDispatcher(context.Background(), 20, fixedFetch(agents(10, 20, 30)), 0)
 	if err != nil {
 		t.Fatal(err)
 	}
 	d.SetLastAssigned(40) // 40 不在列表，且是“最大”的那个
 
 	if a, _ := d.Assign(context.Background()); a == nil || a.GetAgentId() != 10 {
-		t.Fatalf("下线且为最大时，期望回绕到 startID=10，实际 %v", a)
+		t.Fatalf("下线且为最大时，期望回绕到最小 10，实际 %v", a)
 	}
 }
 
