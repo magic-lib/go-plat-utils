@@ -67,11 +67,15 @@ func Time(val any) (time.Time, bool) {
 	}
 
 	// timestamppb.Timestamp 可能按值或指针传入，二者均支持（值场景仅做读取，安全）
+	var timestampPb *timestamppb.Timestamp
 	switch ts := val.(type) {
 	case timestamppb.Timestamp:
-		val = ts.AsTime()
+		timestampPb = &ts
 	case *timestamppb.Timestamp:
-		val = ts.AsTime()
+		timestampPb = ts
+	}
+	if timestampPb != nil {
+		return timestampToTime(timestampPb)
 	}
 
 	if v, ok := val.(time.Time); ok {
@@ -88,6 +92,13 @@ func Time(val any) (time.Time, bool) {
 	}
 
 	return timeRet, false
+}
+
+func timestampToTime(timestamp *timestamppb.Timestamp) (time.Time, bool) {
+	if timestamp == nil || !timestamp.IsValid() {
+		return time.Time{}, false
+	}
+	return timestamp.AsTime(), true
 }
 
 func milliTime() int64 {
