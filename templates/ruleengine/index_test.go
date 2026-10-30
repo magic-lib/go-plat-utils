@@ -44,8 +44,8 @@ func TestIndexFunction(t *testing.T) {
 		{"At 别名", `At(Array(1,2,3), 2)`, nil, 3, false},
 
 		{"下标非整数", `Index(Array(1,2,3), 'x')`, nil, nil, true},
-		// Index(Array(1,2,3)) 少写下标时，摊平后无法和"最后一个元素当下标"区分，会当成越界返回 nil
-		{"缺少下标", `Index(Array(1,2,3))`, nil, nil, false},
+		// 数组参数不再被摊平，少写下标时直接报参数数量错误
+		{"缺少下标", `Index(Array(1,2,3))`, nil, nil, true},
 	}
 
 	for _, tc := range testCases {

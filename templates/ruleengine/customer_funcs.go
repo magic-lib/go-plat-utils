@@ -23,7 +23,7 @@ type customerFunc struct {
 
 func (r *customerFunc) getAllDecimalList(args ...any) []decimal.Decimal {
 	decimalList := make([]decimal.Decimal, 0)
-	for _, arg := range args {
+	for _, arg := range flattenArgs(args) {
 		d, err := conv.Convert[decimal.Decimal](arg)
 		if err == nil {
 			decimalList = append(decimalList, d)
@@ -221,7 +221,7 @@ func (r *customerFunc) Split(args ...any) (any, error) {
 		return false, fmt.Errorf("参数数量不对：%v", args)
 	}
 	splitArr := make([]string, 0)
-	lo.ForEach(args[1:], func(item any, _ int) {
+	lo.ForEach(flattenArgs(args[1:]), func(item any, _ int) {
 		splitArr = append(splitArr, conv.String(item))
 	})
 	return utils.Split(conv.String(args[0]), splitArr), nil
@@ -235,6 +235,11 @@ func (r *customerFunc) Contains(args ...any) (any, error) {
 
 // Array 将动态参数组成一个数组，供 Array(1,2,3) 使用
 func (r *customerFunc) Array(args ...any) (any, error) {
+	if len(args) == 1 { // Array([list]) 直接返回该数组
+		if list := anySlice(args[0]); list != nil {
+			return list, nil
+		}
+	}
 	return args, nil
 }
 
@@ -648,9 +653,25 @@ func isVarCharOrDot(char byte) bool {
 	return char == '.' || isVarChar(char)
 }
 
-// anySlice 把任意类型的切片/数组统一转成 []any，非切片或 nil 返回 nil
+// flattenArgs 把参数中的切片/数组展开成单个元素，供 Max(list)、Add(list) 这类按元素处理的函数使用
+func flattenArgs(args []any) []any {
+	list := make([]any, 0, len(args))
+	for _, arg := range args {
+		if oneList := anySlice(arg); oneList != nil {
+			list = append(list, oneList...)
+			continue
+		}
+		list = append(list, arg)
+	}
+	return list
+}
+
+// anySlice 把任意类型的切片/数组统一转成 []any，非切片或 nil 返回 nil；nil 切片当成空数组
 func anySlice(src any) []any {
 	if list, ok := src.([]any); ok {
+		if list == nil {
+			return []any{}
+		}
 		return list
 	}
 	if src == nil {
@@ -660,11 +681,11 @@ func anySlice(src any) []any {
 	if val.Kind() != reflect.Slice && val.Kind() != reflect.Array {
 		return nil
 	}
-	if val.Kind() == reflect.Slice && val.IsNil() {
-		return nil
-	}
 	if val.Type().Elem().Kind() == reflect.Uint8 { //[]byte 之类不当成数组处理
 		return nil
+	}
+	if val.Kind() == reflect.Slice && val.IsNil() {
+		return []any{}
 	}
 	list := make([]any, 0, val.Len())
 	for idx := 0; idx < val.Len(); idx++ {
@@ -694,17 +715,15 @@ func (r *customerFunc) Join(args ...any) (any, error) {
 	if len(args) == 0 {
 		return "", nil
 	} else if len(args) == 1 {
-		if list, ok := args[0].([]any); ok {
+		if list := anySlice(args[0]); list != nil {
 			dataList = list
 		} else {
 			return conv.String(args[0]), nil
 		}
 	} else if len(args) == 2 {
 		sep = conv.String(args[0])
-		if list, ok := args[1].([]string); ok {
-			dataList = lo.Map(list, func(item string, index int) any {
-				return any(item)
-			})
+		if list := anySlice(args[1]); list != nil {
+			dataList = list
 		} else {
 			dataList = args[1:]
 		}
@@ -801,7 +820,7 @@ func (r *customerFunc) Max(args ...any) (any, error) {
 	var currentNum float64
 	var found bool
 	var notFirst bool
-	lo.ForEach(args, func(item any, _ int) {
+	lo.ForEach(flattenArgs(args), func(item any, _ int) {
 		one, err := conv.Convert[float64](item)
 		if err != nil {
 			return
@@ -830,7 +849,7 @@ func (r *customerFunc) Min(args ...any) (any, error) {
 	var currentNum float64
 	var found bool
 	var notFirst bool
-	lo.ForEach(args, func(item any, _ int) {
+	lo.ForEach(flattenArgs(args), func(item any, _ int) {
 		one, err := conv.Convert[float64](item)
 		if err != nil {
 			return

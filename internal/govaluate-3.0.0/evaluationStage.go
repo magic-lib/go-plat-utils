@@ -237,9 +237,11 @@ func makeFunctionStage(function ExpressionFunction) evaluationOperator {
 			return function()
 		}
 
+		// 只有逗号分隔出来的参数列表才展开成多个参数；
+		// 参数本身是数组（如 Func([list], 'x')）时要原样作为一个参数传入，不能被摊平
 		switch right.(type) {
-		case []interface{}:
-			return function(right.([]interface{})...)
+		case separatedArgs:
+			return function(right.(separatedArgs)...)
 		default:
 			return function(right)
 		}
@@ -247,15 +249,18 @@ func makeFunctionStage(function ExpressionFunction) evaluationOperator {
 	}
 }
 
+// separatedArgs 逗号分隔出来的参数列表，与参数值本身就是 []interface{} 的情况区分开
+type separatedArgs []interface{}
+
 func separatorStage(left interface{}, right interface{}, parameters Parameters) (interface{}, error) {
 
-	var ret []interface{}
+	var ret separatedArgs
 
 	switch left.(type) {
-	case []interface{}:
-		ret = append(left.([]interface{}), right)
+	case separatedArgs:
+		ret = append(left.(separatedArgs), right)
 	default:
-		ret = []interface{}{left, right}
+		ret = separatedArgs{left, right}
 	}
 
 	return ret, nil
@@ -263,7 +268,14 @@ func separatorStage(left interface{}, right interface{}, parameters Parameters) 
 
 func inStage(left interface{}, right interface{}, parameters Parameters) (interface{}, error) {
 
-	for _, value := range right.([]interface{}) {
+	var list []interface{}
+	switch right.(type) {
+	case separatedArgs:
+		list = right.(separatedArgs)
+	default:
+		list = right.([]interface{})
+	}
+	for _, value := range list {
 		if left == value {
 			return true, nil
 		}
@@ -341,7 +353,7 @@ func comparatorTypeCheck(left interface{}, right interface{}) bool {
 
 func isArray(value interface{}) bool {
 	switch value.(type) {
-	case []interface{}:
+	case []interface{}, separatedArgs:
 		return true
 	}
 	return false

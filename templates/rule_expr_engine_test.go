@@ -197,3 +197,40 @@ func TestJsonMapTemplate(t *testing.T) {
 	fmt.Print(mm)
 	fmt.Print(err)
 }
+
+func TestRunStringRealJsonGetExpr(t *testing.T) {
+	jsonStr := `[{"account_id":1659787,"account_no":"0970277258","create_time":"1777597901","extend_properties":{"from":"zl2.0","grade":"SUBS","imports":[{"source":"whitelist_import","subject_id":28,"time":1777597901}],"kycs":[{"by":"airtel_kyc_v2","last":1790096858,"time":1790096858}],"sources":[{"DB":"zamcash","Table":"member","reg_date":1684236155,"remark":"ZAMCASH"},{"DB":"zamloan_db","Table":"member","reg_date":1701499650,"remark":"ZAMLOAN"},{"DB":"external_data","Table":"ext_airtel","reg_date":1638050400,"remark":"AIRTEL DATA"}]},"firstname":"Heather","is_default":0,"is_self":1,"iscore":0,"member_id":365071,"mscore":1,"nid":"142559/77/1","provider_id":1,"provider_name":"Airtel","provider_type":"mobile","reg_date":1638050400,"remark":"扩展属性更新","source":1,"status":1,"subject_id":28,"surname":"Kopakopa","update_time":"1790096858","wallet_type":0}]`
+	e := templates.NewRuleExprEngine()
+
+	arrayList := make([]any, 0)
+	conv.Unmarshal(jsonStr, &arrayList)
+
+	// 数组作为函数参数时不能被摊平成多个参数，否则 JsonGet 拿到的是第一个元素（map）
+	got, err := e.RunString("JsonGet([list], '#.extend_properties.sources.#.remark|@flatten')", map[string]any{"list": arrayList})
+	if err != nil {
+		t.Fatalf("RunString err: %v", err)
+	}
+	fmt.Println(conv.String(got))
+
+	if want := `["ZAMCASH","ZAMLOAN","AIRTEL DATA"]`; conv.String(got) != want {
+		t.Errorf("RunString JsonGet = %s, want %s", conv.String(got), want)
+	}
+
+	// 原先依赖数组被摊平的函数，传单个数组参数时仍按元素处理
+	nums := []any{3, 9, 1}
+	cases := map[string]any{
+		"Max([nums])":       float64(9),
+		"Min([nums])":       float64(1),
+		"Len([nums])":       float64(3),
+		"Join('-', [nums])": "3-9-1",
+		"Has([nums], 9)":    true,
+		"In(3, nums)":       true,
+		"In(4, nums)":       false,
+	}
+	for expr, want := range cases {
+		got, err := e.RunString(expr, map[string]any{"nums": nums})
+		if err != nil || got != want {
+			t.Errorf("RunString(%s) = %v(%T), %v; want %v", expr, got, got, err, want)
+		}
+	}
+}
