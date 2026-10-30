@@ -19,6 +19,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/docker/go v1.5.1-1
 	github.com/dominikbraun/graph v0.23.0
+	github.com/dop251/goja v0.0.0-20231024180952-594410467bc6
 	github.com/fatih/color v1.18.0
 	github.com/forgoer/openssl v1.6.0
 	github.com/gammazero/deque v1.2.1
@@ -79,6 +80,7 @@ require (
 	github.com/tmc/langchaingo v0.1.13
 	github.com/tmc/langgraphgo v0.0.0-20240324234251-3b0caeaffd16
 	github.com/traefik/yaegi v0.16.1
+	github.com/ucarion/jcs v0.1.2
 	github.com/viant/toolbox v0.37.0
 	github.com/wI2L/jsondiff v0.7.1
 	github.com/zeromicro/go-zero v1.9.2
@@ -117,7 +119,6 @@ require (
 	github.com/cloudwego/base64x v0.1.6 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dlclark/regexp2 v1.10.0 // indirect
-	github.com/dop251/goja v0.0.0-20231024180952-594410467bc6 // indirect
 	github.com/eclipse/paho.mqtt.golang v1.5.1 // indirect
 	github.com/expr-lang/expr v1.17.8 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect

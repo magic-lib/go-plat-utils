@@ -107,16 +107,16 @@ func TestEvaluate(t *testing.T) {
 		{"Short-circuit coalesce", []any{`"foo" ?? fail()`, gval.Function("fail", func(arguments ...interface{}) (interface{}, error) {
 			return nil, fmt.Errorf("Did not short-circuit")
 		})}, []any{"foo"}, nil},
-		{"Mixed function and parameters", []any{`sum(1.2, amount) + name`, gval.Function("sum", func(arguments ...interface{}) (interface{}, error) {
+		{"Mixed function and parameters", []any{`sum(1.2, amount) + name`, map[string]interface{}{
+			"amount": 0.8,
+			"name":   "awesome",
+		}, gval.Function("sum", func(arguments ...interface{}) (interface{}, error) {
 			sum := 0.0
 			for _, v := range arguments {
 				sum += v.(float64)
 			}
 			return sum, nil
-		}), map[string]interface{}{
-			"amount": 0.8,
-			"name":   "awesome",
-		}}, []any{"2awesome"}, nil},
+		})}, []any{"2awesome"}, nil},
 	}
 	utils.TestFunction(t, testCases, templates.Evaluate)
 }
