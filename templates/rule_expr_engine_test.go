@@ -234,3 +234,13 @@ func TestRunStringRealJsonGetExpr(t *testing.T) {
 		}
 	}
 }
+func TestRunStringRealIntExpr(t *testing.T) {
+	e := templates.NewRuleExprEngine()
+
+	// 数组作为函数参数时不能被摊平成多个参数，否则 JsonGet 拿到的是第一个元素（map）
+	got, err := e.RunString("name < 5.1", map[string]int64{"name": 5})
+	if err != nil {
+		t.Fatalf("RunString err: %v", err)
+	}
+	fmt.Println(conv.String(got))
+}
