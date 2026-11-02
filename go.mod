@@ -1,8 +1,7 @@
-module github.com/magic-lib/go-plat-utils
+module github.com/magic-lib/go-plat-utils/v2
 
-go 1.24.2
-
-toolchain go1.24.6
+go 1.27.3
+toolchain go1.27.3
 
 require (
 	github.com/Knetic/govaluate v3.0.0+incompatible
