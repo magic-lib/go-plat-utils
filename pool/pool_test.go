@@ -2,7 +2,7 @@ package pool_test
 
 import (
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/pool"
+	"github.com/magic-lib/go-plat-utils/v2/pool"
 	"testing"
 )
 

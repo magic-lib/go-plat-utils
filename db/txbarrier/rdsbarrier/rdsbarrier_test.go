@@ -9,7 +9,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 
-	"github.com/magic-lib/go-plat-utils/db/txbarrier"
+	"github.com/magic-lib/go-plat-utils/v2/db/txbarrier"
 )
 
 const testScript = `

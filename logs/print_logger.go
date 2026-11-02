@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/fatih/color"
-	"github.com/magic-lib/go-plat-utils/goroutines"
-	"github.com/magic-lib/go-plat-utils/utils"
+	"github.com/magic-lib/go-plat-utils/v2/goroutines"
+	"github.com/magic-lib/go-plat-utils/v2/utils"
 )
 
 // printLogger 自定义日志的使用方式

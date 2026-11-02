@@ -3,7 +3,7 @@ package templates_test
 import (
 	"testing"
 
-	"github.com/magic-lib/go-plat-utils/templates"
+	"github.com/magic-lib/go-plat-utils/v2/templates"
 )
 
 // gojaArgs 用于验证 struct 注入

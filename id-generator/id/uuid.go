@@ -2,14 +2,14 @@ package id
 
 import (
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	//alibabautils "github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
 	"github.com/bwmarrin/snowflake"
 	"github.com/go-dev-frame/sponge/pkg/krand"
 	gguid "github.com/google/uuid"
 	"github.com/lithammer/shortuuid/v3"
-	"github.com/magic-lib/go-plat-utils/cond"
+	"github.com/magic-lib/go-plat-utils/v2/cond"
 	"github.com/marspere/goencrypt"
 	gouuid "github.com/nu7hatch/gouuid"
 	"github.com/rs/xid"

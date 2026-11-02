@@ -3,8 +3,8 @@ package param
 import (
 	"context"
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/conv"
-	"github.com/magic-lib/go-plat-utils/utils"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
+	"github.com/magic-lib/go-plat-utils/v2/utils"
 	"net/http"
 	"net/url"
 	"testing"

@@ -3,7 +3,7 @@ package plugins
 import (
 	"context"
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/utils"
+	"github.com/magic-lib/go-plat-utils/v2/utils"
 )
 
 var _ Plugin = (*CommPlugin)(nil)

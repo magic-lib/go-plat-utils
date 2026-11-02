@@ -12,7 +12,7 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
 	"net/url"
 	"sort"
 	"strings"

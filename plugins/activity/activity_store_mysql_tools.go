@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
 )
 
 // ActivityConfig 与 activity.Activity 一一对应，每个属性一列。

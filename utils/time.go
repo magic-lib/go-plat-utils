@@ -1,10 +1,10 @@
 package utils
 
 import (
-	"github.com/magic-lib/go-plat-utils/conf"
+	"github.com/magic-lib/go-plat-utils/v2/conf"
 	"time"
 
-	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
 )
 
 // GetSinceMilliTime 取得相差时间

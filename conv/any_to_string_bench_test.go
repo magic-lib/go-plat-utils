@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

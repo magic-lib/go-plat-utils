@@ -3,13 +3,13 @@ package mysqllog
 import (
 	"context"
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
 	"github.com/samber/lo"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/magic-lib/go-plat-utils/logs"
+	"github.com/magic-lib/go-plat-utils/v2/logs"
 	"github.com/robfig/cron/v3"
 )
 

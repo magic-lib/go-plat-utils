@@ -2,7 +2,7 @@ package action
 
 import (
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/utils"
+	"github.com/magic-lib/go-plat-utils/v2/utils"
 	"reflect"
 )
 

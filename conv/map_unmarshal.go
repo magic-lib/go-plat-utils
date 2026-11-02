@@ -3,7 +3,7 @@ package conv
 import (
 	"fmt"
 	"github.com/jinzhu/copier"
-	"github.com/magic-lib/go-plat-utils/cond"
+	"github.com/magic-lib/go-plat-utils/v2/cond"
 	"log"
 	"reflect"
 )

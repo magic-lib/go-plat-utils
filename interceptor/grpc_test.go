@@ -2,7 +2,7 @@ package interceptor_test
 
 import (
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/interceptor"
+	"github.com/magic-lib/go-plat-utils/v2/interceptor"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log"

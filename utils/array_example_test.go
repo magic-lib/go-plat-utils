@@ -2,8 +2,8 @@ package utils_test
 
 import (
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/conv"
-	"github.com/magic-lib/go-plat-utils/utils"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
+	"github.com/magic-lib/go-plat-utils/v2/utils"
 	"github.com/samber/lo"
 	lop "github.com/samber/lo/parallel"
 	"strconv"

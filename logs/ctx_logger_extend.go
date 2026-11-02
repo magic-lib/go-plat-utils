@@ -2,8 +2,8 @@ package logs
 
 import (
 	"context"
-	"github.com/magic-lib/go-plat-utils/goroutines"
-	"github.com/magic-lib/go-plat-utils/utils"
+	"github.com/magic-lib/go-plat-utils/v2/goroutines"
+	"github.com/magic-lib/go-plat-utils/v2/utils"
 )
 
 func (x *ctxLogger) printlnComm(level LogLevel, msg ...any) {

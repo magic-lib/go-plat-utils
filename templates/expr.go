@@ -3,7 +3,7 @@ package templates
 import (
 	"fmt"
 	"github.com/Knetic/govaluate"
-	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
 	"strings"
 )
 

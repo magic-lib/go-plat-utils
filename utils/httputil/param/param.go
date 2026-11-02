@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-playground/validator/v10"
-	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
 	"github.com/zeromicro/go-zero/rest/httpx"
 	"log"
 	"net/http"

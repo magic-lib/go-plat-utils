@@ -2,7 +2,7 @@ package action
 
 import (
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/plugins"
+	"github.com/magic-lib/go-plat-utils/v2/plugins"
 	"go.uber.org/multierr"
 )
 

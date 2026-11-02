@@ -3,9 +3,9 @@ package logs_test
 import (
 	"context"
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/conv"
-	"github.com/magic-lib/go-plat-utils/goroutines"
-	"github.com/magic-lib/go-plat-utils/logs"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
+	"github.com/magic-lib/go-plat-utils/v2/goroutines"
+	"github.com/magic-lib/go-plat-utils/v2/logs"
 	"testing"
 	"time"
 )

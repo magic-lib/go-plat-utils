@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/magic-lib/go-plat-utils/conv"
-	"github.com/magic-lib/go-plat-utils/templates/ruleengine"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
+	"github.com/magic-lib/go-plat-utils/v2/templates/ruleengine"
 )
 
 func newUserList() []any {

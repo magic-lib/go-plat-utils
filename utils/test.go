@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

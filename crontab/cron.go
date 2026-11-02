@@ -2,8 +2,8 @@ package crontab
 
 import (
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/conv"
-	"github.com/magic-lib/go-plat-utils/goroutines"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
+	"github.com/magic-lib/go-plat-utils/v2/goroutines"
 	"github.com/robfig/cron/v3"
 	"log"
 	"sync"

@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/magic-lib/go-plat-utils/id-generator/id"
+	"github.com/magic-lib/go-plat-utils/v2/id-generator/id"
 )
 
 // isAllDigit 判断字符串是否全部由数字组成

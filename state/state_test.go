@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/looplab/fsm"
-	"github.com/magic-lib/go-plat-utils/state"
+	"github.com/magic-lib/go-plat-utils/v2/state"
 	flow "github.com/s8sg/goflow/flow/v1"
 	goflow "github.com/s8sg/goflow/v1"
 	"testing"

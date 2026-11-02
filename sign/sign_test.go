@@ -3,7 +3,7 @@ package sign
 import (
 	"context"
 	"fmt"
-	cryptotool "github.com/magic-lib/go-plat-utils/crypto"
+	cryptotool "github.com/magic-lib/go-plat-utils/v2/crypto"
 	"net/http"
 	"testing"
 	"time"

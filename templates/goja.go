@@ -2,7 +2,7 @@ package templates
 
 import (
 	"github.com/dop251/goja"
-	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
 )
 
 type Goja struct {

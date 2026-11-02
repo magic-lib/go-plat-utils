@@ -3,7 +3,7 @@ package httputil_test
 import (
 	"context"
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/utils/httputil"
+	"github.com/magic-lib/go-plat-utils/v2/utils/httputil"
 	"testing"
 )
 

@@ -3,8 +3,8 @@ package conv
 import (
 	"database/sql"
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/cond"
-	"github.com/magic-lib/go-plat-utils/conf"
+	"github.com/magic-lib/go-plat-utils/v2/cond"
+	"github.com/magic-lib/go-plat-utils/v2/conf"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"reflect"
 	"regexp"

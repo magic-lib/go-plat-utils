@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
 )
 
 // 本文件实现时间相关的内置函数：Now / DateFormat / DateAdd / DateSub /

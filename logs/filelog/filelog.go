@@ -4,7 +4,7 @@ package filelog
 import (
 	"fmt"
 	nested "github.com/antonfisher/nested-logrus-formatter"
-	"github.com/magic-lib/go-plat-utils/logs"
+	"github.com/magic-lib/go-plat-utils/v2/logs"
 	"github.com/sirupsen/logrus"
 	"path/filepath"
 	"runtime"

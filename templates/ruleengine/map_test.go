@@ -3,8 +3,8 @@ package ruleengine_test
 import (
 	"testing"
 
-	"github.com/magic-lib/go-plat-utils/conv"
-	"github.com/magic-lib/go-plat-utils/templates/ruleengine"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
+	"github.com/magic-lib/go-plat-utils/v2/templates/ruleengine"
 )
 
 // TestMapFunction 验证 Map 既支持表达式映射，也支持按字段名取值映射

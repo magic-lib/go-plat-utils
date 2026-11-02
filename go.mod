@@ -1,7 +1,6 @@
 module github.com/magic-lib/go-plat-utils/v2
 
 go 1.27.3
-toolchain go1.27.3
 
 require (
 	github.com/Knetic/govaluate v3.0.0+incompatible
@@ -147,7 +146,6 @@ require (
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/jasonlvhit/gocron v0.0.1 // indirect
-	github.com/jonboulle/clockwork v0.5.0 // indirect
 	github.com/julienschmidt/httprouter v1.3.0 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
@@ -155,12 +153,12 @@ require (
 	github.com/lestrrat-go/strftime v1.1.0 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/magic-lib/go-plat-startupcfg v1.20250405.1 // indirect
+	github.com/magic-lib/go-plat-utils v1.20251105.2-0.20251205024507-7aae01534474 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/onsi/gomega v1.36.2 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect

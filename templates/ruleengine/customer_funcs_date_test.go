@@ -2,12 +2,12 @@ package ruleengine_test
 
 import (
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/templates"
+	"github.com/magic-lib/go-plat-utils/v2/templates"
 	"testing"
 	"time"
 
-	"github.com/magic-lib/go-plat-utils/conv"
-	"github.com/magic-lib/go-plat-utils/templates/ruleengine"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
+	"github.com/magic-lib/go-plat-utils/v2/templates/ruleengine"
 )
 
 // baseTime 用例里统一使用的时间，时间戳类断言都由它算出来，避免受时区影响

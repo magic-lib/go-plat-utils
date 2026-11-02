@@ -2,9 +2,9 @@ package httputil
 
 import (
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/conv"
-	"github.com/magic-lib/go-plat-utils/id-generator/id"
-	"github.com/magic-lib/go-plat-utils/utils"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
+	"github.com/magic-lib/go-plat-utils/v2/id-generator/id"
+	"github.com/magic-lib/go-plat-utils/v2/utils"
 	"log"
 	"net"
 	"net/http"

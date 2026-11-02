@@ -2,9 +2,9 @@ package ruleengine
 
 import (
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/conv"
-	"github.com/magic-lib/go-plat-utils/internal/govaluate-3.0.0"
-	"github.com/magic-lib/go-plat-utils/utils"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
+	"github.com/magic-lib/go-plat-utils/v2/internal/govaluate-3.0.0"
+	"github.com/magic-lib/go-plat-utils/v2/utils"
 	"github.com/shopspring/decimal"
 	"regexp"
 	"strings"

@@ -5,8 +5,8 @@ import (
 	"crypto/rand"
 	"fmt"
 	"github.com/forgoer/openssl"
-	"github.com/magic-lib/go-plat-utils/crypto"
-	"github.com/magic-lib/go-plat-utils/utils"
+	"github.com/magic-lib/go-plat-utils/v2/crypto"
+	"github.com/magic-lib/go-plat-utils/v2/utils"
 	"testing"
 )
 

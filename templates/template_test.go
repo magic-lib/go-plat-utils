@@ -3,9 +3,9 @@ package templates_test
 import (
 	"fmt"
 	"github.com/PaesslerAG/gval"
-	"github.com/magic-lib/go-plat-utils/conv"
-	"github.com/magic-lib/go-plat-utils/templates"
-	"github.com/magic-lib/go-plat-utils/utils"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
+	"github.com/magic-lib/go-plat-utils/v2/templates"
+	"github.com/magic-lib/go-plat-utils/v2/utils"
 	"github.com/rulego/rulego"
 	"github.com/rulego/rulego/api/types"
 	"strings"

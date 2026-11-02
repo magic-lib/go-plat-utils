@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/magic-lib/go-plat-utils/plugins/paramx"
+	"github.com/magic-lib/go-plat-utils/v2/plugins/paramx"
 )
 
 // TestGetStepResponseNotExist 验证 stepId 不存在时不会 panic

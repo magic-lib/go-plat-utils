@@ -2,7 +2,7 @@ package utils
 
 import (
 	dockerJson "github.com/docker/go/canonical/json"
-	"github.com/magic-lib/go-plat-utils/id-generator/id"
+	"github.com/magic-lib/go-plat-utils/v2/id-generator/id"
 )
 
 // UniqueJsonString

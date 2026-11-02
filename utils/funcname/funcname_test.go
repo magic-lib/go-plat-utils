@@ -2,7 +2,7 @@ package funcname_test
 
 import (
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/utils/funcname"
+	"github.com/magic-lib/go-plat-utils/v2/utils/funcname"
 	"runtime"
 	"strings"
 	"testing"

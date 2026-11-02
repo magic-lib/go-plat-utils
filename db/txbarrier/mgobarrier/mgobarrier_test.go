@@ -8,7 +8,7 @@ package mgobarrier
 //	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 //	"testing"
 //
-//	"github.com/magic-lib/go-plat-utils/db/txbarrier"
+//	"github.com/magic-lib/go-plat-utils/v2/db/txbarrier"
 //	"github.com/stretchr/testify/require"
 //)
 //

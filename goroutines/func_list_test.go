@@ -2,7 +2,7 @@ package goroutines_test
 
 import (
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/goroutines"
+	"github.com/magic-lib/go-plat-utils/v2/goroutines"
 	"regexp"
 	"strings"
 	"sync"
@@ -64,7 +64,7 @@ func TestAsyncExecuteDataList2(t *testing.T) {
 func TestGoroutineId(t *testing.T) {
 
 	// 假设这是第一行文本
-	firstLine := "goroutine 75 [running]:\ngithub.com/magic-lib/go-plat-utils/gorout"
+	firstLine := "goroutine 75 [running]:\ngithub.com/magic-lib/go-plat-utils/v2/gorout"
 	// 正则表达式匹配一个或多个数字
 	firstLine = strings.Split(firstLine, "\n")[0]
 

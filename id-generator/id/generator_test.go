@@ -2,7 +2,7 @@ package id_test
 
 import (
 	"fmt"
-	id2 "github.com/magic-lib/go-plat-utils/id-generator/id"
+	id2 "github.com/magic-lib/go-plat-utils/v2/id-generator/id"
 	"testing"
 )
 

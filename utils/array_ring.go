@@ -3,8 +3,8 @@ package utils
 import (
 	"container/ring"
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/cond"
-	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/v2/cond"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
 	"github.com/samber/lo"
 )
 

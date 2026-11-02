@@ -3,7 +3,7 @@ package cond_test
 import (
 	"errors"
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/cond"
+	"github.com/magic-lib/go-plat-utils/v2/cond"
 	"github.com/wI2L/jsondiff"
 	"testing"
 	"time"

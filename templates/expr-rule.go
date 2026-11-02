@@ -3,8 +3,8 @@ package templates
 import (
 	"fmt"
 	"github.com/lqiz/expr"
-	"github.com/magic-lib/go-plat-utils/cond"
-	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/v2/cond"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
 	"github.com/tidwall/gjson"
 	"go/ast"
 	"go/parser"

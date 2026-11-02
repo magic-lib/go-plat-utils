@@ -3,8 +3,8 @@ package conv
 import (
 	"fmt"
 	"github.com/jinzhu/copier"
-	"github.com/magic-lib/go-plat-utils/cond"
-	jsoniterForNil "github.com/magic-lib/go-plat-utils/internal/jsoniter/go"
+	"github.com/magic-lib/go-plat-utils/v2/cond"
+	jsoniterForNil "github.com/magic-lib/go-plat-utils/v2/internal/jsoniter/go"
 	"github.com/shopspring/decimal"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"log"

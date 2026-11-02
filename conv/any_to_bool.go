@@ -2,7 +2,7 @@ package conv
 
 import (
 	"database/sql"
-	"github.com/magic-lib/go-plat-utils/cond"
+	"github.com/magic-lib/go-plat-utils/v2/cond"
 	"reflect"
 	"strconv"
 	"strings"

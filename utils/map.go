@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/iancoleman/orderedmap"
 	"github.com/json-iterator/go"
-	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
 	"github.com/samber/lo"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"

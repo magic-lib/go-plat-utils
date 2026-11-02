@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/internal"
+	"github.com/magic-lib/go-plat-utils/v2/internal"
 	"github.com/panjf2000/ants/v2"
 	"github.com/timandy/routine"
 	"go.uber.org/automaxprocs/maxprocs"

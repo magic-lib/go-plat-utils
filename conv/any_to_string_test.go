@@ -4,14 +4,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/cond"
+	"github.com/magic-lib/go-plat-utils/v2/cond"
 	"github.com/ucarion/jcs"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/magic-lib/go-plat-utils/commerror/errpb"
-	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/v2/commerror/errpb"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

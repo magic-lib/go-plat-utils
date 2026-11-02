@@ -3,7 +3,7 @@ package snowflake_test
 import (
 	"context"
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/id-generator/snowflake"
+	"github.com/magic-lib/go-plat-utils/v2/id-generator/snowflake"
 	"testing"
 )
 

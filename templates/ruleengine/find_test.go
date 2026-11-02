@@ -3,8 +3,8 @@ package ruleengine_test
 import (
 	"testing"
 
-	"github.com/magic-lib/go-plat-utils/conv"
-	"github.com/magic-lib/go-plat-utils/templates/ruleengine"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
+	"github.com/magic-lib/go-plat-utils/v2/templates/ruleengine"
 )
 
 // TestFindFunction 验证 Find 既支持原来的相等匹配，也支持传入表达式对每个元素求值

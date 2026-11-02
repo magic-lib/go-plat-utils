@@ -3,8 +3,8 @@ package ruleengine_test
 import (
 	"testing"
 
-	"github.com/magic-lib/go-plat-utils/conv"
-	"github.com/magic-lib/go-plat-utils/templates/ruleengine"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
+	"github.com/magic-lib/go-plat-utils/v2/templates/ruleengine"
 )
 
 // TestIndexFunction 验证 Index 按下标取元素的各种场景

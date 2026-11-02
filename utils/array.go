@@ -1,8 +1,8 @@
 package utils
 
 import (
-	"github.com/magic-lib/go-plat-utils/cond"
-	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/v2/cond"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
 	"github.com/samber/lo"
 	"reflect"
 	"slices"

@@ -11,7 +11,7 @@ import (
 	"github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/require"
 
-	"github.com/magic-lib/go-plat-utils/db/txbarrier"
+	"github.com/magic-lib/go-plat-utils/v2/db/txbarrier"
 )
 
 const (

@@ -3,8 +3,8 @@ package httputil
 import (
 	"fmt"
 	jwtRequest "github.com/golang-jwt/jwt/v4/request"
-	"github.com/magic-lib/go-plat-utils/crypto"
-	"github.com/magic-lib/go-plat-utils/utils/httputil/param"
+	"github.com/magic-lib/go-plat-utils/v2/crypto"
+	"github.com/magic-lib/go-plat-utils/v2/utils/httputil/param"
 	"net/http"
 )
 

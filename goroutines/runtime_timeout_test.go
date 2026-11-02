@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/magic-lib/go-plat-utils/goroutines"
+	"github.com/magic-lib/go-plat-utils/v2/goroutines"
 )
 
 func TestGoAsyncTimeoutNormal(t *testing.T) {

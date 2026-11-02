@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/magic-lib/go-plat-utils/utils/httputil"
+	"github.com/magic-lib/go-plat-utils/v2/utils/httputil"
 )
 
 func TestSign(t *testing.T) {

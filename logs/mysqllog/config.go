@@ -3,8 +3,8 @@ package mysqllog
 import (
 	"database/sql"
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/logs"
-	"github.com/magic-lib/go-plat-utils/utils"
+	"github.com/magic-lib/go-plat-utils/v2/logs"
+	"github.com/magic-lib/go-plat-utils/v2/utils"
 	"strings"
 	"time"
 )

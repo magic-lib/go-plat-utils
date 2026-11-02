@@ -12,7 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 
-	"github.com/magic-lib/go-plat-utils/db/txbarrier"
+	"github.com/magic-lib/go-plat-utils/v2/db/txbarrier"
 )
 
 // DefaultDBCollection is the default database name and collection name separated by ".".

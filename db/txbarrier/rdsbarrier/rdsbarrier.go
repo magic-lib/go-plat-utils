@@ -10,7 +10,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/magic-lib/go-plat-utils/db/txbarrier"
+	"github.com/magic-lib/go-plat-utils/v2/db/txbarrier"
 )
 
 var cancelMapFirstPhase = map[txbarrier.Operation]txbarrier.Operation{

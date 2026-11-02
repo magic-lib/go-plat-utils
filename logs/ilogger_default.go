@@ -2,8 +2,8 @@ package logs
 
 import (
 	"context"
-	"github.com/magic-lib/go-plat-utils/cond"
-	"github.com/magic-lib/go-plat-utils/goroutines"
+	"github.com/magic-lib/go-plat-utils/v2/cond"
+	"github.com/magic-lib/go-plat-utils/v2/goroutines"
 )
 
 type Config struct {

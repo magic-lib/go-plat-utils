@@ -8,7 +8,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/magic-lib/go-plat-utils/internal"
+	"github.com/magic-lib/go-plat-utils/v2/internal"
 )
 
 // VariableType snake 和 camel 类型

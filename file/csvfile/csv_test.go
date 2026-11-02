@@ -3,8 +3,8 @@ package csvfile_test
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/conv"
-	"github.com/magic-lib/go-plat-utils/file/csvfile"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
+	"github.com/magic-lib/go-plat-utils/v2/file/csvfile"
 	"os"
 	"testing"
 )

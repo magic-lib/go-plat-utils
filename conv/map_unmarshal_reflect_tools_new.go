@@ -2,9 +2,9 @@ package conv
 
 import (
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/cond"
-	"github.com/magic-lib/go-plat-utils/internal"
-	jsoniterForNil "github.com/magic-lib/go-plat-utils/internal/jsoniter/go"
+	"github.com/magic-lib/go-plat-utils/v2/cond"
+	"github.com/magic-lib/go-plat-utils/v2/internal"
+	jsoniterForNil "github.com/magic-lib/go-plat-utils/v2/internal/jsoniter/go"
 	"reflect"
 	"strings"
 )

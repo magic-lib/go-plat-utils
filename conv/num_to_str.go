@@ -2,7 +2,7 @@ package conv
 
 import (
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/cond"
+	"github.com/magic-lib/go-plat-utils/v2/cond"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )

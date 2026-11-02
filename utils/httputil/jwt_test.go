@@ -3,8 +3,8 @@ package httputil_test
 import (
 	"fmt"
 	"github.com/golang-jwt/jwt"
-	"github.com/magic-lib/go-plat-utils/crypto"
-	"github.com/magic-lib/go-plat-utils/utils/httputil"
+	"github.com/magic-lib/go-plat-utils/v2/crypto"
+	"github.com/magic-lib/go-plat-utils/v2/utils/httputil"
 	"net/http"
 	"testing"
 	"time"

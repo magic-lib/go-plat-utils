@@ -2,11 +2,11 @@ package internal_test
 
 import (
 	"encoding/json"
-	"github.com/magic-lib/go-plat-utils/internal"
+	"github.com/magic-lib/go-plat-utils/v2/internal"
 	"strings"
 	"testing"
 
-	"github.com/magic-lib/go-plat-utils/cond"
+	"github.com/magic-lib/go-plat-utils/v2/cond"
 )
 
 // TestSimpleCheckJson 各种合法/非法输入

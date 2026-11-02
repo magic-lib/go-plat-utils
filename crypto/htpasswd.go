@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/jimstudt/http-authentication/basic"
-	"github.com/magic-lib/go-plat-utils/utils"
+	"github.com/magic-lib/go-plat-utils/v2/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 

@@ -2,8 +2,8 @@ package compress_test
 
 import (
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/compress"
-	"github.com/magic-lib/go-plat-utils/utils"
+	"github.com/magic-lib/go-plat-utils/v2/compress"
+	"github.com/magic-lib/go-plat-utils/v2/utils"
 	"testing"
 )
 

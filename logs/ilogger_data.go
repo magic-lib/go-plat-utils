@@ -3,11 +3,11 @@ package logs
 import (
 	"context"
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/cond"
-	"github.com/magic-lib/go-plat-utils/conf"
-	"github.com/magic-lib/go-plat-utils/utils"
-	"github.com/magic-lib/go-plat-utils/utils/httputil"
-	"github.com/magic-lib/go-plat-utils/utils/httputil/param"
+	"github.com/magic-lib/go-plat-utils/v2/cond"
+	"github.com/magic-lib/go-plat-utils/v2/conf"
+	"github.com/magic-lib/go-plat-utils/v2/utils"
+	"github.com/magic-lib/go-plat-utils/v2/utils/httputil"
+	"github.com/magic-lib/go-plat-utils/v2/utils/httputil/param"
 	"path/filepath"
 	"time"
 )

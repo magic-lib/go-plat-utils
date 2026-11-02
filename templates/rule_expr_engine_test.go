@@ -2,10 +2,10 @@ package templates_test
 
 import (
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/conv"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
 	"testing"
 
-	"github.com/magic-lib/go-plat-utils/templates"
+	"github.com/magic-lib/go-plat-utils/v2/templates"
 )
 
 // TestRunStringPureNumericExpr 验证：字符串只包含数字和 +-*/ 等符号时直接返回原值，不做表达式计算

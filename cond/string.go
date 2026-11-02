@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/google/go-cmp/cmp"
 	"github.com/json-iterator/go"
-	"github.com/magic-lib/go-plat-utils/internal"
+	"github.com/magic-lib/go-plat-utils/v2/internal"
 	"regexp"
 	"strings"
 )

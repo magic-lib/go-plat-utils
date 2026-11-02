@@ -31,8 +31,8 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 
-	"github.com/magic-lib/go-plat-utils/db/txbarrier"
-	"github.com/magic-lib/go-plat-utils/db/txbarrier/sqlbarrier"
+	"github.com/magic-lib/go-plat-utils/v2/db/txbarrier"
+	"github.com/magic-lib/go-plat-utils/v2/db/txbarrier/sqlbarrier"
 )
 
 func main() {
@@ -99,8 +99,8 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
-	"github.com/magic-lib/go-plat-utils/db/txbarrier"
-	"github.com/magic-lib/go-plat-utils/db/txbarrier/mgobarrier"
+	"github.com/magic-lib/go-plat-utils/v2/db/txbarrier"
+	"github.com/magic-lib/go-plat-utils/v2/db/txbarrier/mgobarrier"
 )
 
 func main() {
@@ -163,8 +163,8 @@ import (
 	
 	"github.com/redis/go-redis/v9"
 	
-	"github.com/magic-lib/go-plat-utils/db/txbarrier"
-	"github.com/magic-lib/go-plat-utils/db/txbarrier/rdsbarrier"
+	"github.com/magic-lib/go-plat-utils/v2/db/txbarrier"
+	"github.com/magic-lib/go-plat-utils/v2/db/txbarrier/rdsbarrier"
 )
 
 // testScript 演示逻辑，运行程序前，需要保证 KEYS[1] 的 value 是数值， 否则lua脚本会执行失败: set testKey 0
@@ -223,11 +223,11 @@ func main() {
 $ go test -bench='Hook$' -benchmem .
 goos: darwin
 goarch: amd64
-pkg: github.com/magic-lib/go-plat-utils/db/txbarrier/rdsbarrier
+pkg: github.com/magic-lib/go-plat-utils/v2/db/txbarrier/rdsbarrier
 cpu: VirtualApple @ 2.50GHz
 BenchmarkHook-10           	    3693	    329795 ns/op	  441558 B/op	    1652 allocs/op
 BenchmarkWithoutHook-10    	    4658	    220224 ns/op	  386576 B/op	    1483 allocs/op
 PASS
-ok  	github.com/magic-lib/go-plat-utils/db/txbarrier/rdsbarrier	3.702s
+ok  	github.com/magic-lib/go-plat-utils/v2/db/txbarrier/rdsbarrier	3.702s
 ```
 **注意：** 此处 Benchmark 仅供业务参考，实际性能表现需要业务根据业务逻辑进行压力测试对比。

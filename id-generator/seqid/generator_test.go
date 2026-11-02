@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/magic-lib/go-plat-cache/cache"
 	"github.com/magic-lib/go-plat-locker/lock"
-	id2 "github.com/magic-lib/go-plat-utils/id-generator/id"
-	"github.com/magic-lib/go-plat-utils/id-generator/seqid"
+	id2 "github.com/magic-lib/go-plat-utils/v2/id-generator/id"
+	"github.com/magic-lib/go-plat-utils/v2/id-generator/seqid"
 	"testing"
 	"time"
 )

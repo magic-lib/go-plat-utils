@@ -2,8 +2,8 @@ package mask_test
 
 import (
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/mask"
-	"github.com/magic-lib/go-plat-utils/utils"
+	"github.com/magic-lib/go-plat-utils/v2/mask"
+	"github.com/magic-lib/go-plat-utils/v2/utils"
 	"testing"
 )
 

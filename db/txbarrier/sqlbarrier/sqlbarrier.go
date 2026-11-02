@@ -13,7 +13,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/magic-lib/go-plat-utils/db/txbarrier"
+	"github.com/magic-lib/go-plat-utils/v2/db/txbarrier"
 )
 
 var (

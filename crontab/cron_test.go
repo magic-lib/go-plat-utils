@@ -1,7 +1,7 @@
 package crontab_test
 
 import (
-	"github.com/magic-lib/go-plat-utils/crontab"
+	"github.com/magic-lib/go-plat-utils/v2/crontab"
 	"github.com/robfig/cron/v3"
 	"testing"
 )

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/magic-lib/go-plat-utils/goroutines"
+	"github.com/magic-lib/go-plat-utils/v2/goroutines"
 )
 
 // context.WithValue 的 key 必须用自定义类型，直接用 string 会触发 staticcheck SA1029

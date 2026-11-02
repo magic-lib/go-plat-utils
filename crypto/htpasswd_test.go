@@ -2,7 +2,7 @@ package crypto_test
 
 import (
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/crypto"
+	"github.com/magic-lib/go-plat-utils/v2/crypto"
 	"testing"
 )
 

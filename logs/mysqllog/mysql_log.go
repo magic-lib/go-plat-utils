@@ -3,15 +3,15 @@ package mysqllog
 import (
 	"context"
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/cond"
-	"github.com/magic-lib/go-plat-utils/conv"
-	"github.com/magic-lib/go-plat-utils/goroutines"
+	"github.com/magic-lib/go-plat-utils/v2/cond"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
+	"github.com/magic-lib/go-plat-utils/v2/goroutines"
 	"github.com/samber/lo"
 	"reflect"
 	"sync"
 	"time"
 
-	"github.com/magic-lib/go-plat-utils/logs"
+	"github.com/magic-lib/go-plat-utils/v2/logs"
 )
 
 // mysqlLogger 实现 logs.ILogger 接口的 MySQL 日志记录器

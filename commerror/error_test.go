@@ -2,7 +2,7 @@ package commerror_test
 
 import (
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/commerror"
+	"github.com/magic-lib/go-plat-utils/v2/commerror"
 	"google.golang.org/grpc/codes"
 	"testing"
 )

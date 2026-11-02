@@ -3,11 +3,11 @@ package activity_test
 import (
 	"context"
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/conv"
-	"github.com/magic-lib/go-plat-utils/plugins/action"
-	"github.com/magic-lib/go-plat-utils/plugins/activity"
-	"github.com/magic-lib/go-plat-utils/utils"
-	"github.com/magic-lib/go-plat-utils/utils/httputil/param"
+	"github.com/magic-lib/go-plat-utils/v2/conv"
+	"github.com/magic-lib/go-plat-utils/v2/plugins/action"
+	"github.com/magic-lib/go-plat-utils/v2/plugins/activity"
+	"github.com/magic-lib/go-plat-utils/v2/utils"
+	"github.com/magic-lib/go-plat-utils/v2/utils/httputil/param"
 	"testing"
 )
 

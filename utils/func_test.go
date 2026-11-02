@@ -3,8 +3,8 @@ package utils_test
 import (
 	"context"
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/id-generator/id"
-	"github.com/magic-lib/go-plat-utils/utils"
+	"github.com/magic-lib/go-plat-utils/v2/id-generator/id"
+	"github.com/magic-lib/go-plat-utils/v2/utils"
 	"testing"
 )
 
