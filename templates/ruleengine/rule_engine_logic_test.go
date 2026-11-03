@@ -28,6 +28,22 @@ func TestCheckOneRule22(t *testing.T) {
 	fmt.Println(kk, err)
 
 }
+func TestCheckFilter22(t *testing.T) {
+
+	ruleStr := `Len(Filter([arguments.slice_param1], "MaskMatch(item, \'{{arguments.string_param1}}\', \'*\')")) > 0`
+
+	ruleExpr := templates.NewRuleExprEngine()
+	aa, err := ruleExpr.RunString(ruleStr, map[string]any{
+		"arguments": map[string]any{
+			"slice_param1": []string{
+				"592*******105",
+				"592*******206",
+			},
+			"string_param1": "5928526200206",
+		},
+	})
+	fmt.Println(aa, err)
+}
 func TestCheckOneRule33(t *testing.T) {
 	f1 := 0.1
 	f2 := 0.2
