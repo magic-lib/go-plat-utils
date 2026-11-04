@@ -43,37 +43,32 @@ func decimalToBase(num uint64, base int) string {
 }
 
 // initGenerator 初始化,避免用init
-func initGenerator() {
+// 判空和创建都在锁内完成，避免并发首次调用时创建出多个机器号相同的实例而产生重复 id
+func initGenerator() *sonyflake.Sonyflake {
+	m.Lock() // 加锁，确保线程安全
+	defer m.Unlock()
 	if generator != nil { // 如果生成器已经初始化，直接返回
-		return
-	}
-	if maxTimes <= 0 { // 如果最大次数小于等于0，记录错误
-		log.Panic("initGenerator maxTimes should be greater than 0", maxTimes)
-		return
+		return generator
 	}
 
 	t, err := time.Parse("2006-01-02 15:04:05", "2025-02-14 00:00:00") // 解析时间字符串
 	if err != nil {                                                    // 如果时间解析出错，记录错误
 		log.Panic("initGenerator failed to parse time: ", err)
-		return
 	}
 
-	m.Lock() // 加锁，确保线程安全
-	generator = sonyflake.NewSonyflake(sonyflake.Settings{
-		StartTime:      t,            // 设置生成器的开始时间
-		MachineID:      getMachineID, // 设置机器ID生成函数
-		CheckMachineID: nil,          // 设置机器ID检查
-	})
-
-	if generator != nil {
-		m.Unlock()
-		return
+	// 如果生成器为nil，减少maxTimes并循环尝试初始化
+	for ; maxTimes > 0; maxTimes-- {
+		generator = sonyflake.NewSonyflake(sonyflake.Settings{
+			StartTime:      t,            // 设置生成器的开始时间
+			MachineID:      getMachineID, // 设置机器ID生成函数
+			CheckMachineID: nil,          // 设置机器ID检查
+		})
+		if generator != nil {
+			return generator
+		}
 	}
-	// 如果生成器仍然为nil，减少maxTimes并循环尝试初始化
-	maxTimes--
-	m.Unlock()
-	//循环检测
-	initGenerator()
+	log.Panic("initGenerator maxTimes should be greater than 0", maxTimes)
+	return nil
 }
 
 // Generator id 生成器，接受一个进制值，转换为对应进制的 id: qFS1rdQXe
@@ -95,12 +90,12 @@ func Generator(base int) string {
 
 // GeneratorInt id 生成器:5817151654986320
 func GeneratorInt() uint64 {
-	initGenerator()
+	idGenerator := initGenerator()
 
-	id, err := generator.NextID()
+	id, err := idGenerator.NextID()
 	if err != nil {
 		// 函数内部重试一次
-		id, err = generator.NextID()
+		id, err = idGenerator.NextID()
 		if err != nil {
 			return 0
 		}
