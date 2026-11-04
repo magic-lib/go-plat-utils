@@ -21,8 +21,8 @@ func PostMessage(ctx context.Context, wsUrl string, msgByte []byte) ([]byte, err
 		return nil, err
 	}
 
-	// 接收服务器的回复
-	retMsg, _, err := wsutil.ReadClientData(conn)
+	// 接收服务器的回复：客户端读取服务端数据应使用 ReadServerData（原来用 ReadClientData，按服务端视角要求帧带掩码，必然失败）
+	retMsg, _, err := wsutil.ReadServerData(conn)
 	if err != nil {
 		return nil, err
 	}

@@ -101,6 +101,7 @@ func (a *ArrayRing[K, V]) Next(curr V) V {
 			nextData := p.Next()
 			return nextData.Value.(*ringData[K, V]).val
 		}
+		p = p.Next() // 原来没有推进指针，只会反复比较第一个元素
 	}
 	// 如果没找到有可能会数据删除了
 	return NextByRing(a.vsList, curr, a.keyFunc, func(this V, last V) bool {

@@ -1,7 +1,6 @@
 package conv
 
 import (
-	"encoding/binary"
 	"github.com/shopspring/decimal"
 	"math"
 	"reflect"
@@ -88,9 +87,8 @@ func Int64(i any) (int64, bool) {
 		return int64(num), true
 	case []byte:
 		bits := i.([]byte)
-		if len(bits) == 8 {
-			return int64(binary.LittleEndian.Uint64(bits)), true
-		} else if len(bits) <= 4 {
+		// 统一按数字文本解析：原来长度恰好为 8 时按小端二进制解释，[]byte("20240101") 会得到乱值
+		if len(bits) <= 4 {
 			num, err := strconv.Atoi(string(bits))
 			if err != nil {
 				return 0, false

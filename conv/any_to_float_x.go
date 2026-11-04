@@ -2,7 +2,6 @@ package conv
 
 import (
 	"encoding/json"
-	"fmt"
 	"math"
 	"reflect"
 	"strconv"
@@ -27,8 +26,8 @@ func toFloat64(i any) (float64, bool) {
 		return 0, false
 	}
 	if f, ok := i.(float32); ok {
-		str := fmt.Sprintf("%f", f)
-		v, _ := strconv.ParseFloat(str, 64)
+		// 取能还原该 float32 的最短十进制表示再解析：0.1 仍得到 0.1，且不会像 %f 那样只保留 6 位小数（1e-7 变成 0）
+		v, _ := strconv.ParseFloat(strconv.FormatFloat(float64(f), 'g', -1, 32), 64)
 		return v, true
 	}
 
@@ -76,10 +75,8 @@ func toFloat64(i any) (float64, bool) {
 		}
 		return i, true
 	case string:
-		if len(v1) > 15 {
-			return 0, false
-		}
-		t, err := strconv.ParseFloat(v1, 64)
+		// 去掉首尾空白，与整数转换一致；不再因长度超过 15 位直接判失败
+		t, err := strconv.ParseFloat(strings.TrimSpace(v1), 64)
 		if err != nil {
 			return 0, false
 		}

@@ -50,8 +50,14 @@ func Run(ctx context.Context) {
 		}
 	}
 
+	// 在读锁内取快照，之后只处理快照：原来 len 与遍历都在锁外，与并发 Register 存在数据竞争
+	resourcesMu.RLock()
+	snapshot := make([]Cleanable, len(resources))
+	copy(snapshot, resources)
+	resourcesMu.RUnlock()
+
 	var wg sync.WaitGroup
-	total := len(resources)
+	total := len(snapshot)
 	if total == 0 {
 		return
 	}
@@ -60,11 +66,7 @@ func Run(ctx context.Context) {
 
 	wg.Add(total)
 	cleanup := func(reason string) {
-		for i := range resources {
-			if i > end {
-				break
-			}
-			r := resources[i]
+		for _, r := range snapshot {
 			if r != nil {
 				fmt.Printf("( %s ) terminated, %s", r.Name(), reason)
 				r.Stop()
@@ -92,6 +94,7 @@ func terminateIf(ctx context.Context, onCancel onCancel, onSignal onSignal) {
 	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGILL, syscall.SIGTERM,
 		syscall.SIGTRAP, syscall.SIGQUIT, syscall.SIGABRT)
 	go func() {
+		defer signal.Stop(sig) // 不再需要时停止接收信号
 		select {
 		case <-ctx.Done():
 			onCancel()

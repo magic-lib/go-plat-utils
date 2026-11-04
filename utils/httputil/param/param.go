@@ -609,8 +609,6 @@ func getParamFromQuery(req *http.Request, splitString string, pathFunc ParsePath
 	return allParamMap, err
 }
 
-type bodyCacheKey struct{}
-
 func getParamFromBody(req *http.Request) (string, error) {
 	bodyByte, err := getParamByteFromBody(req)
 	if err != nil {
@@ -626,13 +624,9 @@ func getParamByteFromBody(req *http.Request) ([]byte, error) {
 	if req == nil || req.Body == nil {
 		return []byte{}, nil
 	}
-	if cachedBody, ok := req.Context().Value(bodyCacheKey{}).([]byte); ok {
-		return cachedBody, nil
-	}
-	requestBody := SafeReadBody(req)
-	newCtx := context.WithValue(req.Context(), bodyCacheKey{}, requestBody)
-	req = req.WithContext(newCtx)
-	return requestBody, nil
+	// 原来把 body 放入 req.WithContext 的新请求做缓存，但只改了局部变量，调用方拿不到，缓存永远不会命中；
+	// SafeReadBody 读取后会把 body 放回，重复调用结果正确，这里直接读取
+	return SafeReadBody(req), nil
 }
 
 func getParamFromForm(req *http.Request) url.Values {

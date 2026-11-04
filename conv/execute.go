@@ -231,7 +231,10 @@ func ParamsTypeChange(f reflect.Value, params []reflect.Value) []reflect.Value {
 		tf = tf.Elem()
 	}
 	plen := tf.NumIn()
-	for i := 0; i < plen; i++ {
+	for i := 0; i < plen && i < len(params); i++ { // 实参少于形参时原来会越界
+		if isNumberKind(tf.In(i).Kind()) && getNumType(params[i]) == notNumType {
+			continue // 实参不是数字时不做数字转换（原来 getNumType 直接 panic）
+		}
 		switch tf.In(i).Kind() {
 		case reflect.Int:
 			tag := getNumType(params[i])
@@ -356,8 +359,9 @@ func ParamsTypeChange(f reflect.Value, params []reflect.Value) []reflect.Value {
 		case reflect.Ptr:
 			break
 		case reflect.Interface:
-			if !reflect.ValueOf(params[i]).IsValid() {
-				params[i] = reflect.New(tf.In(i))
+			// 原来对 reflect.Value 再取 ValueOf 恒为有效，且 reflect.New 得到的是指针类型
+			if !params[i].IsValid() {
+				params[i] = reflect.Zero(tf.In(i))
 			}
 		default:
 			continue
@@ -380,12 +384,24 @@ func getNumType(param reflect.Value) int {
 		return _float
 	}
 
-	panic(fmt.Sprintf("it is not number type, type is %s !", ts))
+	return notNumType
+}
+
+// notNumType getNumType 对非数字类型的返回值
+const notNumType = -1
+
+// isNumberKind 是否为整数或浮点数类型
+func isNumberKind(k reflect.Kind) bool {
+	return (k >= reflect.Int && k <= reflect.Uint64) || k == reflect.Float32 || k == reflect.Float64
 }
 
 func GetWantedValue(newValue reflect.Value, toKind reflect.Type) (reflect.Value, error) {
 	if newValue.Kind() == toKind.Kind() {
 		return newValue, nil
+	}
+	// 数字之间统一用 Convert：原来 Int64/Uint64/Float64 分支原样返回未转换的值，有符号转无符号调用 Uint() 会 panic
+	if isNumberKind(newValue.Kind()) && isNumberKind(toKind.Kind()) {
+		return newValue.Convert(toKind), nil
 	}
 
 	switch toKind.Kind() {

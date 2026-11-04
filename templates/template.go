@@ -119,12 +119,12 @@ func (t *impl) Replace(data ...any) string {
 			if !ok || keyRegex == nil {
 				keyRegex = &keyRe{
 					key: oldKey,
-					re:  regexp.MustCompile(repStr),
+					re:  compileRe(repStr),
 				}
 				keyResMap[repStr] = keyRegex
 			}
-			// 编译当前key的正则表达式并执行替换
-			templateStr = keyRegex.re.ReplaceAllString(templateStr, value.String())
+			// 按字面量替换：ReplaceAllString 会把值里的 $1、$name 当分组引用展开，"$100" 之类会被吞掉
+			templateStr = keyRegex.re.ReplaceAllLiteralString(templateStr, value.String())
 		}
 	}
 
@@ -141,8 +141,8 @@ func (t *impl) Replace(data ...any) string {
 		}
 
 		// 编译全量替换的正则表达式并执行替换
-		fullReplaceRegex := regexp.MustCompile(fmt.Sprintf(regexPattern, `\.`))
-		templateStr = fullReplaceRegex.ReplaceAllString(templateStr, replaceStr)
+		fullReplaceRegex := compileRe(fmt.Sprintf(regexPattern, `\.`))
+		templateStr = fullReplaceRegex.ReplaceAllLiteralString(templateStr, replaceStr)
 	}
 
 	return templateStr
@@ -154,7 +154,7 @@ func (t *impl) Replace(data ...any) string {
 func (t *impl) ParseVars(templateStrings ...string) []string {
 	// 编译正则表达式，用于匹配分隔符包裹的内容
 	pattern := fmt.Sprintf(`%s\s*(.*?)\s*%s`, regexp.QuoteMeta(t.prefix), regexp.QuoteMeta(t.suffix))
-	matcher := regexp.MustCompile(pattern)
+	matcher := compileRe(pattern)
 
 	// 用map存储关键字实现去重
 	uniqueKeys := make(map[string]struct{})
@@ -221,8 +221,8 @@ eq ne lt le gt ge: 等于, 不等于, 小于, 小于等于, 大于, 大于等于
 func Template(format string, data interface{}, delis ...string) (string, error) {
 	startDelim, endDelim := getPreAndSuffix(delis...)
 
-	// 生成唯一模板名称（使用MD5哈希避免名称冲突）
-	tempName := "utils-template-" + crypto.Md5(format)
+	// 生成唯一模板名称（使用MD5哈希避免名称冲突）；需包含分隔符，否则同一 format 换分隔符会命中按旧分隔符解析的缓存
+	tempName := "utils-template-" + crypto.Md5(startDelim+"\x00"+endDelim+"\x00"+format)
 	var parsedTpl *tmpl.Template
 	var err error
 

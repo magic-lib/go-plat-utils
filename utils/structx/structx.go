@@ -12,7 +12,12 @@ import (
 // CopyTo 将fromValue转为T类型并返回
 func CopyTo[T any](fromValue any) T {
 	t := NewInstance[T]()
-	err := Copy(t, fromValue)
+	var err error
+	if reflect.TypeFor[T]().Kind() == reflect.Ptr {
+		err = Copy(t, fromValue)
+	} else {
+		err = Copy(&t, fromValue) // 非指针类型需传地址，否则目标不可寻址，总是复制失败返回零值
+	}
 	var zero T
 	if err != nil {
 		return zero
@@ -500,15 +505,10 @@ func ToMap(input any) map[string]any {
 	}
 
 	for i := 0; i < v.NumField(); i++ {
-		field := v.Field(i)
-		zeroValue := reflect.Zero(field.Type()).Interface()
-		fieldValue := field.Interface()
-
-		if !reflect.DeepEqual(fieldValue, zeroValue) {
-			result[v.Type().Field(i).Name] = fieldValue
-		} else {
-			result[v.Type().Field(i).Name] = zeroValue
+		if !v.Type().Field(i).IsExported() { // 未导出字段调用 Interface() 会 panic
+			continue
 		}
+		result[v.Type().Field(i).Name] = v.Field(i).Interface()
 	}
 
 	return result

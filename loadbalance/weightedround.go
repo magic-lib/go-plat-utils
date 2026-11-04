@@ -33,8 +33,8 @@ func (r *WeightedRoundSelector[T]) Select() T {
 	for _, ins := range r.weights {
 		totalWeight += ins
 	}
-	if totalWeight == 0 {
-		totalWeight = 100
+	if totalWeight == 0 { // 权重全为 0 时等概率选择（原来设为 100 后循环永远命中不了，恒返回零值）
+		return r.instances[rand.Intn(len(r.instances))]
 	}
 
 	// 生成随机数，落在哪个权重区间就选哪个实例
