@@ -112,6 +112,11 @@ func CbcDecrypt(cipherStr string, key string, de ...EnDeCoder) (string, error) {
 		}
 		iv := ciphertext[:aes.BlockSize]
 		ciphertext = ciphertext[aes.BlockSize:]
+		// 长度不是块大小整数倍时 CryptBlocks 会 panic，被 GoSync 恢复后 err 仍为 nil，会把未解密的数据当结果返回
+		if len(ciphertext)%aes.BlockSize != 0 {
+			err = fmt.Errorf("ciphertext is not a multiple of the block size")
+			return
+		}
 
 		stream := cipher.NewCBCDecrypter(block, iv)
 
