@@ -8,6 +8,7 @@ import (
 	"github.com/iancoleman/orderedmap"
 	"github.com/magic-lib/go-plat-utils/cond"
 	jsoniterForNil "github.com/magic-lib/go-plat-utils/internal/jsoniter/go"
+	"github.com/samber/lo"
 	"github.com/spf13/cast"
 	"github.com/ucarion/jcs"
 	"github.com/viant/toolbox"
@@ -625,13 +626,19 @@ func getStringFromJson(src any, ignoreOmitempty bool) (string, error) {
 	_, ok3 := src.(map[any]any)
 	_, ok4 := src.([]any)
 	if ok1 || ok2 || ok3 || ok4 {
-		if newS, err := jcs.Format(src); err == nil {
+		jcsSrc := src
+		if ok2 { // jcs 只支持 map[string]any，map[string]string 需先转换，否则总是走兜底分支
+			jcsSrc = lo.MapValues(src.(map[string]string), func(v string, _ string) any { return v })
+		}
+		if newS, err := jcs.Format(jcsSrc); err == nil {
 			return newS, nil
 		} else {
+			// 兜底输出按 key 排序，保证结果稳定；orderedmap 按写入顺序输出，直接遍历 map 会是随机顺序
 			if ok1 {
 				omIns := orderedmap.New()
-				for k, v := range src.(map[string]any) {
-					omIns.Set(k, v)
+				oneMap := src.(map[string]any)
+				for _, k := range sortedKeys(oneMap) {
+					omIns.Set(k, oneMap[k])
 				}
 				bs, err := json.Marshal(omIns)
 				if err == nil {
@@ -640,10 +647,11 @@ func getStringFromJson(src any, ignoreOmitempty bool) (string, error) {
 			}
 			if ok2 {
 				omIns := orderedmap.New()
-				for k, v := range src.(map[string]string) {
-					omIns.Set(k, v)
+				oneMap := src.(map[string]string)
+				for _, k := range sortedKeys(oneMap) {
+					omIns.Set(k, oneMap[k])
 				}
-				bs, err := json.MarshalIndent(omIns, "", "")
+				bs, err := json.Marshal(omIns)
 				if err == nil {
 					return string(bs), nil
 				}
@@ -681,6 +689,13 @@ func getStringFromJson(src any, ignoreOmitempty bool) (string, error) {
 		return retAll, nil
 	}
 	return "", fmt.Errorf(errStrGetStringFromJson, err)
+}
+
+// sortedKeys 返回 map 按字典序排序后的 key
+func sortedKeys[V any](m map[string]V) []string {
+	keys := lo.Keys(m)
+	sort.Strings(keys)
+	return keys
 }
 
 // 解决src为struct时，存在json里有 omitempty 时，会隐藏不输出的问题
