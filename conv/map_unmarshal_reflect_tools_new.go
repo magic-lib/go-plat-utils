@@ -84,7 +84,9 @@ func (c *toolsService) canSetStructColumn(columnName string, columnValue reflect
 func (c *toolsService) getAllStructColumn(srcType reflect.Type, srcValue reflect.Value) (
 	[]reflect.StructField, []reflect.Value) {
 
-	logDebug("getAllStructColumn:", srcType.String(), srcValue.String())
+	if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+		logDebug("getAllStructColumn:", srcType.String(), srcValue.String())
+	}
 
 	allStructList := make([]reflect.StructField, 0)
 	allValueList := make([]reflect.Value, 0)
@@ -337,15 +339,20 @@ func (c *toolsService) getNewSrcAndDst(srcStruct any, dstPoint any) (
 	return newSrcStruct, newDstPoint
 }
 func (c *toolsService) UnmarshalDataFromJson(srcStruct any, dstPoint any) error {
-	if String(srcStruct) == "{}" || String(srcStruct) == "[]" {
+	srcString := String(srcStruct) // 只序列化一次，下面复用
+	if srcString == "{}" || srcString == "[]" {
 		return nil
 	}
-	logDebug("UnmarshalDataFromJson param 338:", String(srcStruct), reflect.TypeOf(srcStruct).String())
+	if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+		logDebug("UnmarshalDataFromJson param 338:", String(srcStruct), reflect.TypeOf(srcStruct).String())
+	}
 	srcType := reflect.TypeOf(srcStruct)
 	if srcType.Kind() == reflect.String || cond.IsBytes(srcStruct) {
-		errJson := jsoniterForNil.UnmarshalFromString(String(srcStruct), dstPoint)
+		errJson := jsoniterForNil.UnmarshalFromString(srcString, dstPoint)
 		if errJson != nil {
-			logDebug("UnmarshalDataFromJson err2 343:", String(srcStruct), errJson.Error())
+			if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+				logDebug("UnmarshalDataFromJson err2 343:", String(srcStruct), errJson.Error())
+			}
 			//"github.com/bytedance/sonic"
 			//return sonic.UnmarshalString(string(b), dstPoint)
 			return errJson
@@ -360,13 +367,17 @@ func (c *toolsService) UnmarshalDataFromJson(srcStruct any, dstPoint any) error 
 	}
 	errJson := jsoniterForNil.Unmarshal(b, dstPoint)
 	if errJson != nil {
-		logDebug("UnmarshalDataFromJson err2 358:", String(srcStruct), errJson.Error())
+		if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+			logDebug("UnmarshalDataFromJson err2 358:", String(srcStruct), errJson.Error())
+		}
 		//"github.com/bytedance/sonic"
 		//return sonic.UnmarshalString(string(b), dstPoint)
 		return errJson
 	}
 	// 这里有可能对json标签不存在的字段进行忽略了
-	logDebug("UnmarshalDataFromJson success:", String(dstPoint))
+	if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+		logDebug("UnmarshalDataFromJson success:", String(dstPoint))
+	}
 
 	return nil
 }

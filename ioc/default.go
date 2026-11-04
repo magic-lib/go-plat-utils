@@ -14,10 +14,11 @@ func Register(component any, opts ...ComponentOption) {
 	DefaultContainer.Register(component, opts...)
 }
 
-// Get 根据组件名从全局默认ioc容器获取实例
+// Get 根据组件名从全局默认ioc容器获取实例；未注册或类型不符时返回 T 的零值（原来直接 panic）
 func Get[T any](name string) T {
 	c, _ := DefaultContainer.Get(name)
-	return c.(T)
+	t, _ := c.(T)
+	return t
 }
 
 // GetBeansByType 根据组件实例类型从全局默认ioc容器获取实例

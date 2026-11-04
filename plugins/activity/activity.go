@@ -10,6 +10,7 @@ import (
 	"github.com/magic-lib/go-plat-utils/utils/httputil/param"
 	"github.com/samber/lo"
 	"log"
+	"strings"
 	"time"
 )
 
@@ -317,9 +318,13 @@ func (ac *Activity) makeInputMap(arguments map[string]any) map[string]any {
 	//3、activity中自定义进行覆盖，主要是将前面流程的参数和返回值加到里面
 	args = param.MergeArgumentsByBinding(args, ac.Arguments)
 
-	//4、如果有变量，则进行覆盖
+	//4、如果有变量，则进行覆盖；没有模板占位符时跳过，避免每次都序列化整个参数再交给表达式引擎计算
+	argsStr := conv.String(args)
+	if !strings.Contains(argsStr, templates.DefaultPrefix) {
+		return args
+	}
 	ruleExpr := templates.NewRuleExprEngine()
-	checkResult, _ := ruleExpr.RunString(conv.String(args), args)
+	checkResult, _ := ruleExpr.RunString(argsStr, args)
 	newArgs, _ := conv.Convert[map[string]any](checkResult)
 	if len(newArgs) > 0 {
 		args = lo.Assign(args, newArgs)

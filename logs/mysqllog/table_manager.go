@@ -121,14 +121,29 @@ func (tm *tableManager) getTableColumns(tableName string) ([]string, error) {
 	return columns, nil
 }
 
+// escapeLike 转义 LIKE 中的通配符 \、_、%
+func escapeLike(s string) string {
+	return strings.NewReplacer(`\`, `\\`, `_`, `\_`, `%`, `\%`).Replace(s)
+}
+
+// isLogTableName 是否为本日志器创建的按天分表：前缀 + "_" + 合法的 yyyyMMdd 日期
+func isLogTableName(prefix, tableName string) bool {
+	datePart, ok := strings.CutPrefix(tableName, prefix+"_")
+	if !ok || len(datePart) != 8 {
+		return false
+	}
+	_, err := time.Parse("20060102", datePart)
+	return err == nil
+}
+
 // cleanOldTables 清理过期表
 func (tm *tableManager) cleanOldTables() error {
 	cutoffTime := time.Now().AddDate(0, 0, -tm.cfg.RetentionDays)
 	cutoffTableName := tm.cfg.getTableName(cutoffTime)
 
-	// 查询所有匹配前缀的表
+	// 查询所有匹配前缀的表；LIKE 中 _ 和 % 是通配符，需转义成字面量
 	rows, err := tm.cfg.DB.QueryContext(tm.ctx,
-		fmt.Sprintf("SHOW TABLES LIKE '%s_%%'", tm.cfg.TablePrefix))
+		fmt.Sprintf("SHOW TABLES LIKE '%s\\_%%'", escapeLike(tm.cfg.TablePrefix)))
 	if err != nil {
 		return fmt.Errorf("show tables failed: %w", err)
 	}
@@ -140,6 +155,10 @@ func (tm *tableManager) cleanOldTables() error {
 	for rows.Next() {
 		var tableName string
 		if err := rows.Scan(&tableName); err != nil {
+			continue
+		}
+		// 只处理严格符合「前缀_yyyyMMdd」的日志表，避免误删同库中名字相近的其他表
+		if !isLogTableName(tm.cfg.TablePrefix, tableName) {
 			continue
 		}
 		// 表名小于截止日期表名，说明已过期

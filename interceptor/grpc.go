@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"log"
 	"runtime/debug"
 	"time"
 )
@@ -53,8 +54,9 @@ func (_ *GrpcServer) RecoveryUnaryServerInterceptor() grpc.UnaryServerIntercepto
 	) (resp interface{}, err error) {
 		defer func() {
 			if r := recover(); r != nil {
-				err = status.Errorf(codes.Internal, "panic in method=%s, err=%v, stack=%s",
-					info.FullMethod, r, debug.Stack())
+				// 堆栈只记录到服务端日志，不返回给客户端，避免泄露内部实现信息
+				log.Printf("grpc panic in method=%s, err=%v, stack=%s", info.FullMethod, r, debug.Stack())
+				err = status.Errorf(codes.Internal, "panic in method=%s, err=%v", info.FullMethod, r)
 			}
 		}()
 		return handler(ctx, req)
@@ -175,9 +177,19 @@ func (_ *GrpcClient) RetryUnaryClientInterceptor(maxRetry int, wait time.Duratio
 			if st.Code() != codes.Unavailable && st.Code() != codes.DeadlineExceeded {
 				return err
 			}
+			// 调用方 ctx 已取消或超时，重试没有意义；最后一次失败后也不再等待
+			if ctx.Err() != nil || i == maxRetry {
+				return err
+			}
 
-			// 等一会再重试，简单点就固定睡
-			time.Sleep(wait)
+			// 等一会再重试，等待期间 ctx 结束则立即返回
+			timer := time.NewTimer(wait)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return err
+			case <-timer.C:
+			}
 		}
 		return err
 	}

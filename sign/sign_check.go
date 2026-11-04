@@ -9,7 +9,6 @@ import (
 	"github.com/magic-lib/go-plat-utils/utils/httputil/param"
 	"github.com/samber/lo"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -113,7 +112,7 @@ func (bs *BaseSignCheck) checkSignatureByBaseSignDto(ctx context.Context, baseSi
 		return false, fmt.Errorf("generated signature is empty")
 	}
 
-	return strings.EqualFold(conv.String(generatedSignature), baseSign.Signature), nil
+	return cryptotool.SignatureEqual(conv.String(generatedSignature), baseSign.Signature), nil
 }
 
 func (bs *BaseSignCheck) CheckSignature(ctx context.Context, header http.Header, params map[string]any) (bool, error) {
@@ -133,19 +132,21 @@ func (bs *BaseSignCheck) CheckSignature(ctx context.Context, header http.Header,
 		}
 	}
 
+	// 先验签再记录 nonce：否则任何人用伪造签名就能提前消耗掉合法请求的 nonce
+	checkSignature, err := bs.checkSignatureByBaseSignDto(ctx, baseSign, params)
+	if err != nil {
+		return false, err
+	}
+	if !checkSignature {
+		return false, nil
+	}
+
 	// 检查nonce
 	checkNonceTemp, err := checkNonce(ctx, baseSign.AppId, baseSign.Nonce, bs.GetOrSetNonceFunc, bs.NonceTimeout, bs.NonceUseTimes)
 	if err != nil {
 		return false, err
 	}
 	if !checkNonceTemp {
-		return false, nil
-	}
-	checkSignature, err := bs.checkSignatureByBaseSignDto(ctx, baseSign, params)
-	if err != nil {
-		return false, err
-	}
-	if !checkSignature {
 		return false, nil
 	}
 	return true, nil

@@ -28,9 +28,6 @@ func NewIDGenerator[T constraints.Integer](idGen *IDGenerator[T]) (*IDGenerator[
 	if idGen == nil {
 		idGen = new(IDGenerator[T])
 	}
-	if idGen.BatchSize <= 0 {
-		idGen.BatchSize = 1
-	}
 	if idGen.IdStore == nil {
 		return nil, fmt.Errorf("ID存储不能为空")
 	}
@@ -41,7 +38,7 @@ func NewIDGenerator[T constraints.Integer](idGen *IDGenerator[T]) (*IDGenerator[
 		setLocker(idGen)
 	}
 
-	if idGen.BatchSize <= 0 {
+	if idGen.BatchSize <= 0 { // 默认批量预取 100 个，避免每次取号都加分布式锁并读写一次缓存
 		idGen.BatchSize = 100
 	}
 	if idGen.Timeout <= 0 {
@@ -151,12 +148,14 @@ func (g *IDGenerator[T]) fetchBatchFromCache(key string, currMaxId T) (T, T, err
 	ctx := context.Background()
 
 	// 使用分布式锁
+	// 加锁与解锁必须是同一个 Locker 实例：两次调用 LockFunc 得到不同实例，带 token 的锁实现会解锁失败
 	if g.LockFunc != nil {
-		if err := g.LockFunc(g.Namespace, key).Lock(ctx); err != nil {
+		locker := g.LockFunc(g.Namespace, key)
+		if err := locker.Lock(ctx); err != nil {
 			return 0, 0, err
 		}
 		defer func() {
-			_ = g.LockFunc(g.Namespace, key).UnLock(ctx)
+			_ = locker.UnLock(ctx)
 		}()
 	}
 

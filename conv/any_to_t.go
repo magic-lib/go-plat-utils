@@ -12,6 +12,10 @@ import (
 
 // Convert 转换泛型
 func Convert[T any](v any) (t T, err error) {
+	// 已经是目标类型时直接返回，避免切片逐个元素转换
+	if result, ok := v.(T); ok {
+		return result, nil
+	}
 	if cond.IsArray(t) && cond.IsArray(v) {
 		t, err = toConvertList[T](v)
 		if err == nil {
@@ -31,10 +35,18 @@ func toConvertList[T any](v any) (T, error) {
 	elementType := targetType.Elem()
 	sliceValue := reflect.MakeSlice(targetType, 0, len(list))
 	for _, item := range list {
+		if item == nil { // nil 元素取元素类型的零值；reflect.ValueOf(nil) 是无效值，Append 会 panic
+			sliceValue = reflect.Append(sliceValue, reflect.Zero(elementType))
+			continue
+		}
 		itemT, err := ConvertForType(elementType, item)
 		if err != nil {
 			var zero T
 			return zero, err
+		}
+		if itemT == nil {
+			sliceValue = reflect.Append(sliceValue, reflect.Zero(elementType))
+			continue
 		}
 		sliceValue = reflect.Append(sliceValue, reflect.ValueOf(itemT))
 	}
@@ -71,7 +83,10 @@ func ConvertForType(targetType reflect.Type, v any) (any, error) {
 		return v, nil
 	}
 
-	convErr := fmt.Errorf("unsupported targetType: %s, value: %s", targetType.String(), String(v))
+	// 只在转换失败时才生成错误：String(v) 对 struct/map 是一次完整的 JSON 序列化，成功路径不应付出这个开销
+	convErr := func() error {
+		return fmt.Errorf("unsupported targetType: %s, value: %s", targetType.String(), String(v))
+	}
 	contConv := false
 
 	switch targetType {
@@ -169,15 +184,15 @@ func ConvertForType(targetType reflect.Type, v any) (any, error) {
 			if ok {
 				return convRet, nil
 			}
-			return convRet, convErr
+			return convRet, convErr()
 		}
 	default:
-		//log.Println("ConvertForType: ", convErr.Error())
+		//log.Println("ConvertForType: ", convErr().Error())
 		contConv = true
 	}
 
 	if !contConv {
-		return v, convErr
+		return v, convErr()
 	}
 
 	target := reflect.Zero(targetType)
@@ -193,7 +208,7 @@ func ConvertForType(targetType reflect.Type, v any) (any, error) {
 	if err != nil {
 		err = toAssignTo(v, targetPtrValue)
 		if err != nil {
-			return target, convErr
+			return target, convErr()
 		}
 		return reflect.ValueOf(targetPtrValue).Elem().Interface(), nil
 	}
@@ -202,7 +217,7 @@ func ConvertForType(targetType reflect.Type, v any) (any, error) {
 		if reflect.TypeOf(targetPtrValue) == targetType {
 			return targetPtrValue, nil
 		}
-		return target, convErr
+		return target, convErr()
 	}
 
 	return reflect.ValueOf(targetPtrValue).Elem().Interface(), nil
