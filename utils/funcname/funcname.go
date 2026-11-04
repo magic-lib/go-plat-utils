@@ -23,6 +23,9 @@ const (
 // The parameter v must be a function or a method. If v is not a function or method, it returns Unknown.
 func Of(v interface{}) string {
 	rv := reflect.ValueOf(v)
+	if rv.Kind() != reflect.Func { // 非函数调用 Pointer() 会 panic，按文档返回 Unknown
+		return Unknown
+	}
 	return ForPC(rv.Pointer())
 }
 
