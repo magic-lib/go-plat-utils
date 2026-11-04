@@ -24,9 +24,9 @@ func (sc *SafeChannel[T]) Send(value T) bool {
 	if sc.closed {
 		return false
 	}
-	// 持锁期间执行发送：Close 同样需获取 mu，因此在本次 select 执行期间无法并发
+	// 持锁期间执行发送：Close 关闭 sc.ch 前同样需获取 mu，因此在本次 select 执行期间无法并发
 	// close(sc.ch)，从而彻底避免「向已关闭的 channel 发送导致 panic」。
-	// 代价：当 channel 已满且无接收方时调用 Close 会短暂等待当前发送完成（标准权衡）。
+	// channel 已满且无接收方时，Close 会先关闭 closeSig 让这里返回 false 并释放锁。
 	select {
 	case sc.ch <- value:
 		return true
@@ -37,11 +37,12 @@ func (sc *SafeChannel[T]) Send(value T) bool {
 
 func (sc *SafeChannel[T]) Close() {
 	sc.once.Do(func() {
-		sc.mu.Lock()
-		sc.closed = true
-		sc.mu.Unlock()
-
+		// 先关闭 closeSig 唤醒阻塞在 Send 中的发送方；若先加锁，发送方持锁阻塞时 Close 会永久等待
 		close(sc.closeSig)
+
+		sc.mu.Lock()
+		defer sc.mu.Unlock()
+		sc.closed = true
 		close(sc.ch)
 	})
 }
