@@ -2,13 +2,15 @@ package ruleengine
 
 import (
 	"fmt"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/internal/govaluate-3.0.0"
 	"github.com/magic-lib/go-plat-utils/utils"
 	"github.com/shopspring/decimal"
 	"regexp"
+	"strconv"
 	"strings"
-	"sync"
+	"sync/atomic"
 )
 
 // EngineLogic 规则引擎判断逻辑
@@ -17,12 +19,17 @@ type EngineLogic struct {
 	retRulePrefix string
 	preString     string //变量前的字符
 	afterString   string //变量后的字符
+	cacheScope    string // 表达式缓存作用域：注册过自定义函数的引擎函数表不同，不能与其他引擎共用编译结果
 }
+
+// expressCacheSize 表达式缓存容量。{{}} 变量会按值拼进表达式文本，取值变化就产生新的 key，不设上限会持续占用内存
+const expressCacheSize = 10000
 
 var (
 	defaultRulePrefix = "RET_RULE_"
 
-	expressCache sync.Map // 缓存表达式,提高执行效率
+	expressCache, _ = lru.New[string, *govaluate.EvaluableExpression](expressCacheSize) // 缓存表达式,提高执行效率
+	cacheScopeSeq   atomic.Int64                                                        // 自定义函数引擎的缓存作用域序号
 )
 
 // RuleInfo 定义好的规则，包括简单规则和负责规则
@@ -120,6 +127,9 @@ func (r *EngineLogic) SetCustomerFunctions(functions map[string]govaluate.Expres
 		}
 		r.functions[key] = val
 	}
+	if r.cacheScope == "" { // 函数表已与内置不同，使用独立的缓存作用域
+		r.cacheScope = "scope" + strconv.FormatInt(cacheScopeSeq.Add(1), 10) + "\x00"
+	}
 	if len(repeatKeyList) > 0 {
 		return fmt.Errorf("自定义函数有重复的key: %v", repeatKeyList)
 	}
@@ -130,10 +140,9 @@ func (r *EngineLogic) getExpressionByRuleString(ruleString string) (*govaluate.E
 	var expression *govaluate.EvaluableExpression
 	var err error
 
-	if expressionTemp, ok := expressCache.Load(ruleString); ok {
-		if expression, ok = expressionTemp.(*govaluate.EvaluableExpression); ok {
-			return expression, nil
-		}
+	cacheKey := r.cacheScope + ruleString
+	if expression, ok := expressCache.Get(cacheKey); ok {
+		return expression, nil
 	}
 
 	if r.functions != nil && len(r.functions) > 0 {
@@ -159,7 +168,7 @@ func (r *EngineLogic) getExpressionByRuleString(ruleString string) (*govaluate.E
 						expression, err = govaluate.NewEvaluableExpression(newRuleString)
 					}
 					if err == nil {
-						expressCache.Store(ruleString, expression)
+						expressCache.Add(cacheKey, expression)
 						return expression, nil
 					}
 				}
@@ -168,7 +177,7 @@ func (r *EngineLogic) getExpressionByRuleString(ruleString string) (*govaluate.E
 		return nil, fmt.Errorf("err: 【%w】, 【%s】", err, errHasOccurred)
 	}
 
-	expressCache.Store(ruleString, expression)
+	expressCache.Add(cacheKey, expression)
 	return expression, nil
 }
 
