@@ -160,6 +160,14 @@ func GetFuncName(i any) (name string, isMethod bool) {
 	return strings.TrimSuffix(shortName, "-fm"), isMethod
 }
 
+// funcInType 第 i 个实参对应的形参类型，可变参数部分取元素类型
+func funcInType(fnType reflect.Type, i int) reflect.Type {
+	if fnType.IsVariadic() && i >= fnType.NumIn()-1 {
+		return fnType.In(fnType.NumIn() - 1).Elem()
+	}
+	return fnType.In(i)
+}
+
 // FuncExecute 根据参数，可以调用任何方法
 func FuncExecute(function any, args ...any) (result []any, err error) {
 	// 将空接口转换为reflect.Value
@@ -185,6 +193,10 @@ func FuncExecute(function any, args ...any) (result []any, err error) {
 	}()
 	argSlice := make([]reflect.Value, len(trueArgList))
 	for i, v := range trueArgList {
+		if v == nil { // reflect.ValueOf(nil) 是无效值，Call 会 panic，需按形参类型传零值
+			argSlice[i] = reflect.Zero(funcInType(fnType, i))
+			continue
+		}
 		argSlice[i] = reflect.ValueOf(v)
 	}
 	// 调用函数并返回结果

@@ -26,3 +26,12 @@ func TestFuncExecutePanic(t *testing.T) {
 		t.Fatalf("正常调用 result=%v err=%v", result, err)
 	}
 }
+
+func TestFuncExecuteNilArg(t *testing.T) {
+	result, err := utils.FuncExecute(func(v any, s *string, rest ...any) bool {
+		return v == nil && s == nil && len(rest) == 1 && rest[0] == nil
+	}, nil, nil, nil)
+	if err != nil || len(result) != 1 || result[0] != true {
+		t.Fatalf("nil 实参应按形参类型传零值, got result=%v err=%v", result, err)
+	}
+}
