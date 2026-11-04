@@ -121,7 +121,7 @@ func TestNewFlowContextMeta(t *testing.T) {
 
 // TestNewFlowContextStepKeyFunc 验证 stepKeyFunc 匹配的 key 分流到 Steps、其余进 Arguments
 func TestNewFlowContextStepKeyFunc(t *testing.T) {
-	stepFn := func(key string) bool { return strings.HasPrefix(key, "step_") }
+	stepFn := func(key string, val any) (any, bool) { return val, strings.HasPrefix(key, "step_") }
 	c := paramx.NewFlowContext("f1", "i1", map[string]any{
 		"step_a": map[string]any{"x": 1},
 		"normal": "v",
@@ -154,7 +154,7 @@ func TestNewFlowContextStepKeyFunc(t *testing.T) {
 
 // TestNewFlowContextStepKeyFuncNotMap 验证 stepKeyFunc 命中但值不是 map 时回退到 Arguments
 func TestNewFlowContextStepKeyFuncNotMap(t *testing.T) {
-	stepFn := func(key string) bool { return key == "step_b" }
+	stepFn := func(key string, val any) (any, bool) { return val, key == "step_b" }
 	c := paramx.NewFlowContext("f1", "i1", map[string]any{
 		"step_b": "not-a-map",
 	}, stepFn)

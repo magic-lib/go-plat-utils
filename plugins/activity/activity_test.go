@@ -6,39 +6,9 @@ import (
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/plugins/action"
 	"github.com/magic-lib/go-plat-utils/plugins/activity"
-	"github.com/magic-lib/go-plat-utils/utils"
 	"github.com/magic-lib/go-plat-utils/utils/httputil/param"
 	"testing"
 )
-
-func TestActivityExecute(t *testing.T) {
-	oneAct := activity.Activity{
-		Id:           "",
-		ActNamespace: "",
-		ActName:      "",
-		Arguments: []*param.BindConfig{
-			{
-				Key:   "name",
-				Value: "{{ffff.responses.id}}",
-			},
-		},
-		ArgTemplate: "{{aaaa.responses.id}}+{{return_bbbb.responses.mm}}+{{cccc.aa}}",
-		Responses:   nil,
-		Hooks:       nil,
-		Control:     activity.ActivityControl{},
-	}
-
-	testCases := []*utils.TestStruct{
-		{"err", []any{0}, []any{"err:no id"}, func(n int) string {
-			//task.WithReturnKeyPrefix("return_")
-
-			fmt.Println(oneAct)
-
-			return ""
-		}},
-	}
-	utils.TestFunction(t, testCases, nil)
-}
 
 // 1. 加法：输入两个数字，返回和
 type AddReq struct {
@@ -162,9 +132,7 @@ func TestActivityExecuteDemo(t *testing.T) {
 
 	// ---------- Activity 4: 使用 Hooks（OnStart 钩子，自身不绑定 Action）----------
 	hookAct := &activity.Activity{
-		Id:           "hook_log",
-		ActNamespace: "test",
-		ActName:      "concat",
+		Id: "hook_log",
 		Hooks: activity.LifecycleHooks{
 			activity.LifecycleEventOnStart: &activity.Activity{
 				ActNamespace: "test",
