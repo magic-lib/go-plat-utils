@@ -38,6 +38,9 @@ func Unmarshal(srcStruct any, dstPoint any) error {
 	}
 
 	dstType := reflect.TypeOf(dstPoint)
+	if dstType.Kind() != reflect.Ptr { // 非指针无法回写，且后续 dstType.Elem() 会 panic
+		return fmt.Errorf("unmarshal DstPoint must be a pointer, got %s", dstType.String())
+	}
 	if (srcType.Kind() == reflect.Ptr || srcType.Kind() == reflect.Struct) &&
 		dstType.Kind() == reflect.Ptr {
 		if dstType.Elem().Kind() == reflect.Map {

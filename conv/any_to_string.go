@@ -46,10 +46,9 @@ func String(src any) string {
 	if src == nil {
 		return ""
 	}
-
 	// 特殊处理error类型
 	if cond.IsError(src) {
-		return src.(error).Error()
+		return safeErrorString(src.(error))
 	}
 
 	// IgnoreOmitempty 为 true 时忽略 json tag 中的 omitempty，空值字段也会输出（String 显示全部字段）
@@ -484,7 +483,7 @@ func getByType(src any) (string, error) {
 			// 返回 errType 让流程继续往后走，最终按对象序列化输出
 			return "", errType
 		}
-		return v.Error(), nil
+		return safeErrorString(v), nil
 	case time.Time:
 		{
 			return v.Format(time.DateTime), nil
@@ -689,6 +688,19 @@ func getStringFromJson(src any, ignoreOmitempty bool) (string, error) {
 		return retAll, nil
 	}
 	return "", fmt.Errorf(errStrGetStringFromJson, err)
+}
+
+// safeErrorString 调用 Error()；typed-nil 指针（如 var e *MyErr）的 Error() 若解引用接收者会 panic，此时返回空串，
+// 不解引用接收者的实现仍正常输出其文本
+func safeErrorString(err error) (s string) {
+	if rv := reflect.ValueOf(err); rv.Kind() == reflect.Ptr && rv.IsNil() {
+		defer func() {
+			if recover() != nil {
+				s = ""
+			}
+		}()
+	}
+	return err.Error()
 }
 
 // sortedKeys 返回 map 按字典序排序后的 key
