@@ -9,6 +9,9 @@ import (
 	"regexp"
 )
 
+// defaultEngineLogic 共用的规则引擎：内置函数表创建后只读，可并发复用，避免每次计算都重建函数表
+var defaultEngineLogic = ruleengine.NewEngineLogic()
+
 // RuleExprEngine 公式计算引擎（变量替换 + 表达式计算 + 函数支持）
 type RuleExprEngine struct {
 	prefix       string
@@ -85,7 +88,7 @@ func (e *RuleExprEngine) RunString(expr string, args any, noEvaluate ...bool) (a
 		return newWhen, nil
 	}
 
-	ruleEngine := ruleengine.NewEngineLogic()
+	ruleEngine := defaultEngineLogic
 	newWhenString := conv.String(newWhen)
 	retVal, err := ruleEngine.EvaluateString(newWhenString, argMap)
 	if err != nil {
