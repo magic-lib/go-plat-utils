@@ -26,7 +26,7 @@ func getCron() *cronInstance {
 	cOnce.Do(func() {
 		oneCrontab = &cronInstance{
 			running:  false,
-			c:        cron.New(),
+			c:        cron.New(cron.WithChain(cron.Recover(cron.DefaultLogger))), // 默认不 recover，任务 panic 会导致进程崩溃
 			entryMap: make(map[string]cron.EntryID),
 		}
 	})
@@ -50,12 +50,36 @@ dayOfWeek  = field(fields[5], dow)
 // expr格式：分 时 日 月 周
 // immediateRun：是否添加成功后立刻执行一遍
 func StartJobs(immediateRun bool, jobs ...map[string]cron.FuncJob) error {
+	runList, err := addJobs(immediateRun, jobs...)
+	if err != nil {
+		return err
+	}
+
+	//立即执行：每次调用都要执行本次传入的任务；放在锁外执行，避免任务里再调用 StartJobs/Stop 时死锁
+	for _, runFn := range runList {
+		runJobWithRecover(runFn)
+	}
+	return nil
+}
+
+// runJobWithRecover 立即执行任务，单个任务 panic 不影响其他任务，也不会抛给调用方
+func runJobWithRecover(fn cron.FuncJob) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("[crontab] immediate run job panic: %v", r)
+		}
+	}()
+	fn()
+}
+
+// addJobs 添加任务并按需启动调度器，返回需要立即执行的任务列表
+func addJobs(immediateRun bool, jobs ...map[string]cron.FuncJob) ([]cron.FuncJob, error) {
 	oneCron := getCron()
 	oneCron.mu.Lock()
 	defer oneCron.mu.Unlock()
 
 	if len(jobs) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	log.Println("[crontab] StartJobs start:")
@@ -82,7 +106,7 @@ func StartJobs(immediateRun bool, jobs ...map[string]cron.FuncJob) error {
 				for _, rid := range rollback {
 					oneCron.c.Remove(rid)
 				}
-				return fmt.Errorf("crontab add job failed, expr=%s: %w", failExpr, err)
+				return nil, fmt.Errorf("crontab add job failed, expr=%s: %w", failExpr, err)
 			}
 			rollback = append(rollback, eid)
 			oneCron.entryMap[times] = eid
@@ -92,16 +116,9 @@ func StartJobs(immediateRun bool, jobs ...map[string]cron.FuncJob) error {
 	//没有添加成功，则不用启动
 	log.Println("[crontab] StartJobs loaded success:", conv.String(allKey))
 
-	//立即执行：每次调用都要执行本次传入的任务（不能放在 isStart 判断之后，否则第二次调用会被跳过）
-	if immediateRun && len(runList) > 0 {
-		for _, runFn := range runList {
-			runFn()
-		}
-	}
-
 	//cron 的调度循环只会启动一次，后续调用只是向已运行的调度器追加任务
 	if oneCron.running {
-		return nil
+		return runList, nil
 	}
 	oneCron.running = true
 
@@ -109,7 +126,7 @@ func StartJobs(immediateRun bool, jobs ...map[string]cron.FuncJob) error {
 	goroutines.GoAsync(func(params ...any) {
 		oneCron.c.Run()
 	})
-	return nil
+	return runList, nil
 }
 
 // Stop 优雅停止，等待正在运行任务全部结束
