@@ -10,14 +10,15 @@ import (
 // Dispatcher 环形分配器
 type Dispatcher struct {
 	mu        sync.RWMutex
-	refreshMu sync.Mutex        // 串行化刷新：手动 Refresh 与后台定时刷新互斥，避免并发 fetch / 旧数据覆盖新数据
-	agents    []Agent           // 当前参与分配的客服，按 GetAgentId() 升序排列
-	lastID    uint64            // 上一次已分配的客服 ID
-	lastIdx   int               // lastID 内已分配到的实例序号（0-based）
-	assigned  bool              // 是否已分配过（区分首次）
-	issued    map[uint64]uint64 // 每人（按 GetAgentId）已发放的单数累计，用于跨批次按比例分摊
-	active    map[uint64]bool   // 上一次分配时可分单的 ID 集合，用于识别新加入/回归的人；nil 表示尚未分配过
-	pinned    map[uint64]bool   // 经 SetIssued 显式设置过、尚未加入在岗集合的 ID，不参与对齐
+	refreshMu sync.Mutex         // 串行化刷新：手动 Refresh 与后台定时刷新互斥，避免并发 fetch / 旧数据覆盖新数据
+	agents    []Agent            // 当前参与分配的客服，按 GetAgentId() 升序排列
+	lastID    uint64             // 上一次已分配的客服 ID
+	lastIdx   int                // lastID 内已分配到的实例序号（0-based）
+	assigned  bool               // 是否已分配过（区分首次）
+	issued    map[uint64]uint64  // 每人（按 GetAgentId）已发放的单数累计，用于跨批次按比例分摊
+	active    map[uint64]bool    // 上一次分配时可分单的 ID 集合，用于识别新加入/回归的人；nil 表示尚未分配过
+	pinned    map[uint64]bool    // 经 SetIssued 显式设置过、尚未加入在岗集合的 ID，不参与对齐
+	cancel    context.CancelFunc // 停止后台定时刷新，由 Close 调用
 
 	StartID      uint64  // 默认起始客服ID（首次分配从此客服开始）
 	Agents       []Agent // 初始客服列表（也可事后用 SetAgentList 动态设置）
@@ -35,13 +36,21 @@ func NewDispatcher(ctx context.Context, dConfig *Dispatcher) (*Dispatcher, error
 	if dConfig == nil {
 		dConfig = new(Dispatcher)
 	}
-	ctx = ctxOr(ctx)
+	// 派生可取消的 ctx：调用方传 nil（退化为 Background）时后台刷新协程原本无法退出，可通过 Close 停止
+	ctx, dConfig.cancel = context.WithCancel(ctxOr(ctx))
 	err := dConfig.init(ctx)
 
 	if dConfig.Period > 0 && dConfig.Fetch != nil {
 		dConfig.start(ctx)
 	}
 	return dConfig, err
+}
+
+// Close 停止后台定时刷新，可重复调用；不再使用分配器时应调用，避免刷新协程和定时器泄漏。
+func (d *Dispatcher) Close() {
+	if d.cancel != nil {
+		d.cancel()
+	}
 }
 
 // SetSkipBatchFunc 设置批量跳过条件：一次性给定全部 Agent 并一次性判断，返回自身便于链式调用。
@@ -118,17 +127,24 @@ func (d *Dispatcher) nextPos() int {
 	return pos
 }
 
-// computeSkip 在持锁状态下一次性计算所有 Agent 的“跳过标记”（key=Agent.GetAgentId()，value=true 表示跳过）：
+// computeSkip 一次性计算所有 Agent 的“跳过标记”（key=Agent.GetAgentId()，value=true 表示跳过）：
 // 调用一次 SkipBatch 批量判断（适合查库/远程调用，N 次 IO → 1 次批量）。
 //
 // 用 map[uint64]bool 而非 []bool：避免“返回切片长度与 agents 不一致导致下标错位/越界”；
 // 缺失的 Agent 一律视作“不跳过”。之后可用 available(skipMap, pos) 在内存中 O(1) 查表，
 // 避免在分配循环里对每个 Agent 重复查库。
-// 回调在持锁状态下调用，因此回调里不要再反向调用 Dispatcher 的加锁方法，否则会死锁。
+// 调用方不能持有 d.mu：只在读锁内拷贝 agents，回调在锁外执行，慢查询不会阻塞 Assign/AgentList/刷新。
+// 拷贝之后列表若被刷新，新加入的 Agent 不在结果中，按“不跳过”处理。
 func (d *Dispatcher) computeSkip(ctx context.Context) map[uint64]bool {
+	d.mu.RLock()
+	skipBatch := d.SkipBatch
+	agents := make([]Agent, len(d.agents))
+	copy(agents, d.agents)
+	d.mu.RUnlock()
+
 	skipMap := make(map[uint64]bool)
-	if d.SkipBatch != nil {
-		res := d.SkipBatch(ctx, d.agents)
+	if skipBatch != nil {
+		res := skipBatch(ctx, agents)
 		for id, skip := range res {
 			if skip {
 				skipMap[id] = true
@@ -180,6 +196,7 @@ func (d *Dispatcher) nextAssign(skipMap map[uint64]bool) (Agent, uint64, int) {
 // （cursor 不动，下次可重新尝试）。
 func (d *Dispatcher) Assign(ctx context.Context) (Agent, error) {
 	ctx = ctxOr(ctx)
+	flags := d.computeSkip(ctx) // 锁外执行，可能查库
 
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -188,7 +205,6 @@ func (d *Dispatcher) Assign(ctx context.Context) (Agent, error) {
 		return nil, sql.ErrNoRows
 	}
 
-	flags := d.computeSkip(ctx)
 	target, newID, newIdx := d.nextAssign(flags)
 	if target == nil {
 		return nil, sql.ErrNoRows
@@ -222,6 +238,7 @@ func (d *Dispatcher) AssignN(ctx context.Context, n int) []Agent {
 		return nil
 	}
 	ctx = ctxOr(ctx)
+	flags := d.computeSkip(ctx) // 锁外执行，可能查库
 
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -230,7 +247,6 @@ func (d *Dispatcher) AssignN(ctx context.Context, n int) []Agent {
 		return nil
 	}
 
-	flags := d.computeSkip(ctx)
 	avail, weights := d.availables(flags)
 	if len(avail) == 0 {
 		return nil
