@@ -41,27 +41,32 @@ func DoWithSessionContext(ctx context.Context, fn func(ctx context.Context) erro
 	if err != nil {
 		return err
 	}
+	// 结束会话，原来从不调用 EndSession，每次调用都泄漏一个会话
+	defer sc.EndSession(ctx)
 	err = sc.StartTransaction()
 	if err != nil {
 		return err
 	}
+	// 屏障检查与业务操作必须使用绑定了该会话的 ctx 才会在事务内执行：
+	// 原来直接用外部 ctx，屏障记录与业务写入都不在事务中，回滚不会撤销屏障记录，重试会被误判为重复请求
+	sessCtx := mongo.NewSessionContext(ctx, sc)
 
 	if b := txbarrier.BarrierFromCtx(ctx); b.Valid() { // check whether if need barrier check.
-		err = barrierCheck(ctx, cli, b)
+		err = barrierCheck(sessCtx, cli, b)
 		if errors.Is(err, txbarrier.ErrEmptyCompensation) {
-			_ = sc.CommitTransaction(ctx)
+			_ = sc.CommitTransaction(sessCtx)
 			return err
 		}
 		if err != nil {
-			_ = sc.AbortTransaction(ctx)
+			_ = sc.AbortTransaction(sessCtx)
 			return err
 		}
 	}
 
-	if err = fn(ctx); err == nil {
-		err = sc.CommitTransaction(ctx)
+	if err = fn(sessCtx); err == nil {
+		err = sc.CommitTransaction(sessCtx)
 	} else {
-		err = multierror.Append(err, sc.AbortTransaction(ctx))
+		err = multierror.Append(err, sc.AbortTransaction(sessCtx))
 	}
 
 	return err
