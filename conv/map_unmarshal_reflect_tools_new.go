@@ -275,18 +275,20 @@ func (c *toolsService) getSrcStruct(srcStruct any) any {
 	}
 
 	if srcType.Kind() == reflect.String { //字符串类型
+		// 用 UseNumber 解析：超过 2^53 的整数保留为 json.Number，后续赋值给整数字段时不丢精度；
+		// 其余数字仍为 float64，与原来的解析结果一致
 		newStruct := make(map[string]any)
 		srcStructString := String(srcStruct)
-		err := jsoniterForNil.UnmarshalFromString(srcStructString, &newStruct)
+		err := jsonUseNumber.UnmarshalFromString(srcStructString, &newStruct)
 		// 数组
 		if err != nil {
 			newList := make([]any, 0)
-			err = jsoniterForNil.UnmarshalFromString(srcStructString, &newList)
+			err = jsonUseNumber.UnmarshalFromString(srcStructString, &newList)
 			if err == nil {
-				srcStruct = newList
+				srcStruct, _ = normalizeJsonNumber(newList)
 			}
 		} else {
-			srcStruct = newStruct
+			srcStruct, _ = normalizeJsonNumber(newStruct)
 		}
 	}
 
