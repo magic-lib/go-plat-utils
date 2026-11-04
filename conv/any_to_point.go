@@ -12,9 +12,12 @@ func Pointer[E any](v any) *E {
 		return p
 	}
 
-	vType := reflect.TypeOf(v)
-	if vType.Kind() == reflect.Ptr {
-		return v.(*E) // 已经是指针，直接转型
+	// 其他类型的指针：v.(*E) 已经断言失败，不能再强转（会 panic），解引用后按值继续转换
+	if rv := reflect.ValueOf(v); rv.Kind() == reflect.Ptr {
+		if rv.IsNil() {
+			return nil
+		}
+		v = rv.Elem().Interface()
 	}
 
 	ptr := new(E)
