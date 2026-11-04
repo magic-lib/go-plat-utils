@@ -176,10 +176,11 @@ func FuncExecute(function any, args ...any) (result []any, err error) {
 		return nil, err
 	}
 
-	// 调用函数，捕获panic
+	// 调用函数，捕获panic，并通过 err 返回给调用方，避免被当成执行成功
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("[FuncExecute] Recovered from panic:", r)
+			result = nil
+			err = fmt.Errorf("[FuncExecute] panic: %v", r)
 		}
 	}()
 	argSlice := make([]reflect.Value, len(trueArgList))
