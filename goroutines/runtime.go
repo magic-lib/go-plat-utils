@@ -59,7 +59,8 @@ func OpenRoutinePool(nums int) *ants.Pool {
 	return newPool
 }
 
-// CloseRoutinePool 不用了，关闭池
+// CloseRoutinePool 不用了，关闭池。
+// 注意：ants 释放池时不会等待已提交的任务，与 GoAsync 并发调用时个别任务可能不被执行，应在不再提交任务后再关闭
 func CloseRoutinePool() {
 	defaultAsyncObj.poolMutex.Lock()
 	defer defaultAsyncObj.poolMutex.Unlock()
