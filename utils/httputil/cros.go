@@ -1,6 +1,7 @@
 package httputil
 
 import (
+	"github.com/samber/lo"
 	"net/http"
 	"strings"
 )
@@ -43,7 +44,9 @@ func CROSMiddleware(fn func(w http.Header), origins ...string) func(http.Handler
 func checkAndSetHeaders(w http.ResponseWriter, r *http.Request, origins []string) {
 	setVaryHeaders(w, r)
 
-	if len(origins) == 0 {
+	// 未配置或配置了 * 时允许所有来源：固定返回 *，不回显请求方 Origin，也不允许携带凭证，
+	// 否则任意站点都能发起带 cookie 的跨域请求
+	if len(origins) == 0 || lo.Contains(origins, allOrigins) {
 		setHeader(w, allOrigins)
 		return
 	}
