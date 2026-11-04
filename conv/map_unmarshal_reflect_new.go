@@ -33,7 +33,9 @@ func toAssignTo(srcStruct any, dstPoint any) error {
 
 	dstVal = dstVal.Elem()
 
-	logDebug("UnmarshalByReflect param:", srcVal.Kind().String(), dstVal.Kind().String())
+	if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+		logDebug("UnmarshalByReflect param:", srcVal.Kind().String(), dstVal.Kind().String())
+	}
 	// 如果是切片
 	if srcVal.Kind() == reflect.Slice && dstVal.Kind() == reflect.Slice {
 		return assignConvertSlice(srcVal, dstVal)
@@ -53,7 +55,9 @@ func toAssignTo(srcStruct any, dstPoint any) error {
 		return fmt.Errorf("UnmarshalByReflect error: %s, %s", reflect.TypeOf(dstPoint).String(), err.Error())
 	}
 
-	logDebug("fill.GetByDstAll:", String(dstValue.Interface()))
+	if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+		logDebug("fill.GetByDstAll:", String(dstValue.Interface()))
+	}
 
 	t := new(toolsService)
 	dstStruct, _ := t.getNewSrcAndDst(dstValue.Interface(), dstPoint)
@@ -151,7 +155,9 @@ type getNewService struct {
 
 // GetByDstAll 根据Dst的类型，获取srcInterface的值
 func (c *getNewService) GetByDstAll(srcInterface any, dstType reflect.Type) (newDstValue reflect.Value, err error) {
-	logDebug("GetByDstAll param:", String(srcInterface), dstType.String(), dstType.Kind().String())
+	if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+		logDebug("GetByDstAll param:", String(srcInterface), dstType.String(), dstType.Kind().String())
+	}
 
 	srcType := reflect.TypeOf(srcInterface)
 	if srcType == dstType {
@@ -161,7 +167,9 @@ func (c *getNewService) GetByDstAll(srcInterface any, dstType reflect.Type) (new
 	var newDstList reflect.Value
 	var found bool
 
-	logDebug("GetByDstAll param 163:", dstType.Kind().String())
+	if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+		logDebug("GetByDstAll param 163:", dstType.Kind().String())
+	}
 	if dstType.Kind() == reflect.Slice {
 		found = true
 		newDstList, err = c.getByDstSlice(srcInterface, dstType)
@@ -169,7 +177,9 @@ func (c *getNewService) GetByDstAll(srcInterface any, dstType reflect.Type) (new
 		found = true
 		newDstList, err = c.getByDstPtr(srcInterface, dstType)
 	} else if dstType.Kind() == reflect.Struct {
-		logDebug("GetByDstAll struct 174:", String(srcInterface), dstType.String())
+		if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+			logDebug("GetByDstAll struct 174:", String(srcInterface), dstType.String())
+		}
 		logDebug("GetByDstAll struct 175:", srcType)
 		dstIns := reflect.New(dstType)
 		if srcType != nil && srcType.Kind() == reflect.Map {
@@ -177,7 +187,9 @@ func (c *getNewService) GetByDstAll(srcInterface any, dstType reflect.Type) (new
 			t := new(toolsService)
 			err = t.UnmarshalDataFromJson(srcInterface, dstIns.Interface())
 			if err == nil {
-				logDebug("GetByDstAll mapToStruct result:", String(dstIns.Interface()))
+				if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+					logDebug("GetByDstAll mapToStruct result:", String(dstIns.Interface()))
+				}
 				newDstList = dstIns.Elem()
 			}
 		}
@@ -185,7 +197,9 @@ func (c *getNewService) GetByDstAll(srcInterface any, dstType reflect.Type) (new
 		if !found || err != nil {
 			found = true
 			newDstList, err = c.getByDstStruct(srcInterface, dstType)
-			logDebug("GetByDstAll struct result:", newDstList, dstType.String())
+			if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+				logDebug("GetByDstAll struct result:", newDstList, dstType.String())
+			}
 		}
 	} else if dstType.Kind() == reflect.Map {
 		found = true
@@ -195,7 +209,9 @@ func (c *getNewService) GetByDstAll(srcInterface any, dstType reflect.Type) (new
 	// 完成
 	if found {
 		if err == nil && newDstList.IsValid() {
-			logDebug("GetByDstAll found:", String(newDstList.Interface()))
+			if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+				logDebug("GetByDstAll found:", String(newDstList.Interface()))
+			}
 			return newDstList, nil
 		}
 		newDstList2, err2 := c.getByDstOther(srcInterface, dstType)
@@ -207,7 +223,9 @@ func (c *getNewService) GetByDstAll(srcInterface any, dstType reflect.Type) (new
 	}
 
 	//未找到的情况用默认的方法
-	logDebug("getByDstOther 207:", dstType.String(), String(srcInterface))
+	if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+		logDebug("getByDstOther 207:", dstType.String(), String(srcInterface))
+	}
 	newDstList2, err2 := c.getByDstOther(srcInterface, dstType)
 	logDebug("getByDstOther 209:", newDstList2, err2)
 	if err2 == nil && newDstList2.IsValid() {
@@ -260,7 +278,9 @@ func (c *getNewService) getByDstPtr(srcInterface any, dstType reflect.Type) (new
 
 	dstDataType := t.getDirectTypeByPtr(dstType)
 
-	logDebug("getByDstPtr:", dstDataType.String())
+	if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+		logDebug("getByDstPtr:", dstDataType.String())
+	}
 
 	if dstType == reflect.TypeOf(&timestamppb.Timestamp{}) {
 		if oneTime, err1 := toConvert[time.Time](srcInterface); err1 == nil {
@@ -269,7 +289,9 @@ func (c *getNewService) getByDstPtr(srcInterface any, dstType reflect.Type) (new
 		}
 	}
 
-	logDebug("getByDstPtr2:", dstDataType.String())
+	if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+		logDebug("getByDstPtr2:", dstDataType.String())
+	}
 
 	dstDataInterface, err := c.GetByDstAll(srcInterface, dstDataType)
 	if err != nil || !dstDataInterface.IsValid() {
@@ -281,7 +303,9 @@ func (c *getNewService) getByDstPtr(srcInterface any, dstType reflect.Type) (new
 	newRetVal := t.getDirectValueByPtr(dstType, dstDataInterface)
 	if newRetVal.IsValid() {
 		logDebug("getByDstPtr:", newRetVal.Interface())
-		logDebug("getByDstPtr:", newRetVal.Type().String())
+		if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+			logDebug("getByDstPtr:", newRetVal.Type().String())
+		}
 		return newRetVal, nil
 	}
 	return reflect.Value{}, nil
@@ -326,10 +350,14 @@ func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (new
 			}
 			logDebug("GetByDstAll end 324:")
 
-			logDebug("getByDstStruct1:", dstColumnField.Name, dstColumnField.Type.String())
+			if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+				logDebug("getByDstStruct1:", dstColumnField.Name, dstColumnField.Type.String())
+			}
 			if newDataValue.IsValid() {
 				logDebug("getByDstStruct2:", newDataValue.Interface())
-				logDebug("getByDstStruct 312:", dstColumnValue.Type().String(), newDataValue.Interface())
+				if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+					logDebug("getByDstStruct 312:", dstColumnValue.Type().String(), newDataValue.Interface())
+				}
 			}
 
 			if newDataValue.IsValid() {
@@ -349,7 +377,9 @@ func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (new
 		}
 
 		// 当前字段是否能设置，放后面解决类为小写的情况
-		logDebug("canSetStructColumn:", dstColumnField.Name, dstColumnValue.String())
+		if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+			logDebug("canSetStructColumn:", dstColumnField.Name, dstColumnValue.String())
+		}
 		if canSet := t.canSetStructColumn(dstColumnField.Name, dstColumnValue); !canSet {
 			continue
 		}
@@ -358,7 +388,9 @@ func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (new
 		//从src获取每一个目标的值,src 是一个整体，需要一一读取
 		valueTemp := c.GetSrcFromStructField(srcStruct, dstColumnField)
 
-		logDebug("getByDstStruct 344:", String(srcStruct), dstColumnField, valueTemp)
+		if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+			logDebug("getByDstStruct 344:", String(srcStruct), dstColumnField, valueTemp)
+		}
 
 		if cond.IsNil(valueTemp) {
 			//源数据为nil，则不用设置
@@ -369,7 +401,9 @@ func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (new
 
 		newDataValue, errTemp := c.GetByDstAll(valueTemp, dstColumnField.Type)
 		if errTemp == nil && newDataValue.IsValid() {
-			logDebug("getByDstStruct 346:", dstColumnField.Name, dstColumnValue.Type().String(), newDataValue.Interface())
+			if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+				logDebug("getByDstStruct 346:", dstColumnField.Name, dstColumnValue.Type().String(), newDataValue.Interface())
+			}
 			dstColumnValue.Set(newDataValue)
 			isSetStruct = true
 		}
@@ -382,12 +416,16 @@ func (c *getNewService) getByDstStruct(srcStruct any, dstType reflect.Type) (new
 	//正常设置
 	if isSetStruct {
 		if dstStructValue.IsValid() {
-			logDebug("getByDstStruct: ", dstStructValue.Interface(), dstStructValue.Type().String())
+			if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+				logDebug("getByDstStruct: ", dstStructValue.Interface(), dstStructValue.Type().String())
+			}
 		}
 		return dstStructValue, err
 	}
 
-	logDebug("getByDstStruct error:", String(srcStruct), err, dstType.String())
+	if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+		logDebug("getByDstStruct error:", String(srcStruct), err, dstType.String())
+	}
 
 	return reflect.Value{}, err
 }
@@ -402,7 +440,9 @@ func (c *getNewService) getByDstMap(srcStruct any, dstType reflect.Type) (newDst
 		return reflect.Value{}, fmt.Errorf(errStrGetByDstMap, keyType.String())
 	}
 
-	logDebug("getByDstMap param:", String(srcStruct), dstType.String())
+	if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+		logDebug("getByDstMap param:", String(srcStruct), dstType.String())
+	}
 
 	toMap := make(map[string]any)
 
@@ -466,7 +506,9 @@ func (c *getNewService) getByDstOther(srcOther any, dstType reflect.Type) (newDs
 	if !hasSet {
 		if srcValue.CanConvert(dstType) {
 			newV := srcValue.Convert(dstType)
-			logDebug("newV", String(String(newV.Interface())), String(srcValue.Interface()))
+			if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+				logDebug("newV", String(String(newV.Interface())), String(srcValue.Interface()))
+			}
 			//这里有可能将55数字转换为7字符的问题，不是想要的效果，所以需要对值进行判断
 			if newPtr.Elem().Type() == newV.Type() && String(newV.Interface()) == String(srcValue.Interface()) {
 				newPtr.Elem().Set(newV)
@@ -480,7 +522,9 @@ func (c *getNewService) getByDstOther(srcOther any, dstType reflect.Type) (newDs
 			//自定义转换
 			newDst, err := c.getByDstDefault(srcOther, dstType)
 			if err == nil {
-				logDebug("getByDstOther type:", newPtr.Elem().Type().String(), newDst.Type().String())
+				if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+					logDebug("getByDstOther type:", newPtr.Elem().Type().String(), newDst.Type().String())
+				}
 
 				if newPtr.Elem().Type() == newDst.Type() {
 					newPtr.Elem().Set(newDst)
@@ -1070,7 +1114,9 @@ func (c *getNewService) changeValueToDstBySrcType(srcValue reflect.Value, dstTyp
 // GetSrcFromStructField 取下一级的数据
 func (c *getNewService) GetSrcFromStructField(srcInterface any, dstColumn reflect.StructField) any {
 
-	logDebug("GetSrcFromStructField", String(srcInterface), dstColumn.Name)
+	if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+		logDebug("GetSrcFromStructField", String(srcInterface), dstColumn.Name)
+	}
 
 	srcVal := reflect.ValueOf(srcInterface)
 	for srcVal.Kind() == reflect.Ptr || srcVal.Kind() == reflect.Interface {
@@ -1092,7 +1138,9 @@ func (c *getNewService) GetSrcFromStructField(srcInterface any, dstColumn reflec
 }
 
 func (c *getNewService) getColumnValueFromStruct(srcStruct any, dstColumn reflect.StructField) any {
-	logDebug("getColumnValueFromStruct:", String(srcStruct), dstColumn.Name)
+	if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
+		logDebug("getColumnValueFromStruct:", String(srcStruct), dstColumn.Name)
+	}
 
 	//1、如果是struct，则首先从struct中进行匹配，名称完全一样的进行匹配
 	srcType := reflect.TypeOf(srcStruct)
