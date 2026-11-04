@@ -72,6 +72,14 @@ func (r *customerFunc) Mul(args ...any) (any, error) {
 
 // Div 两数相除
 func (r *customerFunc) Div(args ...any) (any, error) {
+	// decimal 除以 0 会直接 panic，导致整个调用 goroutine 崩溃，这里提前返回错误
+	if decimalList := r.getAllDecimalList(args...); len(decimalList) > 1 {
+		for _, d := range decimalList[1:] {
+			if d.IsZero() {
+				return nil, fmt.Errorf("除数不能为0：%v", args)
+			}
+		}
+	}
 	return r.relationByNumber(func(d1 decimal.Decimal, d2 decimal.Decimal) decimal.Decimal {
 		return d1.Div(d2)
 	}, args...), nil
@@ -91,6 +99,9 @@ func (r *customerFunc) Has(args ...any) (any, error) {
 		return false, fmt.Errorf("参数数量不对：%v", args)
 	}
 	listInterface := args[0]
+	if listInterface == nil { // reflect.TypeOf(nil) 为 nil，后面调用 Kind() 会 panic
+		return false, nil
+	}
 	item, _ := conv.Convert[string](args[1])
 	listType := reflect.TypeOf(listInterface)
 	listValue := reflect.ValueOf(listInterface)
