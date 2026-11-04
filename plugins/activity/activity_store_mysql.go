@@ -21,6 +21,7 @@ func (s *SQLActivityStore) Migrate(ctx context.Context, tableName string) error 
 CREATE TABLE IF NOT EXISTS %s (
 	id      INTEGER PRIMARY KEY AUTOINCREMENT,
 	type         VARCHAR(191) NOT NULL UNIQUE,
+	activity_id  VARCHAR(191),
 	activity_type VARCHAR(191),
 	act_namespace VARCHAR(191),
 	act_name     VARCHAR(191),
@@ -30,8 +31,8 @@ CREATE TABLE IF NOT EXISTS %s (
 	depends_on   JSON,
 	hooks        JSON,
 	control      JSON,
-	create_time   DATETIME,
-	update_time   DATETIME
+	created_at   DATETIME,
+	updated_at   DATETIME
 )`, tableName))
 	return err
 }
