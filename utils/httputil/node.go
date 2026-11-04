@@ -86,6 +86,9 @@ func (n *PathNode) match(parts []string, maps *map[string]string, split string, 
 			if result != nil {
 				return result
 			}
+			if child.isWild { // 该分支匹配失败，回溯时清掉写入的通配参数，避免残留到最终结果
+				delete(*maps, child.part[1:])
+			}
 		}
 	}
 	return nil

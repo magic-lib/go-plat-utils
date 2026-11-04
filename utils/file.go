@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 )
 
 // GetAllFileContent 获取文件夹下所有文件的相对路径和文件内容
@@ -37,7 +36,11 @@ func GetAllFileContent(dest string) (map[string]string, error) {
 
 	newFileMap := map[string]string{}
 	for key, con := range fileMap {
-		keyTemp := strings.TrimPrefix(key, dest+"/")
+		// 用 Rel 计算相对路径：dest 以 / 结尾时原来的 TrimPrefix(key, dest+"/") 去不掉前缀
+		keyTemp, errRel := filepath.Rel(dest, key)
+		if errRel != nil {
+			keyTemp = key
+		}
 		newFileMap[keyTemp] = con
 	}
 
