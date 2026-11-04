@@ -103,7 +103,10 @@ func UnZipFile(zipFile string, dest string) (err error) {
 		return err
 	}
 	defer func(r *zip.ReadCloser) {
-		err = r.Close()
+		// 只在没有错误时记录 Close 的错误，原来会把解压过程中返回的错误覆盖为 nil
+		if closeErr := r.Close(); err == nil {
+			err = closeErr
+		}
 	}(r)
 
 	for _, f := range r.File {
