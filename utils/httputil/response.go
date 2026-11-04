@@ -275,7 +275,7 @@ func GetErrorResponse(allErrorMap map[int64]string, errorCode int64, err ...erro
 
 	respError.Code = errorCode
 
-	if len(err) > 0 {
+	if len(err) > 0 && err[0] != nil { // WriteCommFailure 允许传入 nil error，直接调用 Error() 会 panic
 		respError.Message = err[0].Error()
 	}
 
