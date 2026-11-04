@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"testing"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 
@@ -39,5 +40,16 @@ func TestSQLActivityStoreMigrateSaveList(t *testing.T) {
 	}
 	if len(list) != 1 || list[0].Id != "a1" || list[0].ArgTemplate != "{{b}}" {
 		t.Fatalf("List = %+v", list)
+	}
+
+	// 时间写入 create_time / update_time 列
+	var createTime, updateTime time.Time
+	if err = db.QueryRowContext(ctx,
+		"SELECT create_time, update_time FROM activity_store_test WHERE type = ?", "test_type").
+		Scan(&createTime, &updateTime); err != nil {
+		t.Fatalf("查询 create_time/update_time: %v", err)
+	}
+	if createTime.IsZero() || updateTime.Before(createTime) {
+		t.Fatalf("create_time = %v, update_time = %v", createTime, updateTime)
 	}
 }
