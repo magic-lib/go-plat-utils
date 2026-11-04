@@ -507,14 +507,8 @@ func getByType(src any) (string, error) {
 		for key, value := range v {
 			stringMap[String(key)] = value
 		}
-		if newS, err := jcs.Format(stringMap); err == nil {
-			return newS, nil
-		}
-		if data, err := jsoniterForNil.Marshal(stringMap); err == nil {
-			return string(data), nil
-		} else {
-			return "", err
-		}
+		// jcs 不支持的值类型（如 int）由 getStringFromJson 兜底，按 key 排序输出，保证结果稳定
+		return getStringFromJson(stringMap, false)
 	}
 
 	return "", errType
