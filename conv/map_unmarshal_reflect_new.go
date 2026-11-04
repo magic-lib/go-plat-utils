@@ -1195,15 +1195,20 @@ func (c *getNewService) getColumnValueFromMap(srcMap any, dstColumn reflect.Stru
 	t := new(toolsService)
 	dstColumnJsonNameList := t.getAllMapNameByField(dstColumn)
 
+	// MapKeys 每次调用都会分配完整的 key 切片，原来在「候选名 × key」双层循环里反复调用；改为只取一次建索引
+	srcKeyIndex := make(map[string]reflect.Value, srcValue.Len())
+	for _, k := range srcValue.MapKeys() {
+		if _, ok := srcKeyIndex[k.String()]; !ok {
+			srcKeyIndex[k.String()] = k
+		}
+	}
+
 	var srcColumnKey reflect.Value
 	findFromSrc := false
-	for _, oneName := range dstColumnJsonNameList {
-		for _, k := range srcValue.MapKeys() {
-			if k.String() == oneName {
-				srcColumnKey = k
-				findFromSrc = true
-				break
-			}
+	for _, oneName := range dstColumnJsonNameList { // 与原逻辑一致：后面的候选名命中时覆盖前面的
+		if k, ok := srcKeyIndex[oneName]; ok {
+			srcColumnKey = k
+			findFromSrc = true
 		}
 	}
 

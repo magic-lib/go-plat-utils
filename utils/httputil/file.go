@@ -2,6 +2,7 @@ package httputil
 
 import (
 	"encoding/base64"
+	"io"
 	"mime/multipart"
 	"path"
 	"strings"
@@ -41,7 +42,11 @@ func GetFileBase64(f *multipart.FileHeader) (*fileInfo, error) {
 		}(file)
 
 		sourceBuffer := make([]byte, f.Size)
-		n, _ := file.Read(sourceBuffer)
+		// 单次 Read 不保证读满，大文件可能只读到一部分；用 ReadFull 读取完整内容
+		n, err := io.ReadFull(file, sourceBuffer)
+		if err != nil {
+			return nil, err
+		}
 		sourceString := base64.StdEncoding.EncodeToString(sourceBuffer[:n])
 		fileInfoTemp.Data = sourceString
 	}

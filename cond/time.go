@@ -7,15 +7,18 @@ import (
 
 // IsTime 是否是标准的时间格式 2006-01-02 15:04:05
 func IsTime(dateTime string) bool {
-	regPattern := "((([0-9]{3}[1-9]|[0-9]{2}[1-9][0-9]{1}|[0-9]{1}[1-9][0-9]{2}|[1-9][0-9]{3})-(((0[13578]|1[02])-"
+	return timeRegexp.MatchString(dateTime)
+}
+
+// timeRegexp 预编译的时间格式正则；开头补上 ^，原来只有 $，"xx2023-01-01 00:00:00" 也能匹配
+var timeRegexp = regexp.MustCompile(timePattern())
+
+func timePattern() string {
+	regPattern := "^((([0-9]{3}[1-9]|[0-9]{2}[1-9][0-9]{1}|[0-9]{1}[1-9][0-9]{2}|[1-9][0-9]{3})-(((0[13578]|1[02])-"
 	regPattern += "(0[1-9]|[12][0-9]|3[01]))|((0[469]|11)-(0[1-9]|[12][0-9]|30))|(02-(0[1-9]|[1][0-9]|2[0-8]))))|"
 	regPattern += "((([0-9]{2})(0[48]|[2468][048]|[13579][26])|((0[48]|[2468][048]|[3579][26])00))-02-29))\\s"
 	regPattern += "([0-1][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$"
-	matched, err := regexp.Match(regPattern, []byte(dateTime))
-	if err == nil {
-		return matched
-	}
-	return false
+	return regPattern
 }
 
 // IsTimeEmpty 是否为空时间

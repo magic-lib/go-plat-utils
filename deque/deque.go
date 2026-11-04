@@ -84,7 +84,7 @@ func (s *SafeDeque[T]) Back() (T, bool) {
 func (s *SafeDeque[T]) At(i int) (T, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	if s.d.Len() > 0 {
+	if i >= 0 && i < s.d.Len() { // 原来只判断 Len>0，下标越界会 panic
 		return s.d.At(i), true
 	}
 	var zero T

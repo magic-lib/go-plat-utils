@@ -56,6 +56,9 @@ func ContextMethodToAnyHandler[TReq, TResp any](method any) (ContextAnyHandler, 
 			}
 		}
 		retData, err := methodFun(ctx, paramPtr)
+		if err != nil { // 先返回真实错误：TResp 为接口时返回 (nil, err) 会被下面的类型检查替换成 "retData is <nil>"
+			return nil, err
+		}
 		if _, ok := any(retData).(TResp); !ok {
 			return nil, fmt.Errorf("retData is %T, expect TResp=%s, TReq=%s", retData, respType, reqType)
 		}
@@ -153,7 +156,12 @@ func GetFuncName(i any) (name string, isMethod bool) {
 	if fullName, ok := i.(string); ok {
 		return fullName, false
 	}
-	fullName := runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
+	// 非函数调用 Pointer() 会 panic，而这里常用于“传入的不是函数”的报错路径
+	fnValue := reflect.ValueOf(i)
+	if fnValue.Kind() != reflect.Func {
+		return "", false
+	}
+	fullName := runtime.FuncForPC(fnValue.Pointer()).Name()
 	isMethod = strings.ContainsAny(fullName, "*")
 	elements := strings.Split(fullName, ".")
 	shortName := elements[len(elements)-1]

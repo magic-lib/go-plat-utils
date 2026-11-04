@@ -58,8 +58,8 @@ func mergeStructFields(target, source reflect.Value) {
 		sourceField := source.Field(i)
 		targetField := target.FieldByName(sourceType.Field(i).Name)
 
-		// 检查目标字段是否存在且可设置
-		if !targetField.IsValid() || !targetField.CanSet() {
+		// 检查目标字段是否存在、可设置且类型兼容（同名不同类型时 Set 会 panic）
+		if !targetField.IsValid() || !targetField.CanSet() || !sourceField.Type().AssignableTo(targetField.Type()) {
 			continue
 		}
 

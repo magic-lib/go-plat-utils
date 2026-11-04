@@ -17,15 +17,11 @@ func IsUUID(uuid string) bool {
 		return false
 	}
 
-	// 正则：仅接受 全小写 或 全大写 的十六进制，不接受大小写混用；格式为 8-4-4-4-12
-	pattern := `^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12})$`
-
-	match, err := regexp.MatchString(pattern, uuid)
-	if err != nil {
-		return false
-	}
-	return match
+	return uuidRegexp.MatchString(uuid)
 }
+
+// uuidRegexp 仅接受 全小写 或 全大写 的十六进制，不接受大小写混用；格式为 8-4-4-4-12（预编译，避免每次调用编译）
+var uuidRegexp = regexp.MustCompile(`^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12})$`)
 
 // IsJson 是否是json字符串
 func IsJson(text string) bool {

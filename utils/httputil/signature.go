@@ -81,40 +81,44 @@ func buildSignParams(r *http.Request) *crypto.SignParams {
 	return p
 }
 
-func checkNonce(ctx context.Context, cacheNonceFunc func(ctx context.Context, cacheKey string) (int64, error), appId, nonce string, ttl time.Duration) (bool, error) {
+// checkNonce 校验 nonce 是否首次出现。cacheNonceFunc 需记录 cacheKey 并返回其被记录的次数（含本次），
+// 如 redis INCR 后对新 key 设置 EXPIRE ttl：返回 1 表示首次出现，大于 1 表示重放。
+// 原实现把返回值当作首次出现的时间戳、仍在 ttl 内即放行，ttl 内的重放请求同样能通过。
+func checkNonce(ctx context.Context, cacheNonceFunc func(ctx context.Context, cacheKey string) (int64, error), appId, nonce string) (bool, error) {
 	if nonce == "" {
-		return false, nil
+		return false, fmt.Errorf("nonce is empty")
 	}
 	if cacheNonceFunc == nil {
 		return true, nil
 	}
 	cacheKey := fmt.Sprintf("%s/%s", appId, nonce)
-	cacheVal, err := cacheNonceFunc(ctx, cacheKey)
+	seenTimes, err := cacheNonceFunc(ctx, cacheKey)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("check nonce: %w", err)
 	}
-	if cacheVal == 0 {
-		return false, fmt.Errorf("cache not set error")
+	if seenTimes <= 0 {
+		return false, fmt.Errorf("check nonce: cache not set")
 	}
-	retTime := checkTimestamp(cacheVal, ttl)
-	if retTime {
-		return true, nil
+	if seenTimes > 1 {
+		return false, fmt.Errorf("nonce reused")
 	}
-	return false, nil
+	return true, nil
 }
 
+// CheckSignature 校验请求签名。cacheNonceFunc 返回 nonce 被记录的次数（含本次），见 checkNonce；为 nil 时不做防重放。
 func CheckSignature(r *http.Request, ttl time.Duration, cacheNonceFunc func(ctx context.Context, cacheKey string) (int64, error), getSecret func(ctx context.Context, appId string) string) (bool, error) {
 	sh := getSignatureHeader(r.Header)
 	_, err := checkSignatureHeader(sh, ttl)
 	if err != nil {
 		return false, err
 	}
-
-	// 校验 nonce，防止重放
-	if ok, err := checkNonce(r.Context(), cacheNonceFunc, sh.AppID, sh.Nonce, ttl); err != nil || !ok {
-		return false, fmt.Errorf("nonce reused")
+	if getSecret == nil {
+		return false, fmt.Errorf("getSecret is nil")
 	}
 	secret := getSecret(r.Context(), sh.AppID)
+	if secret == "" {
+		return false, fmt.Errorf("secret is empty")
+	}
 	p := buildSignParams(r)
 	checkServerSign, err := crypto.VerifySignatureParamsByHmac(secret, p, sh.Signature)
 	if err != nil {
@@ -123,6 +127,13 @@ func CheckSignature(r *http.Request, ttl time.Duration, cacheNonceFunc func(ctx 
 	// 比对签名
 	if !checkServerSign {
 		return false, fmt.Errorf("invalid signature")
+	}
+	// 验签通过后再记录 nonce：否则伪造签名的请求也会消耗掉合法请求的 nonce
+	if ok, err := checkNonce(r.Context(), cacheNonceFunc, sh.AppID, sh.Nonce); err != nil || !ok {
+		if err == nil {
+			err = fmt.Errorf("nonce reused")
+		}
+		return false, err
 	}
 	return true, nil
 }

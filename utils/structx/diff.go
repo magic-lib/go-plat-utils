@@ -6,12 +6,21 @@ import "reflect"
 func DiffFields[T any](t1 T, t2 T, fieldsToCompare ...string) []string {
 	var changedFields []string
 
-	oldValue := reflect.ValueOf(t1)
-	newValue := reflect.ValueOf(t2)
+	// T 为指针时先解引用；非结构体没有字段可比较
+	oldValue := reflect.Indirect(reflect.ValueOf(t1))
+	newValue := reflect.Indirect(reflect.ValueOf(t2))
+	if oldValue.Kind() != reflect.Struct || newValue.Kind() != reflect.Struct {
+		return changedFields
+	}
 
 	for _, fieldName := range fieldsToCompare {
 		oldFieldValue := oldValue.FieldByName(fieldName)
 		newFieldValue := newValue.FieldByName(fieldName)
+		// 字段不存在或未导出时跳过，否则 Interface() 会 panic
+		if !oldFieldValue.IsValid() || !newFieldValue.IsValid() ||
+			!oldFieldValue.CanInterface() || !newFieldValue.CanInterface() {
+			continue
+		}
 
 		if !reflect.DeepEqual(oldFieldValue.Interface(), newFieldValue.Interface()) {
 			changedFields = append(changedFields, fieldName)

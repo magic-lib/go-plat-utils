@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/shopspring/decimal"
-	"math/rand"
-	"time"
+	"math/rand/v2"
 )
 
 // Percent 计算百分数，并保留小数点位数，后面位数直接舍去
@@ -29,8 +28,13 @@ func RandomIntInRange(minNum, maxNum int64) int64 {
 	if minNum > maxNum {
 		minNum, maxNum = maxNum, minNum
 	}
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	return r.Int63n(maxNum-minNum+1) + minNum
+	// 使用并发安全的全局随机源：原来每次按纳秒新建随机源，开销大且高并发时种子相同会得到相同结果；
+	// 区间长度按 uint64 计算，避免 maxNum-minNum+1 在跨满 int64 时溢出导致 panic
+	span := uint64(maxNum-minNum) + 1
+	if span == 0 { // 覆盖整个 int64 范围
+		return int64(rand.Uint64())
+	}
+	return minNum + int64(rand.Uint64N(span))
 }
 func RandomInt(length int) int64 {
 	if length < 1 {

@@ -15,15 +15,17 @@ type (
 	}
 
 	flightGroup struct {
-		calls map[string]*call
-		lock  sync.Mutex
+		calls   map[string]*call
+		results map[string]any // Once 成功执行后的结果
+		lock    sync.Mutex
 	}
 )
 
 // NewSingleFlight returns a SingleFlight.
 func NewSingleFlight() SingleFlight {
 	return &flightGroup{
-		calls: make(map[string]*call),
+		calls:   make(map[string]*call),
+		results: make(map[string]any),
 	}
 }
 
@@ -40,16 +42,20 @@ func (g *flightGroup) Do(key string, fn func() (any, error)) (val any, cached bo
 
 // Once 只执行一次，除非err!=nil
 func (g *flightGroup) Once(key string, fn func() (any, error)) (val any, err error) {
+	// 原来读取的是进行中 call 的 val/err（锁外写入，存在数据竞争），且 call 完成后即被删除，实际从不缓存
 	g.lock.Lock()
-	if c, ok := g.calls[key]; ok {
-		if c.val != nil && c.err == nil {
-			g.lock.Unlock()
-			return c.val, nil
-		}
+	if cached, ok := g.results[key]; ok {
+		g.lock.Unlock()
+		return cached, nil
 	}
 	g.lock.Unlock()
 
 	val, _, err = g.Do(key, fn)
+	if err == nil && val != nil {
+		g.lock.Lock()
+		g.results[key] = val
+		g.lock.Unlock()
+	}
 	return val, err
 }
 

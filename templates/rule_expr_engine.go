@@ -133,11 +133,11 @@ func isParameterNotFoundError(err error) bool {
 	if err == nil {
 		return false
 	}
-	errMsg := err.Error()
-	pattern := `No parameter '[^']*' found\.`
-	matched, _ := regexp.MatchString(pattern, errMsg)
-	return matched
+	return parameterNotFoundRe.MatchString(err.Error())
 }
+
+// parameterNotFoundRe 预编译，避免每次判断错误都编译正则
+var parameterNotFoundRe = regexp.MustCompile(`No parameter '[^']*' found\.`)
 
 // pureNumericExprRe 匹配只包含数字、小数点、算术运算符（+ - * / % ^ ( )）和空白的字符串
 var pureNumericExprRe = regexp.MustCompile(`^[0-9.+\-*/%^()\s]+$`)

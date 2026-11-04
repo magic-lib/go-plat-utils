@@ -11,7 +11,6 @@ import (
 	"log"
 	"net/url"
 	"reflect"
-	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -364,15 +363,13 @@ func GetStructInfo(obj any) StructInfo {
 		// 如果是未命名包，使用默认值
 		pkgPath = ""
 	}
-	pkgName := runtime.FuncForPC(reflect.ValueOf(obj).Pointer()).Name()
-	if lastSlash := len(pkgPath) - 1; lastSlash > 0 {
-		pkgName = pkgPath[lastSlash+1:]
-	}
+	// 包名取包路径最后一段；原来 len-1 并不是找 "/"，包名恒为空，且对结构体值调用 Pointer() 会 panic
+	pkgName := pkgPath[strings.LastIndex(pkgPath, "/")+1:]
 	typeName := t.Name()
 
-	// 遍历结构体的字段
+	// 遍历结构体的字段（非结构体没有字段，调用 NumField 会 panic）
 	var fields []FieldInfo
-	for i := 0; i < t.NumField(); i++ {
+	for i := 0; t.Kind() == reflect.Struct && i < t.NumField(); i++ {
 		field := t.Field(i)
 		fieldInfo := FieldInfo{
 			Name: field.Name,

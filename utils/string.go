@@ -6,6 +6,7 @@ import (
 	"github.com/samber/lo"
 	"regexp"
 	"strings"
+	"sync"
 	"unicode/utf8"
 
 	"github.com/magic-lib/go-plat-utils/internal"
@@ -85,7 +86,7 @@ func ReplaceDynamicVariables(input string, startDelimiter, endDelimiter string, 
 
 	// 构建正则表达式：匹配 startDelimiter + 变量名 + endDelimiter
 	regexPattern := fmt.Sprintf(`%s(.*?)%s`, escapedStart, escapedEnd)
-	re := regexp.MustCompile(regexPattern)
+	re := cachedRegexp(regexPattern)
 
 	// 替换匹配到的变量
 	output := re.ReplaceAllStringFunc(input, func(match string) string {
@@ -95,6 +96,18 @@ func ReplaceDynamicVariables(input string, startDelimiter, endDelimiter string, 
 	})
 
 	return output
+}
+
+// regexpCache 按 pattern 缓存编译好的正则，避免每次调用都重新编译
+var regexpCache sync.Map
+
+func cachedRegexp(pattern string) *regexp.Regexp {
+	if re, ok := regexpCache.Load(pattern); ok {
+		return re.(*regexp.Regexp)
+	}
+	re := regexp.MustCompile(pattern)
+	regexpCache.Store(pattern, re)
+	return re
 }
 
 // Pad 按【字符数量】补齐，兼容中文、emoji
