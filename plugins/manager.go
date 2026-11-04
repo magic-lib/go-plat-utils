@@ -31,11 +31,10 @@ func (pm *PluginManager) Register(plugin Plugin) error {
 	if pluginName == "" {
 		return fmt.Errorf("插件Key不能为空")
 	}
-	// 不能重复注册，避免覆盖
-	if pm.plugins.Has(pluginName) {
+	// 不能重复注册，避免覆盖；SetIfAbsent 保证并发注册同名插件时只有一个成功
+	if !pm.plugins.SetIfAbsent(pluginName, plugin) {
 		return fmt.Errorf("PluginManager %s is already registered", pluginName)
 	}
-	pm.plugins.Set(pluginName, plugin)
 	return nil
 }
 func (pm *PluginManager) Unregister(pluginName string) {
