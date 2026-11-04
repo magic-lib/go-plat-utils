@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/magic-lib/go-plat-utils/internal"
 	"github.com/panjf2000/ants/v2"
 	"github.com/timandy/routine"
 	"go.uber.org/automaxprocs/maxprocs"
@@ -20,13 +19,10 @@ type asyncObj struct {
 	panicMutex  sync.RWMutex
 	antsPool    *ants.Pool
 	panicHandle func(err error, retRecover any) //全局Panic后的处理方法
-	oncePool    *internal.Once
 }
 
 var (
-	defaultAsyncObj = asyncObj{
-		oncePool: &internal.Once{},
-	}
+	defaultAsyncObj = asyncObj{}
 )
 
 // SetPanicHandle panic的方法
@@ -38,8 +34,12 @@ func SetPanicHandle(c func(err error, retRecover any)) {
 	}
 }
 
-// OpenRoutinePool 启动一个全局的goroutine的协程池，只会执行一次
+// OpenRoutinePool 启动一个全局的goroutine的协程池；已开启时只调整容量，关闭后可再次开启
+// 判空与创建都在锁内完成，避免并发调用时的数据竞争
 func OpenRoutinePool(nums int) *ants.Pool {
+	defaultAsyncObj.poolMutex.Lock()
+	defer defaultAsyncObj.poolMutex.Unlock()
+
 	if defaultAsyncObj.antsPool != nil {
 		if nums > 0 {
 			defaultAsyncObj.antsPool.Tune(nums)
@@ -47,37 +47,26 @@ func OpenRoutinePool(nums int) *ants.Pool {
 		return defaultAsyncObj.antsPool
 	}
 
-	defaultAsyncObj.poolMutex.Lock()
-	defer defaultAsyncObj.poolMutex.Unlock()
-
-	err := defaultAsyncObj.oncePool.Do(func() error {
-		if nums == 0 {
-			nums = ants.DefaultAntsPoolSize
-		}
-		newPool, err := ants.NewPool(nums)
-		if err == nil {
-			defaultAsyncObj.antsPool = newPool
-			return nil
-		}
-		return err
-	})
+	if nums == 0 {
+		nums = ants.DefaultAntsPoolSize
+	}
+	newPool, err := ants.NewPool(nums)
 	if err != nil {
 		log.Println("OpenRoutinePool error:", err)
 		return nil
 	}
-
-	return defaultAsyncObj.antsPool
+	defaultAsyncObj.antsPool = newPool
+	return newPool
 }
 
 // CloseRoutinePool 不用了，关闭池
 func CloseRoutinePool() {
-	if defaultAsyncObj.antsPool == nil || defaultAsyncObj.antsPool.IsClosed() {
-		return
-	}
-
 	defaultAsyncObj.poolMutex.Lock()
 	defer defaultAsyncObj.poolMutex.Unlock()
 
+	if defaultAsyncObj.antsPool == nil || defaultAsyncObj.antsPool.IsClosed() {
+		return
+	}
 	defaultAsyncObj.antsPool.Release()
 	defaultAsyncObj.antsPool = nil
 }
@@ -114,10 +103,11 @@ func GoAsync(task func(params ...any), params ...any) {
 	taskFun := routine.WrapTask(func() {
 		GoSync(task, params...)
 	})
+	// 只在读锁内取出池，提交在锁外进行：池满时 Submit 会阻塞，持锁阻塞会挡住 Open/Close 以及后续所有 GoAsync
 	defaultAsyncObj.poolMutex.RLock()
-	defer defaultAsyncObj.poolMutex.RUnlock()
-
 	pool := defaultAsyncObj.antsPool
+	defaultAsyncObj.poolMutex.RUnlock()
+
 	var submitErr error
 	if pool != nil {
 		submitErr = pool.Submit(taskFun.Run)
