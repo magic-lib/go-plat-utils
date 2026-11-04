@@ -201,6 +201,12 @@ func ArrayMapFilter[T any, K any](arr []T, mapFilterFunc func(val T) (K, bool)) 
 
 // ArrayChunk 将数组或切片按固定大小分割成小数组
 func ArrayChunk[T any](arr []T, chunkSize int) [][]T {
+	if chunkSize <= 0 { // 0 会死循环、负数会越界 panic，按不切分处理
+		chunkSize = len(arr)
+		if chunkSize == 0 {
+			return nil
+		}
+	}
 	var chunks [][]T
 	for i := 0; i < len(arr); i += chunkSize {
 		end := i + chunkSize
@@ -214,6 +220,9 @@ func ArrayChunk[T any](arr []T, chunkSize int) [][]T {
 
 // ArraySplit 将数组切割为指定个数的子数组，并尽可能均匀
 func ArraySplit[T any](arr []T, numGroups int) [][]T {
+	if numGroups <= 0 { // 避免除零 panic，按不切分处理
+		numGroups = 1
+	}
 	if numGroups > len(arr) {
 		numGroups = len(arr)
 	}
