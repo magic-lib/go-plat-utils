@@ -181,6 +181,9 @@ func (c *Container) injectWithField(context context.Context, objValue reflect.Va
 
 		// 检查字段是否是通过组合包含在当前结构体中的，即嵌套结构体
 		if field.Anonymous && structx.IndirectType(field.Type).Kind() == reflect.Struct {
+			if fieldValue.Kind() == reflect.Ptr && fieldValue.IsNil() {
+				continue // 未初始化的嵌入指针没有可注入的字段，继续递归会 panic
+			}
 			if err := c.injectWithField(context, fieldValue); err != nil {
 				return err
 			}

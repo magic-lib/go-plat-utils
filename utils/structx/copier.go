@@ -474,7 +474,10 @@ func copier(toValue interface{}, fromValue interface{}, opt Option) (err error) 
 			to.Set(dest)
 		}
 
-		err = checkBitFlags(flgs.BitFlags)
+		// 循环内的 err 由 getFlags 处 := 声明，遮蔽了命名返回值，必须在这里显式返回，否则 must,nopanic 的错误会丢失
+		if err = checkBitFlags(flgs.BitFlags); err != nil {
+			return err
+		}
 	}
 
 	return

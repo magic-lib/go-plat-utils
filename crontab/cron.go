@@ -133,10 +133,11 @@ func addJobs(immediateRun bool, jobs ...map[string]cron.FuncJob) ([]cron.FuncJob
 func Stop() {
 	oneCron := getCron()
 	oneCron.mu.Lock()
-	defer oneCron.mu.Unlock()
-
 	ctx := oneCron.c.Stop()
-	<-ctx.Done()
 	oneCron.running = false
+	oneCron.mu.Unlock()
+
+	// 在锁外等待任务结束：正在运行的任务若调用了需要 mu 的方法（如追加任务），持锁等待会死锁
+	<-ctx.Done()
 	log.Println("[crontab] cron stopped, all running jobs finished")
 }

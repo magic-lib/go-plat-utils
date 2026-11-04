@@ -233,11 +233,9 @@ func (c *FlowContext) SetStep(stepId StepId, oneStep *Step) {
 	}
 }
 func (c *FlowContext) GetStep(stepId StepId) *Step {
-	c.mux.Lock()
-	defer c.mux.Unlock()
-	if c.Steps == nil {
-		c.Steps = make(map[StepId]*Step)
-	}
+	// 只读操作用读锁；读 nil map 是安全的，无需在这里初始化
+	c.mux.RLock()
+	defer c.mux.RUnlock()
 	if oneStep, ok := c.Steps[stepId]; ok {
 		return oneStep
 	}

@@ -107,8 +107,8 @@ func SliceDiff[T comparable](slice1 []T, slice2 []T) []T {
 	for _, s1 := range slice1 {
 		found := false
 		for _, s2 := range slice2 {
-			if reflect.TypeOf(s1).Name() == reflect.TypeOf(s2).Name() &&
-				reflect.ValueOf(s1).Interface() == reflect.ValueOf(s2).Interface() {
+			// 直接比较：T 为接口且元素为 nil 时 reflect.TypeOf 返回 nil，调用 Name() 会 panic
+			if s1 == s2 {
 				found = true
 				break
 			}

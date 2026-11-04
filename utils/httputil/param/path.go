@@ -40,6 +40,9 @@ func trimVar(part string, varPrefix, varSuffix string) string {
 func getPathConfig(pc *PathConfig) *PathConfig {
 	if pc == nil {
 		pc = &PathConfig{}
+	} else {
+		cp := *pc // 复制一份再补默认值，避免改写调用方传入的配置
+		pc = &cp
 	}
 	if pc.SplitPath == "" {
 		pc.SplitPath = "/"

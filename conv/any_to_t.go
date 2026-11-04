@@ -59,7 +59,8 @@ func toConvert[T any](v any) (T, error) {
 		return result, nil
 	}
 	var target T
-	targetType := reflect.TypeOf(target)
+	// 用 TypeFor 取类型：T 为接口时 reflect.TypeOf(target) 为 nil，ConvertForType 中调用 Kind() 会 panic
+	targetType := reflect.TypeFor[T]()
 
 	targetValue, err := ConvertForType(targetType, v)
 	if err != nil {

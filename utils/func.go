@@ -59,6 +59,9 @@ func ContextMethodToAnyHandler[TReq, TResp any](method any) (ContextAnyHandler, 
 		if err != nil { // 先返回真实错误：TResp 为接口时返回 (nil, err) 会被下面的类型检查替换成 "retData is <nil>"
 			return nil, err
 		}
+		if any(retData) == nil { // TResp 为接口时返回 (nil, nil) 是合法结果，nil 无法通过下面的类型断言
+			return nil, nil
+		}
 		if _, ok := any(retData).(TResp); !ok {
 			return nil, fmt.Errorf("retData is %T, expect TResp=%s, TReq=%s", retData, respType, reqType)
 		}
@@ -299,7 +302,7 @@ func FuncArgList(function any, args ...any) ([]any, error) {
 			return getZeroConvertValue(thisArgType)
 		}
 		argValue := reflect.ValueOf(arg)
-		if argValue.Type().ConvertibleTo(thisArgType) {
+		if canDirectConvert(argValue.Type(), thisArgType) {
 			return argValue.Convert(thisArgType)
 		} else {
 			newArg, err := conv.ConvertForType(thisArgType, arg)
@@ -327,4 +330,21 @@ func FuncArgList(function any, args ...any) ([]any, error) {
 		result[i] = v.Interface()
 	}
 	return result, nil
+}
+
+// canDirectConvert 判断能否直接用 reflect.Value.Convert 转换参数。
+// 排除两种 ConvertibleTo 为 true 但不符合预期的情况：
+// 整数转字符串会得到对应码点的字符（65 -> "A"）；切片转数组在长度不足时会 panic。
+func canDirectConvert(from, to reflect.Type) bool {
+	if !from.ConvertibleTo(to) {
+		return false
+	}
+	switch from.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return to.Kind() != reflect.String
+	case reflect.Slice:
+		return to.Kind() != reflect.Array
+	}
+	return true
 }
