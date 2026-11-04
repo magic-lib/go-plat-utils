@@ -1,10 +1,11 @@
-package param
+package param_test
 
 import (
 	"context"
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/magic-lib/go-plat-utils/utils"
+	"github.com/magic-lib/go-plat-utils/utils/httputil/param"
 	"net/http"
 	"net/url"
 	"testing"
@@ -57,7 +58,7 @@ func TestParam(t *testing.T) {
 	req.Method = http.MethodGet
 	req.URL = new(url.URL)
 	req.URL.RawQuery = "/v1/auth/auth-check?gpid=&exCluster=&paas_name=gdp-appserver-go"
-	data := NewParam().GetAll(req)
+	data := param.NewParam().GetAll(req)
 	fmt.Println(data)
 }
 func TestPath(t *testing.T) {
@@ -65,7 +66,7 @@ func TestPath(t *testing.T) {
 	req.Method = http.MethodGet
 	req.URL = new(url.URL)
 	req.URL.RawQuery = "/v1/auth/auth-check?gpid=&exCluster=&paas_name=gdp-appserver-go"
-	data := NewParam().SetParsePathFunc(func(r *http.Request) map[string]string {
+	data := param.NewParam().SetParsePathFunc(func(r *http.Request) map[string]string {
 		return map[string]string{
 			"name": "zhangsan",
 		}
@@ -85,7 +86,7 @@ func TestParse(t *testing.T) {
 	req.URL = new(url.URL)
 	req.URL.RawQuery = "/v1/auth/auth-check?gpid=&exCluster=&paas_name=gdp-appserver-go"
 	aaa := new(AAA)
-	err := NewParam().SetParsePathFunc(func(r *http.Request) map[string]string {
+	err := param.NewParam().SetParsePathFunc(func(r *http.Request) map[string]string {
 		return map[string]string{
 			"name":   "1111111111",
 			"name2":  "33333",
@@ -106,7 +107,7 @@ func setContext(ctx context.Context) context.Context {
 }
 
 func TestURL1(t *testing.T) {
-	var TraceIdKey = CanonicalHeaderKey("x - trace - id")
+	var TraceIdKey = param.CanonicalHeaderKey("x - trace - id")
 	fmt.Println(TraceIdKey)
 }
 
@@ -116,7 +117,7 @@ func TestPathParam(t *testing.T) {
 		{"path Check", []any{"/aa/bb/cc", "/aa/:bb/cc/mm"}, []any{false}, nil},
 		{"path Check", []any{"/aa/bb/cc", "/aa/:bb/:cc"}, []any{true}, nil},
 	}
-	utils.TestFunction(t, testCheckCases, PathMatch)
+	utils.TestFunction(t, testCheckCases, param.PathMatch)
 
 	testParamCases := []*utils.TestStruct{
 		{"path Param", []any{"/aa/bb/cc", "/aa/:aa/cc"}, []any{"bb"}, nil},
@@ -124,7 +125,7 @@ func TestPathParam(t *testing.T) {
 		{"path Param", []any{"/aa/bb/cc", "/aa/:bb/:aa"}, []any{"cc"}, nil},
 	}
 	utils.TestFunction(t, testParamCases, func(requestPath, routePath string) string {
-		paramTemp := PathParam(requestPath, routePath)
+		paramTemp := param.PathParam(requestPath, routePath)
 		fmt.Println(paramTemp)
 		return paramTemp["aa"]
 	})
