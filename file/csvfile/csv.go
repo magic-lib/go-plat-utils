@@ -65,6 +65,10 @@ func (c *CsvConfig[T]) SetCsvReader(csvReader *csv.Reader) *CsvConfig[T] {
 		return c
 	}
 
+	// 分隔符要在 ReadAll 之前设置，否则自定义分隔符不生效
+	if c.Delimiter > 0 {
+		csvReader.Comma = c.Delimiter
+	}
 	if len(c.csvAllRecords) == 0 {
 		records, err := csvReader.ReadAll()
 		if err != nil {
@@ -87,7 +91,7 @@ func (c *CsvConfig[T]) ExchangeOne(rowIndex, columnIndex int) (string, error) {
 	if c.csvReader == nil && len(c.csvAllRecords) == 0 {
 		return "", fmt.Errorf("请先调用 SetCsvReader 设置 CSV 读取器")
 	}
-	if rowIndex <= 0 && columnIndex <= 0 {
+	if rowIndex <= 0 || columnIndex <= 0 { // 任一索引 <= 0 都会导致下面 [index-1] 越界
 		return "", fmt.Errorf("请指定行和列位置索引，从1开始: %d, %d", rowIndex, columnIndex)
 	}
 	records := c.csvAllRecords
@@ -129,11 +133,15 @@ func (c *CsvConfig[T]) readToList(reader *csv.Reader) ([][]string, []string, err
 
 	result := make([][]string, 0)
 	lastRowIndex := c.DataRowIndex[1] - 1
-	if lastRowIndex <= 0 {
+	if lastRowIndex <= 0 || lastRowIndex >= len(records) { // 结束行超出记录数时读到末尾
 		lastRowIndex = len(records) - 1
 	}
+	firstRowIndex := c.DataRowIndex[0] - 1
+	if firstRowIndex < 0 { // DataRowIndex[0] 为 0（默认值）时从第一行开始，避免 records[-1]
+		firstRowIndex = 0
+	}
 
-	for i := c.DataRowIndex[0] - 1; i <= lastRowIndex; i++ {
+	for i := firstRowIndex; i <= lastRowIndex; i++ {
 		record := records[i]
 		if len(record) <= 1 {
 			if c.SkipEmptyRows {
@@ -208,25 +216,26 @@ func (c *CsvConfig[T]) extractHeaders(records [][]string) ([]string, error) {
 	}
 
 	headerAllList := processFields(records[headerIndex], c.TrimSpaces)
+	return c.sliceColumns(headerAllList), nil
+}
+
+// sliceColumns 按 DataColumnIndex 截取列，索引超出实际列数时按实际列数截取，避免越界 panic
+func (c *CsvConfig[T]) sliceColumns(fields []string) []string {
 	if c.DataColumnIndex[0] > 0 && c.DataColumnIndex[1] > c.DataColumnIndex[0] {
-		headerColIndex := c.DataColumnIndex[0] - 1
-		if headerColIndex >= 0 {
-			headerAllList = headerAllList[headerColIndex:c.DataColumnIndex[1]]
+		start := c.DataColumnIndex[0] - 1
+		end := min(c.DataColumnIndex[1], len(fields))
+		if start >= end {
+			return []string{}
 		}
+		return fields[start:end]
 	}
-	return headerAllList, nil
+	return fields
 }
 
 // extractData 获取表头字段
 func (c *CsvConfig[T]) extractData(records []string) ([]string, error) {
 	newRecords := processFields(records, c.TrimSpaces)
-	if c.DataColumnIndex[0] > 0 && c.DataColumnIndex[1] > c.DataColumnIndex[0] {
-		headerColIndex := c.DataColumnIndex[0] - 1
-		if headerColIndex >= 0 {
-			newRecords = newRecords[headerColIndex:c.DataColumnIndex[1]]
-		}
-	}
-	return newRecords, nil
+	return c.sliceColumns(newRecords), nil
 }
 
 // processFields 处理字段，去除空格等

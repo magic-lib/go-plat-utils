@@ -7,6 +7,7 @@ import (
 	"github.com/magic-lib/go-plat-utils/templates/ruleengine"
 	"log"
 	"regexp"
+	"strings"
 )
 
 // defaultEngineLogic 共用的规则引擎：内置函数表创建后只读，可并发复用，避免每次计算都重建函数表
@@ -73,7 +74,8 @@ func (e *RuleExprEngine) RunString(expr string, args any, noEvaluate ...bool) (a
 	// 字符串只包含数字和算术运算符（如 "2026-08-14"、"1+2"）时直接返回原值，
 	// 避免日期、编号等被表达式引擎误算（如 "2026-08-14" 会被算成 2026-8-14=2004）
 	if _, ok := newWhen.(string); ok {
-		if isReplaceString(expr, e.prefix, e.suffix) {
+		// 表达式本身就是参数里的一个变量名（如 expr="a"、args={"a":1}）时需要交给引擎取值，不能当普通文本直接返回
+		if !isBareArgName(expr, argMap) && isReplaceString(expr, e.prefix, e.suffix) {
 			return newWhen, nil
 		}
 		//if isPureNumericExpr(newWhenStr) && newWhenStr == expr {
@@ -153,6 +155,19 @@ func isPureNumericExpr(s string) bool {
 // exprOperatorRe 匹配表达式运算符特征字符。
 // 占位符外的文本若包含这些字符，说明字符串需要表达式计算，而非纯变量替换。
 var exprOperatorRe = regexp.MustCompile(`[+\-*/%^()<>=!&|?;'",\[\]{}@#\\]`)
+
+// bareIdentRe 匹配合法的变量名
+var bareIdentRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+
+// isBareArgName 判断去掉首尾空白后的表达式是否正好是 args 中存在的一个变量名
+func isBareArgName(expr string, argMap map[string]any) bool {
+	name := strings.TrimSpace(expr)
+	if !bareIdentRe.MatchString(name) {
+		return false
+	}
+	_, ok := argMap[name]
+	return ok
+}
 
 // isReplaceString 判断字符串是否"仅仅只是需要替换变量"：
 // 整个字符串仅由模板占位符（prefix...suffix）和普通文本组成，占位符外不含任何

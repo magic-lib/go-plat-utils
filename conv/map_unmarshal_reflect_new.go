@@ -28,7 +28,7 @@ func toAssignTo(srcStruct any, dstPoint any) error {
 	dstVal := reflect.ValueOf(dstPoint)
 	// 检查 dst 是否为指针
 	if dstVal.Kind() != reflect.Ptr || dstVal.IsNil() {
-		return fmt.Errorf("dstPoint error nil or not point:%s, %v", reflect.TypeOf(dstPoint).String(), srcStruct)
+		return fmt.Errorf("dstPoint error nil or not point:%T, %v", dstPoint, srcStruct) // dstPoint 为 nil 时 TypeOf(nil).String() 会 panic
 	}
 
 	dstVal = dstVal.Elem()

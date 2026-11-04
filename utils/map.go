@@ -353,6 +353,9 @@ type FieldInfo struct {
 func GetStructInfo(obj any) StructInfo {
 	// 获取对象的反射类型
 	t := reflect.TypeOf(obj)
+	if t == nil { // obj 为 nil 时没有类型信息
+		return StructInfo{}
+	}
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}

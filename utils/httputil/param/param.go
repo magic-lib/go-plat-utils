@@ -2,6 +2,7 @@
 package param
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -9,6 +10,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/magic-lib/go-plat-utils/conv"
 	"github.com/zeromicro/go-zero/rest/httpx"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -637,7 +639,15 @@ func getParamFromForm(req *http.Request) url.Values {
 
 	var formValue url.Values
 
+	// ParseForm 会读走 urlencoded 的 body，后面 getParamFromBody 就读不到了；先缓存 body，解析后放回
+	var bodyBytes []byte
+	if req.Form == nil && req.Body != nil {
+		bodyBytes = SafeReadBody(req)
+	}
 	err := req.ParseForm()
+	if bodyBytes != nil {
+		req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+	}
 	if err == nil {
 		formValue = req.Form
 	}

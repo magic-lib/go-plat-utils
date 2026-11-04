@@ -98,6 +98,9 @@ func (ss *StringSwitch) SetAllStates(states map[int]bool) error {
 	// 找到最大开关编号，确定字符串长度
 	maxPos := -1
 	for pos := range states {
+		if pos < 0 { // 与 TurnOn 等方法一致，负数编号直接报错（否则 runes[pos] 越界 panic），且不修改现有状态
+			return fmt.Errorf("switch position %d must be non-negative", pos)
+		}
 		if pos > maxPos {
 			maxPos = pos
 		}
