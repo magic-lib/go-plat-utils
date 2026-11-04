@@ -12,6 +12,10 @@ import (
 
 // Convert 转换泛型
 func Convert[T any](v any) (t T, err error) {
+	// 已经是目标类型时直接返回，避免切片逐个元素转换
+	if result, ok := v.(T); ok {
+		return result, nil
+	}
 	if cond.IsArray(t) && cond.IsArray(v) {
 		t, err = toConvertList[T](v)
 		if err == nil {
@@ -31,10 +35,18 @@ func toConvertList[T any](v any) (T, error) {
 	elementType := targetType.Elem()
 	sliceValue := reflect.MakeSlice(targetType, 0, len(list))
 	for _, item := range list {
+		if item == nil { // nil 元素取元素类型的零值；reflect.ValueOf(nil) 是无效值，Append 会 panic
+			sliceValue = reflect.Append(sliceValue, reflect.Zero(elementType))
+			continue
+		}
 		itemT, err := ConvertForType(elementType, item)
 		if err != nil {
 			var zero T
 			return zero, err
+		}
+		if itemT == nil {
+			sliceValue = reflect.Append(sliceValue, reflect.Zero(elementType))
+			continue
 		}
 		sliceValue = reflect.Append(sliceValue, reflect.ValueOf(itemT))
 	}
