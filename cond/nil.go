@@ -80,8 +80,10 @@ func IsZero(val any) bool {
 	//常用的类型，提高执行效率
 	switch val.(type) {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-	case complex64, complex128:
-		return val == 0
+	case complex64: // 原来 val == 0 是与 int 类型的 0 比较，永远为 false
+		return val.(complex64) == 0
+	case complex128:
+		return val.(complex128) == 0
 	case float32, float64:
 		valFloat32, ok := val.(float32)
 		if ok {

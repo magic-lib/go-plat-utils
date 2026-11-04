@@ -25,16 +25,16 @@ func IsInteger[T Number](n T) bool {
 // IsNumeric 是否是数字
 func IsNumeric(val any) bool {
 	switch val.(type) {
-	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-	case float32, float64, complex64, complex128:
-		return true
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64,
+		float32, float64, complex64, complex128:
+		return true // 整数原来是空分支，会落到下面 Sprintf 再递归判断
 	case string:
 		str := val.(string)
 		if str == "" {
 			return false
 		}
-		// Trim any whitespace
-		str = strings.Trim(str, " \\t\\n\\r")
+		// Trim any whitespace（原来写成 " \\t\\n\\r"，去掉的是反斜杠和字母 t/n/r）
+		str = strings.Trim(str, " \t\n\r")
 		if str == "" {
 			return false
 		}
@@ -62,13 +62,13 @@ func toNumberFromString(str string) bool {
 		return true
 	}
 	// 0-9,Point,Scientific
-	p, s, l := 0, 0, len(str)
+	hasPoint, s, l := false, 0, len(str)
 	for i, v := range str {
-		if v == '.' { // Point
-			if p > 0 || s > 0 || i+1 == l {
+		if v == '.' { // Point：用布尔标记，原来用下标 p>0 判断，首位是点时 "..5" 也能通过
+			if hasPoint || s > 0 || i+1 == l {
 				return false
 			}
-			p = i
+			hasPoint = true
 		} else if v == 'e' || v == 'E' { // Scientific
 			if i == 0 || s > 0 || i+1 == l {
 				return false
