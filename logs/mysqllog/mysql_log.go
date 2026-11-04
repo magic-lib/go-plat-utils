@@ -98,6 +98,18 @@ func DefaultLogger() logs.ILogger {
 	return mysqlLoggerTemp
 }
 
+// closeFlushTimeout 日志器关闭后最后一次写库的超时时间
+const closeFlushTimeout = 5 * time.Second
+
+// execCtx 写库使用的 ctx：运行中使用 ml.ctx；关闭后 ml.ctx 已取消，最后一次刷新改用带超时的独立 ctx，
+// 否则缓冲区里最后一批日志必然写入失败而丢失
+func (ml *mysqlLogger) execCtx() (context.Context, context.CancelFunc) {
+	if ml.ctx.Err() == nil {
+		return ml.ctx, func() {}
+	}
+	return context.WithTimeout(context.Background(), closeFlushTimeout)
+}
+
 // batchFlushLoop 批量刷新协程
 func (ml *mysqlLogger) batchFlushLoop() {
 	ticker := time.NewTicker(10 * time.Second)
@@ -176,7 +188,9 @@ func (ml *mysqlLogger) writeLog(logData *logs.LogData) error {
 			// 重试前短暂等待
 			time.Sleep(time.Duration(attempt) * 50 * time.Millisecond)
 		}
-		_, err := ml.cfg.DB.ExecContext(ml.ctx, sqlStr, args...)
+		ctx, cancel := ml.execCtx()
+		_, err := ml.cfg.DB.ExecContext(ctx, sqlStr, args...)
+		cancel()
 		if err == nil {
 			return nil
 		}
@@ -214,7 +228,9 @@ func (ml *mysqlLogger) writeLogBatch(batch []*logs.LogData) error {
 		if attempt > 0 {
 			time.Sleep(time.Duration(attempt) * 50 * time.Millisecond)
 		}
-		_, err := ml.cfg.DB.ExecContext(ml.ctx, sqlStr, args...)
+		ctx, cancel := ml.execCtx()
+		_, err := ml.cfg.DB.ExecContext(ctx, sqlStr, args...)
+		cancel()
 		if err == nil {
 			return nil
 		}
@@ -455,16 +471,13 @@ func (ml *mysqlLogger) SetLevel(l logs.LogLevel) {
 	}
 }
 
-// Close 关闭日志记录器，停止定时任务，刷新缓冲区
+// Close 关闭日志记录器，停止定时任务，刷新缓冲区。
+// cfg.DB 由调用方传入、可能与其他业务共用，由调用方自行关闭，这里不再关闭
 func (ml *mysqlLogger) Close() {
 	ml.tm.Stop()
 	ml.cancel()
 
 	if ml.cfg.BatchSize > 1 {
 		ml.flushBatch()
-	}
-
-	if closer, ok := interface{}(ml.cfg.DB).(interface{ Close() error }); ok {
-		_ = closer.Close()
 	}
 }
