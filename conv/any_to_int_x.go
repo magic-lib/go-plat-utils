@@ -15,7 +15,7 @@ func toInt(i any) (int, bool) {
 	if !ok {
 		return 0, false
 	}
-	return int(v), true
+	return int(clampInt64(v, math.MinInt, math.MaxInt)), true
 }
 
 // Int8 将给定的值转换为 int8
@@ -24,10 +24,7 @@ func toInt8(i any) (int8, bool) {
 	if !ok {
 		return 0, false
 	}
-	if value < math.MinInt8 || value > math.MaxInt8 {
-		return 0, false
-	}
-	return int8(value), true
+	return int8(clampInt64(value, math.MinInt8, math.MaxInt8)), true
 }
 
 // Int16 将给定的值转换为 int16
@@ -36,10 +33,7 @@ func toInt16(i any) (int16, bool) {
 	if !ok {
 		return 0, false
 	}
-	if value < math.MinInt16 || value > math.MaxInt16 {
-		return 0, false
-	}
-	return int16(value), true
+	return int16(clampInt64(value, math.MinInt16, math.MaxInt16)), true
 }
 
 // Int32 将给定的值转换为 int32
@@ -48,10 +42,7 @@ func toInt32(i any) (int32, bool) {
 	if !ok {
 		return 0, false
 	}
-	if value < math.MinInt32 || value > math.MaxInt32 {
-		return 0, false
-	}
-	return int32(value), true
+	return int32(clampInt64(value, math.MinInt32, math.MaxInt32)), true
 }
 
 // Int64 将给定的值转换为 int64
@@ -69,23 +60,23 @@ func Int64(i any) (int64, bool) {
 	switch i.(type) {
 	case string:
 		intStr := strings.TrimSpace(i.(string))
-		num, err := strconv.Atoi(intStr)
+		num, err := parseInt64(intStr)
 		if err != nil {
 			//转数字错误，判断是否小数点后面全部是0，则可以去掉 3.0000
 			strList := strings.Split(intStr, ".")
 			if len(strList) == 2 {
 				num1, err := strconv.Atoi(strList[1])
 				if err == nil && num1 == 0 {
-					num2, err := strconv.Atoi(strList[0])
+					num2, err := parseInt64(strList[0])
 					if err == nil {
-						return int64(num2), true
+						return num2, true
 					}
 				}
 			}
 
 			return 0, false
 		}
-		return int64(num), true
+		return num, true
 	case []byte:
 		bits := i.([]byte)
 		if len(bits) == 8 {
@@ -109,9 +100,9 @@ func Int64(i any) (int64, bool) {
 
 	switch v.Kind() {
 	case reflect.Float32, reflect.Float64:
-		return int64(v.Float()), true
+		return floatToInt64(v.Float())
 	case reflect.String:
-		intValue, err := strconv.ParseInt(v.String(), 10, 64)
+		intValue, err := parseInt64(v.String())
 		if err != nil {
 			return 0, false
 		}
@@ -119,11 +110,11 @@ func Int64(i any) (int64, bool) {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return v.Int(), true
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return int64(v.Uint()), true
+		return uint64ToInt64(v.Uint()), true
 	case reflect.Complex64:
-		return int64(real(v.Complex())), true
+		return floatToInt64(real(v.Complex()))
 	case reflect.Complex128:
-		return int64(real(v.Complex())), true
+		return floatToInt64(real(v.Complex()))
 	case reflect.Bool:
 		if v.Bool() {
 			return 1, true
@@ -139,7 +130,7 @@ func Int64(i any) (int64, bool) {
 func forceToInt64(i any) (int64, bool) {
 	switch i.(type) {
 	case uint:
-		return int64(i.(uint)), true
+		return uint64ToInt64(uint64(i.(uint))), true
 	case uint8:
 		return int64(i.(uint8)), true
 	case uint16:
@@ -147,7 +138,7 @@ func forceToInt64(i any) (int64, bool) {
 	case uint32:
 		return int64(i.(uint32)), true
 	case uint64:
-		return int64(i.(uint64)), true
+		return uint64ToInt64(i.(uint64)), true
 	case int:
 		return int64(i.(int)), true
 	case int8:
@@ -159,9 +150,9 @@ func forceToInt64(i any) (int64, bool) {
 	case int64:
 		return i.(int64), true
 	case float32:
-		return int64(i.(float32)), true
+		return floatToInt64(float64(i.(float32)))
 	case float64:
-		return int64(i.(float64)), true
+		return floatToInt64(i.(float64))
 	}
 	return 0, false
 }
