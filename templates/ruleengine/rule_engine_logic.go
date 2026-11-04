@@ -270,12 +270,7 @@ func (r *EngineLogic) convertParameters(parameters map[string]any) map[string]an
 	newParameters := make(map[string]any)
 	for key, val := range parameters {
 		if valDecimal, ok := val.(decimal.Decimal); ok {
-			// 取整数值要用 IntPart：CoefficientInt64 返回的是系数而非数值，
-			// 如 DECIMAL(10,2) 的 1.00（系数 100、指数 -2）会变成 100，NewFromFloat(100)（系数 1、指数 2）会变成 1
-			if valDecimal.IsInteger() && valDecimal.BigInt().IsInt64() {
-				newParameters[key] = valDecimal.IntPart()
-				continue
-			}
+			// govaluate 取参数时会把整数统一转成 float64，区分整数没有意义，直接转 float64
 			newParameters[key] = valDecimal.InexactFloat64()
 			continue
 		}
