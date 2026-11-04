@@ -71,7 +71,7 @@ func CbcEncrypt(plainStr string, key string, en ...EnDeCoder) (string, error) {
 	}
 
 	var enCode EnDeCoder = new(HexCoder)
-	if en != nil && len(en) > 0 {
+	if len(en) > 0 && en[0] != nil { // 显式传入 nil 时使用默认编码，否则会空指针 panic
 		enCode = en[0]
 	}
 
@@ -91,7 +91,7 @@ func CbcDecrypt(cipherStr string, key string, de ...EnDeCoder) (string, error) {
 		var block cipher.Block
 
 		var deCode EnDeCoder = new(HexCoder)
-		if de != nil && len(de) > 0 {
+		if len(de) > 0 && de[0] != nil { // 显式传入 nil 时使用默认编码，否则会空指针 panic
 			deCode = de[0]
 		}
 
@@ -151,7 +151,7 @@ func AesCbcEncrypt(plainStr string, key string, en ...EnDeCoder) (string, error)
 	}
 
 	var enCode EnDeCoder = new(HexCoder)
-	if en != nil && len(en) > 0 {
+	if len(en) > 0 && en[0] != nil { // 显式传入 nil 时使用默认编码，否则会空指针 panic
 		enCode = en[0]
 	}
 	return enCode.Encode(originText), nil
@@ -165,7 +165,7 @@ func AesCbcDecrypt(cipherStr string, key string, de ...EnDeCoder) (string, error
 	keyByte := []byte(key)
 
 	var deCode EnDeCoder = new(HexCoder)
-	if de != nil && len(de) > 0 {
+	if len(de) > 0 && de[0] != nil { // 显式传入 nil 时使用默认编码，否则会空指针 panic
 		deCode = de[0]
 	}
 	cipherTextTemp, err := deCode.Decode(cipherStr)
