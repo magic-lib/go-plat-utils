@@ -6,6 +6,7 @@ import (
 	"github.com/magic-lib/go-plat-locker/lock"
 	id2 "github.com/magic-lib/go-plat-utils/id-generator/id"
 	"github.com/magic-lib/go-plat-utils/id-generator/seqid"
+	"os"
 	"testing"
 	"time"
 )
@@ -17,6 +18,9 @@ func TestGeneratorBase32(t *testing.T) {
 	fmt.Println(aa)
 }
 func TestIDGenerator(t *testing.T) {
+	if os.Getenv("GO_PLAT_INTEGRATION") == "" {
+		t.Skip("集成测试，需要本地 MySQL(127.0.0.1:3306)；设置 GO_PLAT_INTEGRATION=1 后运行")
+	}
 
 	ns := "new"
 
