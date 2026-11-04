@@ -393,6 +393,12 @@ func TestStructToTime(t *testing.T) {
 	mm, ok := conv.Time("2h30m")
 	fmt.Println(mm, ok)
 }
+func TestTimeSecondToTime(t *testing.T) {
+	mm, ok := conv.Time(time.Now().Unix())
+	fmt.Println(mm, ok)
+	mm, ok = conv.Time(time.Now().UnixMilli())
+	fmt.Println(mm, ok)
+}
 
 func TestTimestampToTime(t *testing.T) {
 	mm, ok := conv.Convert[time.Time](1788190240)

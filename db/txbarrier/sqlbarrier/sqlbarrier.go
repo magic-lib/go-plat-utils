@@ -165,6 +165,10 @@ func (c *Conn) insertDB(ctx context.Context,
 	if err != nil {
 		return 0, err
 	}
+	// 每次调用都会 prepare，不关闭会持续泄漏服务端 prepared statement，最终触发 max_prepared_stmt_count 上限
+	defer func() {
+		_ = stmt.Close()
+	}()
 
 	var result driver.Result
 	var args = []driver.NamedValue{

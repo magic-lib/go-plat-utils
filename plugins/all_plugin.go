@@ -29,19 +29,17 @@ func getOnePluginManagerFromComm(namespace string) (*PluginManager, error) {
 }
 
 func Register(namespace string, onePlugin Plugin) error {
-	onePluginManager, err := getOnePluginManagerFromComm(namespace)
-	if err != nil {
-		return err
-	}
-	if onePluginManager == nil {
-		onePluginManager = NewPluginManager()
-	}
-	err = onePluginManager.Register(onePlugin)
-	if err != nil {
-		return err
-	}
-	commPluginManager.Set(namespace, onePluginManager)
-	return nil
+	// 写入与查找使用同一个 namespace（空值归一为 default），否则空 namespace 注册后永远 Load 不到；
+	// Upsert 原子地取出或创建管理器，避免并发注册同一新 namespace 时互相覆盖而丢插件
+	namespace = getNamespace(namespace)
+	onePluginManager := commPluginManager.Upsert(namespace, nil,
+		func(exist bool, valueInMap *PluginManager, _ *PluginManager) *PluginManager {
+			if exist && valueInMap != nil {
+				return valueInMap
+			}
+			return NewPluginManager()
+		})
+	return onePluginManager.Register(onePlugin)
 }
 func Unregister(namespace string, pluginName string) error {
 	onePluginManager, err := getOnePluginManagerFromComm(namespace)

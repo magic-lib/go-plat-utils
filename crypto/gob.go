@@ -16,7 +16,7 @@ func GobEncode(s any, en ...EnDeCoder) (string, error) {
 	}
 
 	var enCode EnDeCoder = new(Base64Coder)
-	if en != nil && len(en) > 0 {
+	if len(en) > 0 && en[0] != nil { // 显式传入 nil 时使用默认编码，否则会空指针 panic
 		enCode = en[0]
 	}
 
@@ -28,7 +28,7 @@ func GobDecode(s string, data any, de ...EnDeCoder) error {
 	var b bytes.Buffer
 
 	var deCode EnDeCoder = new(Base64Coder)
-	if de != nil && len(de) > 0 {
+	if len(de) > 0 && de[0] != nil { // 显式传入 nil 时使用默认编码，否则会空指针 panic
 		deCode = de[0]
 	}
 

@@ -21,7 +21,7 @@ type FileLogger struct {
 
 // Debug 调试
 func (x *FileLogger) Debug(v ...any) {
-	if x.Level() < logs.DEBUG {
+	if x.Level() > logs.DEBUG {
 		return
 	}
 	logrus.Debug(v...)
@@ -29,7 +29,7 @@ func (x *FileLogger) Debug(v ...any) {
 
 // Error 错误
 func (x *FileLogger) Error(v ...any) {
-	if x.Level() < logs.ERROR {
+	if x.Level() > logs.ERROR {
 		return
 	}
 	logrus.Error(v...)
@@ -37,7 +37,7 @@ func (x *FileLogger) Error(v ...any) {
 
 // Info 普通
 func (x *FileLogger) Info(v ...any) {
-	if x.Level() < logs.INFO {
+	if x.Level() > logs.INFO {
 		return
 	}
 	logrus.Info(v...)
@@ -45,7 +45,7 @@ func (x *FileLogger) Info(v ...any) {
 
 // Warn 警告
 func (x *FileLogger) Warn(v ...any) {
-	if x.Level() < logs.WARNING {
+	if x.Level() > logs.WARNING {
 		return
 	}
 	logrus.Warn(v...)

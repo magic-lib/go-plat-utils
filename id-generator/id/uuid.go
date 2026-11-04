@@ -13,6 +13,7 @@ import (
 	"github.com/marspere/goencrypt"
 	gouuid "github.com/nu7hatch/gouuid"
 	"github.com/rs/xid"
+	"sync"
 )
 
 // GetXId 20字符 id 生成器,如：
@@ -41,8 +42,20 @@ func Snowflake(nodeInt ...int64) snowflake.ID {
 	if nodeTemp <= 0 || nodeTemp >= 1024 {
 		nodeTemp = 1
 	}
-	node, _ := snowflake.NewNode(nodeTemp)
-	return node.Generate()
+	return getSnowflakeNode(nodeTemp).Generate()
+}
+
+// snowflakeNodes 按节点号缓存 snowflake 节点。
+// 每次新建节点序列号都会从 0 开始，同一毫秒内多次调用会生成重复 ID，所以必须复用同一个节点。
+var snowflakeNodes sync.Map
+
+func getSnowflakeNode(nodeId int64) *snowflake.Node {
+	if node, ok := snowflakeNodes.Load(nodeId); ok {
+		return node.(*snowflake.Node)
+	}
+	node, _ := snowflake.NewNode(nodeId) // nodeId 已限制在 [1, 1023]，不会出错
+	actual, _ := snowflakeNodes.LoadOrStore(nodeId, node)
+	return actual.(*snowflake.Node)
 }
 
 // KrandId 24字符 id 生成器,如：

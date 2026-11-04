@@ -42,7 +42,7 @@ func (ac *Activity) Type() string {
 }
 func (ac *Activity) Clone(oldList ...*Activity) *Activity {
 	old := ac
-	if len(oldList) > 0 && oldList[0] == nil {
+	if len(oldList) > 0 && oldList[0] != nil {
 		old = oldList[0]
 	}
 	newAct := new(Activity)

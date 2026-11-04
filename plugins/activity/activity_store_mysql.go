@@ -21,6 +21,7 @@ func (s *SQLActivityStore) Migrate(ctx context.Context, tableName string) error 
 CREATE TABLE IF NOT EXISTS %s (
 	id      INTEGER PRIMARY KEY AUTOINCREMENT,
 	type         VARCHAR(191) NOT NULL UNIQUE,
+	activity_id  VARCHAR(191),
 	activity_type VARCHAR(191),
 	act_namespace VARCHAR(191),
 	act_name     VARCHAR(191),
@@ -58,14 +59,14 @@ func (s *SQLActivityStore) Save(ctx context.Context, act *Activity) error {
 		_, err := s.DB.ExecContext(ctx,
 			fmt.Sprintf(`UPDATE %s SET activity_id=?, activity_type=?, act_namespace=?,
 			 act_name=?, arguments=?, arg_template=?, responses=?, depends_on=?, hooks=?,
-			 control=?, updated_at=? WHERE type=?`, s.activityTableName),
+			 control=?, update_time=? WHERE type=?`, s.activityTableName),
 			cfg.Id, cfg.ActivityType, cfg.ActNamespace, cfg.ActName,
 			cfg.Arguments, cfg.ArgTemplate, cfg.Responses, cfg.DependsOn, cfg.Hooks,
 			cfg.Control, now, typeName)
 		return err
 	}
 	_, err := s.DB.ExecContext(ctx,
-		fmt.Sprintf("INSERT INTO %s (`type`, activity_id, activity_type, act_namespace, act_name, arguments, arg_template, responses, depends_on, hooks, control, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", s.activityTableName),
+		fmt.Sprintf("INSERT INTO %s (`type`, activity_id, activity_type, act_namespace, act_name, arguments, arg_template, responses, depends_on, hooks, control, create_time, update_time) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", s.activityTableName),
 		typeName, cfg.Id, cfg.ActivityType, cfg.ActNamespace, cfg.ActName,
 		cfg.Arguments, cfg.ArgTemplate, cfg.Responses, cfg.DependsOn, cfg.Hooks,
 		cfg.Control, now, now)

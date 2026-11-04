@@ -157,7 +157,7 @@ func (r *RSASecurity) PubKeyEncrypt(input string, en ...EnDeCoder) (string, erro
 	}
 
 	var enCode EnDeCoder = new(Base64Coder)
-	if en != nil && len(en) > 0 {
+	if len(en) > 0 && en[0] != nil { // 显式传入 nil 时使用默认编码，否则会空指针 panic
 		enCode = en[0]
 	}
 	return enCode.Encode(oldByte), nil
@@ -166,7 +166,7 @@ func (r *RSASecurity) PubKeyEncrypt(input string, en ...EnDeCoder) (string, erro
 // PriKeyDecrypt 私钥解密
 func (r *RSASecurity) PriKeyDecrypt(encodeBase64String string, de ...EnDeCoder) (string, error) {
 	var deCode EnDeCoder = new(Base64Coder)
-	if de != nil && len(de) > 0 {
+	if len(de) > 0 && de[0] != nil { // 显式传入 nil 时使用默认编码，否则会空指针 panic
 		deCode = de[0]
 	}
 
@@ -215,7 +215,7 @@ func (r *RSASecurity) PriKeyEncrypt(input string, en ...EnDeCoder) (string, erro
 	}
 
 	var enCode EnDeCoder = new(Base64Coder)
-	if en != nil && len(en) > 0 {
+	if len(en) > 0 && en[0] != nil { // 显式传入 nil 时使用默认编码，否则会空指针 panic
 		enCode = en[0]
 	}
 	return enCode.Encode(oldByte), nil
@@ -224,7 +224,7 @@ func (r *RSASecurity) PriKeyEncrypt(input string, en ...EnDeCoder) (string, erro
 // PubKeyDecrypt 公钥解密
 func (r *RSASecurity) PubKeyDecrypt(encodeBase64String string, de ...EnDeCoder) (string, error) {
 	var deCode EnDeCoder = new(Base64Coder)
-	if de != nil && len(de) > 0 {
+	if len(de) > 0 && de[0] != nil { // 显式传入 nil 时使用默认编码，否则会空指针 panic
 		deCode = de[0]
 	}
 	newByte, err := deCode.Decode(encodeBase64String)
@@ -248,7 +248,7 @@ func (r *RSASecurity) SignMd5(data string, en ...EnDeCoder) (string, error) {
 	signByte, err := rsa.SignPKCS1v15(rand.Reader, r.priKey, crypto.MD5, hashed)
 
 	var enCode EnDeCoder = new(Base64Coder)
-	if en != nil && len(en) > 0 {
+	if len(en) > 0 && en[0] != nil { // 显式传入 nil 时使用默认编码，否则会空指针 panic
 		enCode = en[0]
 	}
 
@@ -265,7 +265,7 @@ func (r *RSASecurity) SignSha1(data string, en ...EnDeCoder) (string, error) {
 	signByte, err := rsa.SignPKCS1v15(rand.Reader, r.priKey, crypto.SHA1, hashed)
 
 	var enCode EnDeCoder = new(Base64Coder)
-	if en != nil && len(en) > 0 {
+	if len(en) > 0 && en[0] != nil { // 显式传入 nil 时使用默认编码，否则会空指针 panic
 		enCode = en[0]
 	}
 
@@ -282,7 +282,7 @@ func (r *RSASecurity) SignSha256(data string, en ...EnDeCoder) (string, error) {
 	signByte, err := rsa.SignPKCS1v15(rand.Reader, r.priKey, crypto.SHA256, hashed)
 
 	var enCode EnDeCoder = new(Base64Coder)
-	if en != nil && len(en) > 0 {
+	if len(en) > 0 && en[0] != nil { // 显式传入 nil 时使用默认编码，否则会空指针 panic
 		enCode = en[0]
 	}
 	return enCode.Encode(signByte), err
@@ -291,7 +291,7 @@ func (r *RSASecurity) SignSha256(data string, en ...EnDeCoder) (string, error) {
 // VerifySignMd5 使用RSAWithMD5验证签名
 func (r *RSASecurity) VerifySignMd5(data string, signData string, de ...EnDeCoder) error {
 	var deCode EnDeCoder = new(Base64Coder)
-	if de != nil && len(de) > 0 {
+	if len(de) > 0 && de[0] != nil { // 显式传入 nil 时使用默认编码，否则会空指针 panic
 		deCode = de[0]
 	}
 
@@ -307,7 +307,7 @@ func (r *RSASecurity) VerifySignMd5(data string, signData string, de ...EnDeCode
 // VerifySignSha1 使用RSAWithSHA1验证签名
 func (r *RSASecurity) VerifySignSha1(data string, signData string, de ...EnDeCoder) error {
 	var deCode EnDeCoder = new(Base64Coder)
-	if de != nil && len(de) > 0 {
+	if len(de) > 0 && de[0] != nil { // 显式传入 nil 时使用默认编码，否则会空指针 panic
 		deCode = de[0]
 	}
 
@@ -323,7 +323,7 @@ func (r *RSASecurity) VerifySignSha1(data string, signData string, de ...EnDeCod
 // VerifySignSha256 使用RSAWithSHA256验证签名
 func (r *RSASecurity) VerifySignSha256(data string, signData string, de ...EnDeCoder) error {
 	var deCode EnDeCoder = new(Base64Coder)
-	if de != nil && len(de) > 0 {
+	if len(de) > 0 && de[0] != nil { // 显式传入 nil 时使用默认编码，否则会空指针 panic
 		deCode = de[0]
 	}
 

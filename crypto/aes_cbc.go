@@ -71,7 +71,7 @@ func CbcEncrypt(plainStr string, key string, en ...EnDeCoder) (string, error) {
 	}
 
 	var enCode EnDeCoder = new(HexCoder)
-	if en != nil && len(en) > 0 {
+	if len(en) > 0 && en[0] != nil { // 显式传入 nil 时使用默认编码，否则会空指针 panic
 		enCode = en[0]
 	}
 
@@ -91,7 +91,7 @@ func CbcDecrypt(cipherStr string, key string, de ...EnDeCoder) (string, error) {
 		var block cipher.Block
 
 		var deCode EnDeCoder = new(HexCoder)
-		if de != nil && len(de) > 0 {
+		if len(de) > 0 && de[0] != nil { // 显式传入 nil 时使用默认编码，否则会空指针 panic
 			deCode = de[0]
 		}
 
@@ -112,6 +112,11 @@ func CbcDecrypt(cipherStr string, key string, de ...EnDeCoder) (string, error) {
 		}
 		iv := ciphertext[:aes.BlockSize]
 		ciphertext = ciphertext[aes.BlockSize:]
+		// 长度不是块大小整数倍时 CryptBlocks 会 panic，被 GoSync 恢复后 err 仍为 nil，会把未解密的数据当结果返回
+		if len(ciphertext)%aes.BlockSize != 0 {
+			err = fmt.Errorf("ciphertext is not a multiple of the block size")
+			return
+		}
 
 		stream := cipher.NewCBCDecrypter(block, iv)
 
@@ -146,7 +151,7 @@ func AesCbcEncrypt(plainStr string, key string, en ...EnDeCoder) (string, error)
 	}
 
 	var enCode EnDeCoder = new(HexCoder)
-	if en != nil && len(en) > 0 {
+	if len(en) > 0 && en[0] != nil { // 显式传入 nil 时使用默认编码，否则会空指针 panic
 		enCode = en[0]
 	}
 	return enCode.Encode(originText), nil
@@ -160,7 +165,7 @@ func AesCbcDecrypt(cipherStr string, key string, de ...EnDeCoder) (string, error
 	keyByte := []byte(key)
 
 	var deCode EnDeCoder = new(HexCoder)
-	if de != nil && len(de) > 0 {
+	if len(de) > 0 && de[0] != nil { // 显式传入 nil 时使用默认编码，否则会空指针 panic
 		deCode = de[0]
 	}
 	cipherTextTemp, err := deCode.Decode(cipherStr)

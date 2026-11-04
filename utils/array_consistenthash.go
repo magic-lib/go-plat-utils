@@ -38,11 +38,12 @@ func (c *consistentHash) IncreaseReplicas(newReplicas int) {
 	if newReplicas > maxVirtualNodeMultiplier {
 		newReplicas = maxVirtualNodeMultiplier // 超出上限时使用默认最大值
 	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	if newReplicas <= c.virtualNodeMultiplier {
 		return // 新值不大于当前值，无需调整
 	}
-	c.mu.Lock()
-	defer c.mu.Unlock()
 
 	// 记录原有节点
 	existingNodes := make(map[string]bool)
@@ -57,22 +58,27 @@ func (c *consistentHash) IncreaseReplicas(newReplicas int) {
 	// 更新 replicas 值
 	c.virtualNodeMultiplier = newReplicas
 
-	// 重新添加所有节点（包括虚拟节点）
+	// 重新添加所有节点（包括虚拟节点）；已持有锁，不能调用会再次加锁的 AddNode
 	for node := range existingNodes {
-		c.AddNode(node)
+		c.addNodeLocked(node)
 	}
 }
 
 func (c *consistentHash) AddNode(node string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.addNodeLocked(node)
+}
+
+// addNodeLocked 添加节点，调用方需持有写锁
+func (c *consistentHash) addNodeLocked(node string) {
 	// 检查节点是否已存在
 	for _, existingNode := range c.nodeMap {
 		if existingNode == node {
 			return // 节点已存在，直接返回
 		}
 	}
-
-	c.mu.Lock()
-	defer c.mu.Unlock()
 
 	for i := 0; i < c.virtualNodeMultiplier; i++ {
 		// 创建虚拟节点名称，例如 "node1#0", "node1#1"

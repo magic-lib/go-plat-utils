@@ -3,6 +3,7 @@ package limiter
 import (
 	"context"
 	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
 	"time"
 )
 
@@ -14,9 +15,10 @@ type RedisLimiter struct {
 var rateLimiterLua = `
 -- ratelimiter.lua
 local key = KEYS[1]          -- 限流key
-local now = tonumber(ARGV[1]) -- 当前时间戳
-local window = tonumber(ARGV[2]) * 1000 -- 窗口时间(转毫秒)
-local limit = tonumber(ARGV[3])         -- 阈值
+local now = tonumber(ARGV[1]) -- 当前时间戳(毫秒)
+local window = tonumber(ARGV[2]) -- 窗口时间(毫秒)
+local limit = tonumber(ARGV[3])  -- 阈值
+local member = ARGV[4]           -- 本次请求的唯一标识
 
 -- 移除窗口外的数据
 redis.call('ZREMRANGEBYSCORE', key, 0, now - window)
@@ -25,7 +27,7 @@ redis.call('ZREMRANGEBYSCORE', key, 0, now - window)
 local current = redis.call('ZCARD', key)
 
 if current < limit then
-    redis.call('ZADD', key, now, now .. '-' .. math.random())
+    redis.call('ZADD', key, now, member)
     redis.call('PEXPIRE', key, window)
     return 1 -- 允许访问
 end
@@ -45,6 +47,8 @@ func (rl *RedisLimiter) Allow(ctx context.Context, key string, limit int, window
 		now,
 		window.Milliseconds(),
 		limit,
+		// 成员名由调用方生成：redis 脚本里的 math.random 是确定性的，同一毫秒内的请求会被 ZADD 去重而少计数
+		uuid.NewString(),
 	).Int()
 
 	if err != nil {

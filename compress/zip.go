@@ -19,10 +19,24 @@ func CreateGzFile(srcFilePath string, toGzFileName string) (fileContent []byte, 
 		toGzFileName = fmt.Sprintf("%s.tar.gz", toGzFileName)
 	}
 
+	// 必须等 tar、gzip、文件都关闭（写入 tar 结束块和 gzip 尾部）后再读取，否则内容不完整
+	if err = writeTarGz(srcFilePath, toGzFileName); err != nil {
+		return nil, err
+	}
+
+	data, err := os.ReadFile(toGzFileName)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+// writeTarGz 将 srcFilePath 打包压缩到 toGzFileName，返回前按 tar、gzip、文件的顺序关闭
+func writeTarGz(srcFilePath string, toGzFileName string) (err error) {
 	// 创建 tar.gz 文件
 	tarFile, err := os.Create(toGzFileName)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer func() {
 		err1 := tarFile.Close()
@@ -48,41 +62,37 @@ func CreateGzFile(srcFilePath string, toGzFileName string) (fileContent []byte, 
 	}()
 
 	// 遍历目录并添加文件到 tar.gz
-	err = filepath.Walk(srcFilePath, func(file string, fi os.FileInfo, err error) (err1 error) {
-		header, err := tar.FileInfoHeader(fi, file)
-		if err != nil {
-			return err
+	return filepath.Walk(srcFilePath, func(file string, fi os.FileInfo, walkErr error) (err1 error) {
+		if walkErr != nil { // fi 此时可能为 nil
+			return walkErr
+		}
+		header, err1 := tar.FileInfoHeader(fi, file)
+		if err1 != nil {
+			return err1
 		}
 
 		header.Name = filepath.ToSlash(file)
 
-		if err = tw.WriteHeader(header); err != nil {
-			return err
+		if err1 = tw.WriteHeader(header); err1 != nil {
+			return err1
+		}
+		if !fi.Mode().IsRegular() { // 目录等只需写入 header，没有内容可拷贝
+			return nil
 		}
 
-		data, err := os.Open(file)
-		if err != nil {
-			return err
+		data, err1 := os.Open(file)
+		if err1 != nil {
+			return err1
 		}
 		defer func() {
 			err2 := data.Close()
 			if err1 == nil {
-				err = err2
+				err1 = err2
 			}
 		}()
 		_, err1 = io.Copy(tw, data)
 		return err1
 	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	data, err := os.ReadFile(toGzFileName)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
 }
 
 // UnZipFile 解压zip压缩文件

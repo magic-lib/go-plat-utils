@@ -64,7 +64,7 @@ func (r *customerFunc) DateAdd(args ...any) (any, error) {
 	return r.dateShift(args, 1, dateAddDefaultLayout)
 }
 
-// DateDiff 两个时间的差值：DateDiff(t1, t2, 'hour')
+// DateDiff 两个时间的差值：DateDiff(t1, t2, 'hour')  DateDiff(t1, t2, 'day')
 // 返回 t1 - t2，单位默认 second；不足一个单位时按比例返回小数
 func (r *customerFunc) DateDiff(args ...any) (any, error) {
 	if len(args) < 2 {
