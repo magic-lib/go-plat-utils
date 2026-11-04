@@ -7,11 +7,15 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"net"
+	"os"
 	"testing"
 	"time"
 )
 
 func TestGrpcServer(t *testing.T) {
+	if os.Getenv("GO_PLAT_INTEGRATION") == "" {
+		t.Skip("集成测试，监听 50051 端口持续提供服务；设置 GO_PLAT_INTEGRATION=1 后运行")
+	}
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
 		log.Fatalf("listen err: %v", err)
@@ -44,6 +48,9 @@ func TestGrpcServer(t *testing.T) {
 	}
 }
 func TestGrpcClient(t *testing.T) {
+	if os.Getenv("GO_PLAT_INTEGRATION") == "" {
+		t.Skip("集成测试，需要 127.0.0.1:50051 的 gRPC 服务；设置 GO_PLAT_INTEGRATION=1 后运行")
+	}
 	grpcClient := interceptor.NewGrpcClient()
 
 	conn, err := grpc.NewClient(

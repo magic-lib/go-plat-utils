@@ -7,6 +7,7 @@ import (
 	"github.com/magic-lib/go-plat-utils/state"
 	flow "github.com/s8sg/goflow/flow/v1"
 	goflow "github.com/s8sg/goflow/v1"
+	"os"
 	"testing"
 )
 
@@ -37,6 +38,9 @@ func DefineWorkflow(workflow *flow.Workflow, ctx *flow.Context) error {
 }
 
 func TestTask1(t *testing.T) {
+	if os.Getenv("GO_PLAT_INTEGRATION") == "" {
+		t.Skip("集成测试，需要本地 redis，并在 8080 端口启动 goflow 服务；设置 GO_PLAT_INTEGRATION=1 后运行")
+	}
 	// 配置服务
 	fs := &goflow.FlowService{
 		Port:     8080,

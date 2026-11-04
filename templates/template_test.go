@@ -252,7 +252,7 @@ func TestReplaceVar(t *testing.T) {
 			fmt.Println(newArg)
 			return conv.String(newArg)
 		}},
-		{"empty", []any{0}, []any{`{"name":"12345","age":"{{age}"}`}, func(n int) string {
+		{"empty", []any{0}, []any{`{"age":"{{age}","name":"12345"}`}, func(n int) string {
 			newArg, err := jsonReplaceModel.Replace(map[string]string{
 				"name": "12345",
 				"age":  "{{age}",

@@ -3,10 +3,17 @@ package funcname_test
 import (
 	"fmt"
 	"github.com/magic-lib/go-plat-utils/utils/funcname"
+	"reflect"
 	"runtime"
 	"strings"
 	"testing"
 )
+
+// pkgMarker 用于取得本测试包的完整路径
+type pkgMarker struct{}
+
+// testPkg 本测试包的完整包路径，运行时获取，避免写死模块路径（代码源自 github.com/goaux/funcname）
+var testPkg = reflect.TypeOf(pkgMarker{}).PkgPath()
 
 func TestOf(t *testing.T) {
 	tests := []struct {
@@ -14,7 +21,7 @@ func TestOf(t *testing.T) {
 		fn       interface{}
 		expected string
 	}{
-		{"TestOf", TestOf, "github.com/goaux/funcname_test.TestOf"},
+		{"TestOf", TestOf, testPkg + ".TestOf"},
 		{"fmt.Println", fmt.Println, "fmt.Println"},
 	}
 
@@ -69,7 +76,7 @@ func TestSplitOf(t *testing.T) {
 		expectedPkg  string
 		expectedFunc string
 	}{
-		{"TestSplitOf", TestSplitOf, "github.com/goaux/funcname_test", "TestSplitOf"},
+		{"TestSplitOf", TestSplitOf, testPkg, "TestSplitOf"},
 		{"fmt.Println", fmt.Println, "fmt", "Println"},
 	}
 
@@ -85,7 +92,7 @@ func TestSplitOf(t *testing.T) {
 
 func TestThis(t *testing.T) {
 	result := funcname.This()
-	expected := "github.com/goaux/funcname_test.TestThis"
+	expected := testPkg + ".TestThis"
 	if result != expected {
 		t.Errorf("This() = %v, want %v", result, expected)
 	}
@@ -93,7 +100,7 @@ func TestThis(t *testing.T) {
 
 func TestSplitThis(t *testing.T) {
 	pkg, fn := funcname.SplitThis()
-	expectedPkg := "github.com/goaux/funcname_test"
+	expectedPkg := testPkg
 	expectedFunc := "TestSplitThis"
 	if pkg != expectedPkg || fn != expectedFunc {
 		t.Errorf("SplitThis() = (%v, %v), want (%v, %v)", pkg, fn, expectedPkg, expectedFunc)
@@ -102,7 +109,7 @@ func TestSplitThis(t *testing.T) {
 
 func TestCaller(t *testing.T) {
 	result := funcname.Caller(0)
-	expected := "github.com/goaux/funcname_test.TestCaller"
+	expected := testPkg + ".TestCaller"
 	if result != expected {
 		t.Errorf("Caller(0) = %v, want %v", result, expected)
 	}
@@ -110,7 +117,7 @@ func TestCaller(t *testing.T) {
 
 func TestSplitCaller(t *testing.T) {
 	pkg, fn := funcname.SplitCaller(0)
-	expectedPkg := "github.com/goaux/funcname_test"
+	expectedPkg := testPkg
 	expectedFunc := "TestSplitCaller"
 	if pkg != expectedPkg || fn != expectedFunc {
 		t.Errorf("SplitCaller(0) = (%v, %v), want (%v, %v)", pkg, fn, expectedPkg, expectedFunc)
@@ -120,7 +127,7 @@ func TestSplitCaller(t *testing.T) {
 func TestForPC(t *testing.T) {
 	pc, _, _, _ := runtime.Caller(0)
 	result := funcname.ForPC(pc)
-	expected := "github.com/goaux/funcname_test.TestForPC"
+	expected := testPkg + ".TestForPC"
 	if result != expected {
 		t.Errorf("ForPC() = %v, want %v", result, expected)
 	}
@@ -129,7 +136,7 @@ func TestForPC(t *testing.T) {
 func TestSplitForPC(t *testing.T) {
 	pc, _, _, _ := runtime.Caller(0)
 	pkg, fn := funcname.SplitForPC(pc)
-	expectedPkg := "github.com/goaux/funcname_test"
+	expectedPkg := testPkg
 	expectedFunc := "TestSplitForPC"
 	if pkg != expectedPkg || fn != expectedFunc {
 		t.Errorf("SplitForPC() = (%v, %v), want (%v, %v)", pkg, fn, expectedPkg, expectedFunc)
