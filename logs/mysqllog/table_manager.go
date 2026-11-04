@@ -272,7 +272,10 @@ func (tm *tableManager) getTableFieldsForInsert() []string {
 
 func (tm *tableManager) getTableExtendFieldList() []string {
 	tableName := tm.cfg.getTableName(time.Now())
+	// 加读锁：零点建表等会在写锁下写入 createdTables，无锁读取会触发 concurrent map read and map write 导致进程退出
+	tm.mu.RLock()
 	allFields, ok := tm.createdTables[tableName]
+	tm.mu.RUnlock()
 	if !ok {
 		extendFields := tm.cfg.getTableExtendFieldList()
 		extendFieldList := lo.Map(extendFields, func(field ExtendField, _ int) string {
