@@ -41,11 +41,13 @@ func New(bs *BaseSignCheck) (SingChecker, error) {
 	if bs.NonceUseTimes == 0 {
 		bs.NonceUseTimes = 1
 	}
-	if bs.NonceTimeout == 0 {
-		bs.NonceTimeout = 2 * time.Minute
-	}
 	if bs.TimestampTimeout == 0 {
 		bs.TimestampTimeout = 5 * time.Minute
+	}
+	// 时间戳允许 ±TimestampTimeout 偏差，请求在 2 倍窗口内都有效；nonce 保存时间短于此窗口时，
+	// nonce 过期后、时间戳仍有效期间同一请求可原样重放（原默认 nonce 2 分钟 < 10 分钟窗口）
+	if minNonceTimeout := 2 * bs.TimestampTimeout; bs.NonceTimeout < minNonceTimeout {
+		bs.NonceTimeout = minNonceTimeout
 	}
 	if bs.GetAppTokenFunc == nil {
 		return nil, fmt.Errorf("%s", "GetAppTokenFunc not set")

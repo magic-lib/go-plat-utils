@@ -10,7 +10,7 @@ import (
 func TestCompress(t *testing.T) {
 
 	testCases := []*utils.TestStruct{
-		{"BrCompress", []any{"tianlin0"}, []any{[]byte{139, 3, 128, 116, 105, 97, 110, 108, 105, 110, 48}}, func(input string) []byte {
+		{"BrCompress", []any{"tianlin0"}, []any{[]byte{139, 3, 128, 116, 105, 97, 110, 108, 105, 110, 48, 3}}, func(input string) []byte {
 			str, err := compress.BrCompress([]byte(input))
 			if err != nil {
 				return nil

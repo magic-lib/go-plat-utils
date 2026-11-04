@@ -6,6 +6,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/base64"
+	"fmt"
 )
 
 // The blockSize argument should be 16, 24, or 32.
@@ -16,13 +17,22 @@ func pkcs7Padding(plainText []byte, blockSize int) []byte {
 	return append(plainText, paddingText...)
 }
 
-func pkcs7UnPadding(plainText []byte) []byte {
+// pkcs7UnPadding 去除 PKCS7 填充并校验其合法性：空输入（原来访问 [-1] panic）、填充长度越界或填充字节不一致时返回错误
+func pkcs7UnPadding(plainText []byte, blockSize int) ([]byte, error) {
 	length := len(plainText)
-	unPadding := int(plainText[length-1])
-	if length-unPadding < 0 { // 不能<0
-		return []byte{}
+	if length == 0 {
+		return nil, fmt.Errorf("pkcs7: empty data")
 	}
-	return plainText[:length-unPadding]
+	unPadding := int(plainText[length-1])
+	if unPadding == 0 || unPadding > blockSize || unPadding > length {
+		return nil, fmt.Errorf("pkcs7: invalid padding")
+	}
+	for _, b := range plainText[length-unPadding:] {
+		if int(b) != unPadding {
+			return nil, fmt.Errorf("pkcs7: invalid padding")
+		}
+	}
+	return plainText[:length-unPadding], nil
 }
 
 func zeroPadding(plainText []byte, blockSize int) []byte {
@@ -78,12 +88,18 @@ func aesDecrypt(crypt, key []byte, iv string) ([]byte, error) {
 	} else {
 		ivBytes = []byte(iv)
 	}
+	// 校验 IV 与密文长度：不合法时 NewCBCDecrypter / CryptBlocks 会直接 panic，不可信密文可使进程崩溃
+	if len(ivBytes) != block.BlockSize() {
+		return nil, fmt.Errorf("aes: iv length must be %d", block.BlockSize())
+	}
+	if len(crypt) == 0 || len(crypt)%block.BlockSize() != 0 {
+		return nil, fmt.Errorf("aes: ciphertext is not a multiple of the block size")
+	}
 	blockMode := cipher.NewCBCDecrypter(block, ivBytes)
 	origData := make([]byte, len(crypt))
 
 	blockMode.CryptBlocks(origData, crypt)
-	origData = pkcs7UnPadding(origData)
-	return origData, nil
+	return pkcs7UnPadding(origData, block.BlockSize())
 }
 
 func getAesKeyFromBase64(keyBase64 string) []byte {
