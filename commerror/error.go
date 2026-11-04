@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/protoadapt"
+	"maps"
 )
 
 // CommError 通用错误信息
@@ -133,7 +134,7 @@ func Wrap(err error, opts ...Option) CommError {
 			code:    commError.Code(),
 			message: message,
 			cause:   commError.Cause(),
-			details: commError.Details(),
+			details: maps.Clone(commError.Details()), // 复制一份，否则 WithDetail 会改到原错误的 details
 		}
 
 		for _, opt := range opts {

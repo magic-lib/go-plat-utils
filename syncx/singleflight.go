@@ -1,6 +1,12 @@
 package syncx
 
-import "sync"
+import (
+	"errors"
+	"sync"
+)
+
+// errFnPanicked fn 执行时 panic，等待中的调用方拿到该错误，而不是 (nil, nil)
+var errFnPanicked = errors.New("syncx: singleflight fn panicked")
 
 type (
 	// SingleFlight lets the concurrent calls with the same key to share the call result.
@@ -70,7 +76,11 @@ func (g *flightGroup) createCall(key string) (c *call, done bool) {
 }
 
 func (g *flightGroup) makeCall(c *call, key string, fn func() (any, error)) {
+	normalReturn := false
 	defer func() {
+		if !normalReturn { // fn panic（panic 继续向上抛给执行方）
+			c.val, c.err = nil, errFnPanicked
+		}
 		g.lock.Lock()
 		delete(g.calls, key)
 		g.lock.Unlock()
@@ -78,4 +88,5 @@ func (g *flightGroup) makeCall(c *call, key string, fn func() (any, error)) {
 	}()
 
 	c.val, c.err = fn()
+	normalReturn = true
 }

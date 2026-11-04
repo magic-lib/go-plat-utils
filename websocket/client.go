@@ -16,6 +16,18 @@ func PostMessage(ctx context.Context, wsUrl string, msgByte []byte) ([]byte, err
 	}
 	defer conn.Close()
 
+	// ws.Dial 只在建连阶段使用 ctx，读写阶段需要自己处理：有截止时间就设置到连接上，
+	// ctx 被取消时关闭连接，避免服务端不回复时永久阻塞
+	if deadline, ok := ctx.Deadline(); ok {
+		if err = conn.SetDeadline(deadline); err != nil {
+			return nil, err
+		}
+	}
+	stop := context.AfterFunc(ctx, func() {
+		_ = conn.Close()
+	})
+	defer stop()
+
 	// 发送消息到服务器
 	if err = wsutil.WriteClientMessage(conn, ws.OpText, msgByte); err != nil {
 		return nil, err

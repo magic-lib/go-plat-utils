@@ -40,7 +40,9 @@ func JwtEncrypt(secretKey string, data any, cfgList ...*JwtCfg) (string, error) 
 	if len(cfgList) > 0 && cfgList[0] != nil {
 		oneCfg := cfgList[0]
 		if oneCfg.StandardClaims != nil {
-			cfg = oneCfg.StandardClaims
+			// 复制一份再补 IssuedAt/ExpiresAt：直接修改调用方的配置会让复用同一配置的后续 token 沿用第一次的过期时间
+			claimsCopy := *oneCfg.StandardClaims
+			cfg = &claimsCopy
 		}
 		if oneCfg.SigningMethod != nil {
 			signingMethod = oneCfg.SigningMethod

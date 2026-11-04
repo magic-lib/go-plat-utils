@@ -332,9 +332,12 @@ func (ac *Activity) executeByHookEvent(ctx context.Context, linkChar string, eve
 	if len(ac.Hooks) == 0 {
 		return nil, nil
 	}
-	if oneAct, ok := ac.Hooks[event]; ok {
+	if oneAct, ok := ac.Hooks[event]; ok && oneAct != nil {
 		if oneAct.Id == "" && ac.Id != "" {
-			oneAct.Id = ac.Id + linkChar + string(event)
+			// 钩子配置是共享的，并发执行时直接改 Id 会产生数据竞争，复制一份再设置
+			hookAct := *oneAct
+			hookAct.Id = ac.Id + linkChar + string(event)
+			return hookAct.Execute(ctx, args)
 		}
 		return oneAct.Execute(ctx, args)
 	}

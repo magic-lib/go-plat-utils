@@ -215,20 +215,62 @@ var emptyArrayRegex = regexp.MustCompile(`\[\s*\]`)
 // 元素为单引号或双引号包裹的字符串，逗号分隔。
 var stringArrayRegex = regexp.MustCompile(`\[(\s*['"][^'"]*['"]\s*(?:,\s*['"][^'"]*['"]\s*)*)\]`)
 
+// replaceOutsideQuotes 同 ReplaceAllStringFunc，但跳过起始位置位于单引号或双引号字符串内的匹配
+func replaceOutsideQuotes(re *regexp.Regexp, s string, repl func(string) string) string {
+	matches := re.FindAllStringIndex(s, -1)
+	if len(matches) == 0 {
+		return s
+	}
+	// 标记每个字节是否处于引号内（支持反斜杠转义）
+	inQuote := make([]bool, len(s))
+	var quote byte
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if quote != 0 {
+			inQuote[i] = true
+			if c == '\\' && i+1 < len(s) {
+				i++
+				inQuote[i] = true
+			} else if c == quote {
+				quote = 0
+			}
+			continue
+		}
+		if c == '\'' || c == '"' {
+			quote = c
+		}
+	}
+	var builder strings.Builder
+	last := 0
+	for _, m := range matches {
+		if inQuote[m[0]] {
+			continue
+		}
+		builder.WriteString(s[last:m[0]])
+		builder.WriteString(repl(s[m[0]:m[1]]))
+		last = m[1]
+	}
+	builder.WriteString(s[last:])
+	return builder.String()
+}
+
 func (r *EngineLogic) replaceRuleString(ruleString string) string {
 	// 替换[]，和[  ] 为空的情况
-	ruleString = emptyArrayRegex.ReplaceAllString(ruleString, "Array()")
+	// 引号里的内容是字符串字面量（如 name == '[1,2]'），不做数组替换
+	ruleString = replaceOutsideQuotes(emptyArrayRegex, ruleString, func(string) string {
+		return "Array()"
+	})
 
 	// 需要将[1,2,3], 这种格式转换为 Array()，避免报错
 	// 先把纯数字数组字面量 [1,2,3] 替换为 Array(1,2,3)
-	ruleString = numberArrayRegex.ReplaceAllStringFunc(ruleString, func(match string) string {
+	ruleString = replaceOutsideQuotes(numberArrayRegex, ruleString, func(match string) string {
 		inner := match[1 : len(match)-1]
 		return "Array(" + inner + ")"
 	})
 
 	// 字符串数组 ["AIRTEL","PP"]  ['ARM','B']  ["AIRTEL"]  ['ARM'] 也转为 Array(...)
 	// govaluate 的字符串字面量用单引号，故将内部双引号统一转为单引号
-	ruleString = stringArrayRegex.ReplaceAllStringFunc(ruleString, func(match string) string {
+	ruleString = replaceOutsideQuotes(stringArrayRegex, ruleString, func(match string) string {
 		inner := match[1 : len(match)-1]
 		inner = strings.ReplaceAll(inner, `"`, `'`)
 		return "Array(" + inner + ")"

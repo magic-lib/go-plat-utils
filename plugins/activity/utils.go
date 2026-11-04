@@ -46,7 +46,8 @@ func getResponseRegExp(keyPrefix string) *regexp.Regexp {
 	if ok && re != nil {
 		return re
 	}
-	retStr := fmt.Sprintf(`\{\{%s([a-zA-Z0-9_]+)\.(%s|%s)\.`, keyPrefix, Arguments, Responses)
+	// keyPrefix 可能包含 . $ 等正则元字符，需要转义
+	retStr := fmt.Sprintf(`\{\{%s([a-zA-Z0-9_]+)\.(%s|%s)\.`, regexp.QuoteMeta(keyPrefix), Arguments, Responses)
 	re = regexp.MustCompile(retStr)
 	activityIdRegExpMap.Set(keyPrefix, re)
 	return re

@@ -87,10 +87,12 @@ func (am *ActMetaData) FullName() string {
 	if am.Namespace == "" {
 		return am.Name()
 	}
-	if am.linkChar == "" {
-		am.linkChar = namespaceLinkNameChar
+	// 不回写 am.linkChar：FullName 会被并发调用，懒写字段会产生数据竞争
+	linkChar := am.linkChar
+	if linkChar == "" {
+		linkChar = namespaceLinkNameChar
 	}
-	return am.Namespace + am.linkChar + am.Name()
+	return am.Namespace + linkChar + am.Name()
 }
 func (am *ActMetaData) SetMethod(mt utils.ContextAnyHandler) *ActMetaData {
 	am.actionMethod = mt

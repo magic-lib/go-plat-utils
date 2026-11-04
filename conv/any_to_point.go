@@ -46,6 +46,9 @@ func Pointer[E any](v any) *E {
 		}
 	default:
 		rv := reflect.ValueOf(v)
+		if !rv.IsValid() { // 解引用后为 nil 时无值可转换，rv.Type() 会 panic
+			return ptr
+		}
 		target := reflect.ValueOf(ptr).Elem()
 		if rv.Type() != target.Type() {
 			toElem, err := Convert[E](v)
