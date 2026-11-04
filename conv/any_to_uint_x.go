@@ -3,6 +3,7 @@ package conv
 import (
 	"math"
 	"reflect"
+	"strconv"
 )
 
 // toUint 将给定的值转换为 uint
@@ -10,9 +11,6 @@ func toUint(i any) (uint, bool) {
 	v, ok := toUint64(i)
 	if !ok {
 		return 0, false
-	}
-	if v > math.MaxUint {
-		return math.MaxUint, true
 	}
 	return uint(v), true
 }
@@ -24,7 +22,7 @@ func toUint8(i any) (uint8, bool) {
 		return 0, false
 	}
 	if value > math.MaxUint8 {
-		return math.MaxUint8, true
+		return 0, false
 	}
 	return uint8(value), true
 }
@@ -36,7 +34,7 @@ func toUint16(i any) (uint16, bool) {
 		return 0, false
 	}
 	if value > math.MaxUint16 {
-		return math.MaxUint16, true
+		return 0, false
 	}
 	return uint16(value), true
 }
@@ -48,7 +46,7 @@ func toUint32(i any) (uint32, bool) {
 		return 0, false
 	}
 	if value > math.MaxUint32 {
-		return math.MaxUint32, true
+		return 0, false
 	}
 	return uint32(value), true
 }
@@ -72,17 +70,25 @@ func toUint64(i any) (uint64, bool) {
 		return v.Uint(), true
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		intValue := v.Int()
-		if intValue < 0 { // 低于最小值取 0
-			return 0, true
+		if intValue < 0 {
+			return 0, false
 		}
 		return uint64(intValue), true
 	case reflect.Float32, reflect.Float64:
-		return floatToUint64(v.Float())
+		floatValue := v.Float()
+		if floatValue < 0 {
+			return 0, false
+		}
+		return uint64(floatValue), true
 	case reflect.Complex64, reflect.Complex128:
-		return floatToUint64(real(v.Complex()))
+		realValue := real(v.Complex())
+		if realValue < 0 {
+			return 0, false
+		}
+		return uint64(realValue), true
 	case reflect.String:
 		strValue := v.String()
-		uintValue, err := parseUint64(strValue)
+		uintValue, err := strconv.ParseUint(strValue, 10, 64)
 		if err != nil {
 			return 0, false
 		}

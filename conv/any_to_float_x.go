@@ -15,14 +15,8 @@ func toFloat32(i any) (float32, bool) {
 	if !ok {
 		return 0, false
 	}
-	// 有限值越界时取边界值；±Inf 是合法的 float32，直接转换
-	if !math.IsInf(f64, 0) {
-		if f64 > math.MaxFloat32 {
-			return math.MaxFloat32, true
-		}
-		if f64 < -math.MaxFloat32 {
-			return -math.MaxFloat32, true
-		}
+	if f64 < -math.MaxFloat32 || f64 > math.MaxFloat32 {
+		return 0, false
 	}
 	return float32(f64), true
 }
