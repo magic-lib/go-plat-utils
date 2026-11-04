@@ -74,7 +74,11 @@ func (c *Container) Inject(ctx context.Context, obj any) error {
 
 // InjectComponents 对所有组件实例执行Inject。即为实例字段注入依赖的组件实例
 func (c *Container) InjectComponents() error {
-	componentsGroups := utils.ArraySplit[*Component](lo.Values(c.components), 10)
+	// 先在读锁内拷贝组件列表，避免与并发的 Register 产生数据竞争
+	c.mu.RLock()
+	allComponents := lo.Values(c.components)
+	c.mu.RUnlock()
+	componentsGroups := utils.ArraySplit[*Component](allComponents, 10)
 
 	childCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
