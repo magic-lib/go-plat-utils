@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
-	"time"
 	"unicode"
 )
 
@@ -60,10 +59,11 @@ func TestConstantParsing(test *testing.T) {
 
 			Name:  "Single time, RFC3339, only date",
 			Input: "'2014-01-02'",
+			// 本仓库已关闭字符串自动识别为时间（见 parsing.go 中注释掉的 tryParseTime），日期按字符串处理
 			Expected: []ExpressionToken{
 				ExpressionToken{
-					Kind:  TIME,
-					Value: time.Date(2014, time.January, 2, 0, 0, 0, 0, time.Local),
+					Kind:  STRING,
+					Value: "2014-01-02",
 				},
 			},
 		},
@@ -71,10 +71,11 @@ func TestConstantParsing(test *testing.T) {
 
 			Name:  "Single time, RFC3339, with hh:mm",
 			Input: "'2014-01-02 14:12'",
+			// 本仓库已关闭字符串自动识别为时间（见 parsing.go 中注释掉的 tryParseTime），日期按字符串处理
 			Expected: []ExpressionToken{
 				ExpressionToken{
-					Kind:  TIME,
-					Value: time.Date(2014, time.January, 2, 14, 12, 0, 0, time.Local),
+					Kind:  STRING,
+					Value: "2014-01-02 14:12",
 				},
 			},
 		},
@@ -82,10 +83,11 @@ func TestConstantParsing(test *testing.T) {
 
 			Name:  "Single time, RFC3339, with hh:mm:ss",
 			Input: "'2014-01-02 14:12:22'",
+			// 本仓库已关闭字符串自动识别为时间（见 parsing.go 中注释掉的 tryParseTime），日期按字符串处理
 			Expected: []ExpressionToken{
 				ExpressionToken{
-					Kind:  TIME,
-					Value: time.Date(2014, time.January, 2, 14, 12, 22, 0, time.Local),
+					Kind:  STRING,
+					Value: "2014-01-02 14:12:22",
 				},
 			},
 		},

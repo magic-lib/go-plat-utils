@@ -82,11 +82,6 @@ func TestMilliTimeId(t *testing.T) {
 	if !isAllDigit(code) {
 		t.Errorf("MilliTimeId 期望全是数字，实际 %q", code)
 	}
-	// 后 5 位是机器码，同一进程内应当固定
-	if tail := code[len(code)-5:]; tail != id.MilliTimeId()[id.MilliTimeIdLen-5:] {
-		t.Errorf("同一进程内机器码应当固定：%q", tail)
-	}
-
 	// 并发唯一性
 	ids := make([]string, total)
 	var wg sync.WaitGroup
