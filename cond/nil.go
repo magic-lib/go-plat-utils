@@ -3,6 +3,7 @@ package cond
 import (
 	"fmt"
 	"math"
+	"math/big"
 	"reflect"
 	"strconv"
 	"strings"
@@ -132,6 +133,7 @@ func IsPointer(val any) bool {
 
 // IsEqual 宽松相等判断，支持跨类型比较，适用于规则引擎中的值匹配场景：
 //   - 类型相同：使用 reflect.DeepEqual
+//   - 均为整数或整数字符串：按整数精确比较，避免超过 2^53 的大整数（如 ID）转 float64 后误判相等
 //   - 均为数值或可解析为数值的字符串：统一转为 float64 后比较
 //     （如 int64(1) 与 float64(1)、字符串 "1" 与数字 1 均视为相等）
 //   - 一边为字符串、另一边为布尔：按 "true"/"false" 比较
@@ -148,14 +150,21 @@ func IsEqual(a, b any) bool {
 		return reflect.DeepEqual(a, b)
 	}
 
-	// 2) 数值 / 数字字符串 → 转 float64 比较
+	// 2) 整数 / 整数字符串 → 精确比较
+	if ai, ok := toIntegerValue(a); ok {
+		if bi, ok2 := toIntegerValue(b); ok2 {
+			return ai.Cmp(bi) == 0
+		}
+	}
+
+	// 3) 数值 / 数字字符串 → 转 float64 比较
 	af, aOk := toFloatValue(a)
 	bf, bOk := toFloatValue(b)
 	if aOk && bOk {
 		return math.Abs(af-bf) < 1e-9
 	}
 
-	// 3) 一边字符串、一边布尔
+	// 4) 一边字符串、一边布尔
 	if bs, ok := b.(string); ok {
 		if ab, ok2 := a.(bool); ok2 {
 			return strings.EqualFold(bs, strconv.FormatBool(ab))
@@ -167,8 +176,38 @@ func IsEqual(a, b any) bool {
 		}
 	}
 
-	// 4) 退回字符串形态比较（覆盖 decimal、"1.0" 与 1 等已在上步处理外的其余情况）
+	// 5) 退回字符串形态比较（覆盖 decimal、"1.0" 与 1 等已在上步处理外的其余情况）
 	return fmt.Sprintf("%v", a) == fmt.Sprintf("%v", b)
+}
+
+// toIntegerValue 将整数类型或十进制整数字符串转为 big.Int；浮点数、含小数点等其他情况返回 false。
+func toIntegerValue(v any) (*big.Int, bool) {
+	switch n := v.(type) {
+	case int:
+		return big.NewInt(int64(n)), true
+	case int8:
+		return big.NewInt(int64(n)), true
+	case int16:
+		return big.NewInt(int64(n)), true
+	case int32:
+		return big.NewInt(int64(n)), true
+	case int64:
+		return big.NewInt(n), true
+	case uint:
+		return new(big.Int).SetUint64(uint64(n)), true
+	case uint8:
+		return new(big.Int).SetUint64(uint64(n)), true
+	case uint16:
+		return new(big.Int).SetUint64(uint64(n)), true
+	case uint32:
+		return new(big.Int).SetUint64(uint64(n)), true
+	case uint64:
+		return new(big.Int).SetUint64(n), true
+	case string:
+		return new(big.Int).SetString(strings.TrimSpace(n), 10)
+	default:
+		return nil, false
+	}
 }
 
 // toFloatValue 将数值或可解析的数字字符串转为 float64。

@@ -667,11 +667,17 @@ func getStringFromJson(src any, ignoreOmitempty bool) (string, error) {
 			v := reflect.ValueOf(src)
 			if v.Kind() == reflect.Struct {
 				newMapAll := make(map[string]any)
-				err = jsoniterForNil.UnmarshalFromString(retAll, &newMapAll)
+				// 用 UseNumber 解析，超过 2^53 的整数保留为 json.Number，避免先转 float64 丢精度
+				err = jsonUseNumber.UnmarshalFromString(retAll, &newMapAll)
 				if err != nil {
 					return retAll, err
 				}
+				_, hasBigNumber := normalizeJsonNumber(newMapAll)
 				newMap := getStringFromStruct(src, newMapAll)
+				if hasBigNumber {
+					// jcs 只支持 float64，会丢失大整数精度；改用按 key 排序、不转义的输出，与 jcs 保持一致
+					return jsonSortedNoEscape.MarshalToString(newMap)
+				}
 				if newS, err := jcs.Format(newMap); err == nil {
 					return newS, nil
 				}
