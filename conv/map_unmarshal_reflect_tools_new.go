@@ -344,7 +344,7 @@ func (c *toolsService) UnmarshalDataFromJson(srcStruct any, dstPoint any) error 
 		return nil
 	}
 	if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
-		logDebug("UnmarshalDataFromJson param 338:", String(srcStruct), reflect.TypeOf(srcStruct).String())
+		logDebug("UnmarshalDataFromJson param 338:", srcString, reflect.TypeOf(srcStruct).String())
 	}
 	srcType := reflect.TypeOf(srcStruct)
 	if srcType.Kind() == reflect.String || cond.IsBytes(srcStruct) {
@@ -368,7 +368,7 @@ func (c *toolsService) UnmarshalDataFromJson(srcStruct any, dstPoint any) error 
 	errJson := jsoniterForNil.Unmarshal(b, dstPoint)
 	if errJson != nil {
 		if cond.IsOpenLog() { // 参数会先求值，日志关闭时避免无谓的序列化
-			logDebug("UnmarshalDataFromJson err2 358:", String(srcStruct), errJson.Error())
+			logDebug("UnmarshalDataFromJson err2 358:", srcString, errJson.Error())
 		}
 		//"github.com/bytedance/sonic"
 		//return sonic.UnmarshalString(string(b), dstPoint)
