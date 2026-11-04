@@ -7,10 +7,14 @@ import (
 	"github.com/magic-lib/go-plat-utils/conv"
 )
 
+// hybridAesKeyLen 混合加密随机 AES 密钥的字符数：62 个字符可选，43 位约 256 bit 熵。
+// 原来只有 8 位（约 47 bit），可被离线暴力破解。解密端用 sha256 派生密钥，与长度无关，旧密文仍可解密。
+const hybridAesKeyLen = 43
+
 // HybridEncrypt 混合加密：AES加密数据 + RSA加密AES密钥
 // 返回格式：base64(rsa加密的aes密钥) + ":" + base64(aes加密的数据)
 func HybridEncrypt(rsaPubKey *rsa.PublicKey, plaintext []byte) (string, error) {
-	aesKey, err := generateReadableByteNonce(8, charset)
+	aesKey, err := generateReadableByteNonce(hybridAesKeyLen, charset)
 	if err != nil {
 		return "", fmt.Errorf("生成AES密钥失败：%v", err)
 	}
