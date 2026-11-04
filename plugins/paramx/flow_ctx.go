@@ -142,6 +142,8 @@ func (c *FlowContext) SetTraceId(traceId string) {
 	if traceId == "" {
 		return
 	}
+	c.mux.Lock()
+	defer c.mux.Unlock()
 	if c.Meta == nil {
 		c.Meta = &FlowMeta{}
 	}
@@ -151,6 +153,8 @@ func (c *FlowContext) SetFlowId(flowId string) {
 	if flowId == "" {
 		return
 	}
+	c.mux.Lock()
+	defer c.mux.Unlock()
 	if c.Meta == nil {
 		c.Meta = &FlowMeta{}
 	}
@@ -160,6 +164,8 @@ func (c *FlowContext) SetInstanceId(instanceId string) {
 	if instanceId == "" {
 		return
 	}
+	c.mux.Lock()
+	defer c.mux.Unlock()
 	if c.Meta == nil {
 		c.Meta = &FlowMeta{}
 	}
@@ -167,14 +173,15 @@ func (c *FlowContext) SetInstanceId(instanceId string) {
 }
 
 func (c *FlowContext) SetConfig(key string, value any) {
+	// 判空与初始化也要在锁内，否则并发调用时会互相覆盖新建的 map
+	c.mux.Lock()
+	defer c.mux.Unlock()
 	if c.Meta == nil {
 		c.Meta = &FlowMeta{}
 	}
 	if len(c.Meta.Configs) == 0 {
 		c.Meta.Configs = make(map[string]any)
 	}
-	c.mux.Lock()
-	defer c.mux.Unlock()
 	c.Meta.Configs[key] = value
 }
 
@@ -249,6 +256,7 @@ func (c *FlowContext) SetStepError(stepId StepId, err *ErrorInfo) {
 	ps, ok := c.Steps[stepId]
 	if !ok {
 		ps = &Step{}
+		c.Steps[stepId] = ps // 新建的步骤需写回，否则错误信息丢失
 	}
 	ps.Error = err
 }
