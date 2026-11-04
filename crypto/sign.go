@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
+	"crypto/subtle"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
@@ -154,7 +155,12 @@ func VerifySignatureByHmac(secret string, singStr, signature string) (bool, erro
 	if err != nil {
 		return false, err
 	}
-	return strings.EqualFold(genSign, signature), nil
+	return SignatureEqual(genSign, signature), nil
+}
+
+// SignatureEqual 以常量时间比较两个签名（不区分大小写），避免逐字节比较的耗时差异泄露签名信息
+func SignatureEqual(a, b string) bool {
+	return subtle.ConstantTimeCompare([]byte(strings.ToLower(a)), []byte(strings.ToLower(b))) == 1
 }
 func SignatureByRsa11(privateKeyStr string, signStr string) (string, error) {
 	if signStr == "" || privateKeyStr == "" {
