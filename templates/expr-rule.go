@@ -58,10 +58,13 @@ func runExpr(expr ast.Expr, json string) interface{} {
 		}
 
 		if opStr == "&&" || opStr == "||" {
+			// 标识符经 gjson 取值得到的是 "true" 这类字符串，直接断言 bool 会 panic
+			xBool, _ := conv.Convert[bool](x)
+			yBool, _ := conv.Convert[bool](y)
 			if opStr == "&&" {
-				return x.(bool) && y.(bool)
+				return xBool && yBool
 			}
-			return x.(bool) || y.(bool)
+			return xBool || yBool
 		}
 
 		if opStr == "==" {
