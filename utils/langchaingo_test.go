@@ -119,6 +119,7 @@ func executeGraph(g graphA.Graph[string, TaskNode]) ([]ResponseData, error) {
 
 	var results []ResponseData
 	var wg sync.WaitGroup
+	var mu sync.Mutex // 保护 results 与 dependenciesCompleted：多个协程并发写入
 
 	// 记录每个节点的依赖是否完成
 	dependenciesCompleted := make(map[string]bool)
@@ -136,12 +137,14 @@ func executeGraph(g graphA.Graph[string, TaskNode]) ([]ResponseData, error) {
 
 		// 检查依赖是否完成
 		allDependenciesCompleted := true
+		mu.Lock()
 		for _, neighbor := range neighbors {
 			if !dependenciesCompleted[neighbor] {
 				allDependenciesCompleted = false
 				break
 			}
 		}
+		mu.Unlock()
 
 		if allDependenciesCompleted {
 			wg.Add(1)
@@ -158,8 +161,10 @@ func executeGraph(g graphA.Graph[string, TaskNode]) ([]ResponseData, error) {
 					return
 				}
 				task.Data = data
+				mu.Lock()
 				results = append(results, data)
 				dependenciesCompleted[node] = true
+				mu.Unlock()
 			}(node)
 		}
 	}

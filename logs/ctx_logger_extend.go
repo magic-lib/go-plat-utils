@@ -24,7 +24,7 @@ func (x *ctxLogger) printlnComm(level LogLevel, msg ...any) {
 
 	ctxPtr, _, _ := goroutines.GetContext()
 	if ctxPtr == nil {
-		ctxPtr := x.ctx
+		ctxPtr = x.ctx // 原来用 := 新声明了同名变量，外层 ctxPtr 仍为 nil，下面解引用会 panic
 		if ctxPtr == nil {
 			ctx := context.Background()
 			ctxPtr = &ctx

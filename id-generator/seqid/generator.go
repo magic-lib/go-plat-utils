@@ -71,34 +71,13 @@ func (g *IDGenerator[T]) SetStartId(key string, startId T) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
-	hasSet := false
-	if g.currentIDMap.Has(key) {
-		if currId, ok1 := g.currentIDMap.Get(key); ok1 {
-			if currId > zero {
-				if currId < startId {
-					hasSet = true
-					g.currentIDMap.Set(key, startId)
-				}
-			}
-		}
-	}
-	if !hasSet {
+	// 只往大调：原来已有值 >= startId 时也会落到兜底分支被覆盖成更小的 startId，导致已发过的 ID 再次发出
+	if currId, ok := g.currentIDMap.Get(key); !ok || currId < startId {
 		g.currentIDMap.Set(key, startId)
 	}
-
-	hasSet = false
-	if g.maxIDMap.Has(key) {
-		if maxId, ok2 := g.maxIDMap.Get(key); ok2 {
-			if startId > maxId {
-				hasSet = true
-				g.maxIDMap.Set(key, startId)
-			}
-		}
-	}
-	if !hasSet {
+	if maxId, ok := g.maxIDMap.Get(key); !ok || maxId < startId {
 		g.maxIDMap.Set(key, startId)
 	}
-	return
 }
 
 // Generate 获取下一个ID

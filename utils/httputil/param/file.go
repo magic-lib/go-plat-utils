@@ -16,7 +16,15 @@ type MultipartFile struct {
 	FileName    string         // 原始文件名，如 "collection_order_template.xlsx"
 	Size        int64          // 文件大小（字节）
 	ContentType string         // MIME 类型，如 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-	File        multipart.File // 文件流，实现了 io.Reader，可直接读取
+	File        multipart.File // 文件流，实现了 io.Reader，可直接读取；读取完毕后应调用 Close 释放
+}
+
+// Close 关闭文件流。超过 32MB 的上传文件落在磁盘临时文件上，读取完毕后应关闭以释放文件句柄和磁盘空间
+func (m *MultipartFile) Close() error {
+	if m == nil || m.File == nil {
+		return nil
+	}
+	return m.File.Close()
 }
 
 // multipartFormData 解析后的 multipart 表单数据
@@ -112,6 +120,9 @@ func parseMultipartForm(h http.Header, body []byte) (*multipartFormData, error) 
 			for _, header := range fileHeaders {
 				file, err := header.Open()
 				if err != nil {
+					// 失败时关闭已打开的文件并清理临时文件，避免句柄与磁盘泄漏
+					lo.ForEach(allFile, func(item *MultipartFile, _ int) { _ = item.Close() })
+					_ = multipartForm.RemoveAll()
 					return nil, fmt.Errorf("打开上传文件 [%s] 失败: %w", header.Filename, err)
 				}
 				allFile = append(allFile, &MultipartFile{
@@ -131,7 +142,9 @@ func parseMultipartForm(h http.Header, body []byte) (*multipartFormData, error) 
 				result.Files[item.FieldName] = append(result.Files[item.FieldName], item)
 			})
 		}
-
+		// 文件都已打开，删除 ReadForm 落盘的临时文件：已打开的文件在 Unix 上仍可读，关闭后磁盘空间即释放；
+		// 原来从不清理，每次解析超过 32MB 的上传都会遗留临时文件
+		_ = multipartForm.RemoveAll()
 	}
 
 	return result, nil

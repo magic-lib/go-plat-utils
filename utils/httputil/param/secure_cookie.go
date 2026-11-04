@@ -54,7 +54,7 @@ func (s *secureCookie) EncodeCookieToResponse(w http.ResponseWriter, cookie *htt
 	}
 	encoded, err := s.Encode(cookie.Name, cookie.Value)
 	if err != nil {
-		http.SetCookie(w, cookie)
+		// 加密失败不能写 cookie：原来会把未加密、未设 Secure/HttpOnly 的明文 cookie 下发给客户端
 		return err
 	}
 	cookie.Value = encoded

@@ -270,11 +270,7 @@ func (r *EngineLogic) convertParameters(parameters map[string]any) map[string]an
 	newParameters := make(map[string]any)
 	for key, val := range parameters {
 		if valDecimal, ok := val.(decimal.Decimal); ok {
-			valDecimal.CoefficientInt64()
-			if valDecimal.IsInteger() {
-				newParameters[key] = valDecimal.CoefficientInt64()
-				continue
-			}
+			// govaluate 取参数时会把整数统一转成 float64，区分整数没有意义，直接转 float64
 			newParameters[key] = valDecimal.InexactFloat64()
 			continue
 		}
