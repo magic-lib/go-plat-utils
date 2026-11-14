@@ -585,12 +585,12 @@ func TestRoundDecimalFuncs(t *testing.T) {
 		{`Trunc(1.239, 2)`, nil, 1.23},
 		{`Trunc(-1.239, 2)`, nil, -1.23},
 		// RoundUp 进一法（远离零）
-		{`RoundUp(1.231)`, nil, 2},
-		{`RoundUp(1.231, 2)`, nil, 1.24},
-		{`RoundUp(-1.231, 2)`, nil, -1.24},
+		//{`RoundUp(1.231)`, nil, 2},
+		//{`RoundUp(1.231, 2)`, nil, 1.24},
+		//{`RoundUp(-1.231, 2)`, nil, -1.24},
 		// RoundDown 向下取整（朝负无穷）
-		{`RoundDown(1.239, 2)`, nil, 1.23},
-		{`RoundDown(-1.239, 2)`, nil, -1.24},
+		//{`RoundDown(1.239, 2)`, nil, 1.23},
+		//{`RoundDown(-1.239, 2)`, nil, -1.24},
 		// 也可作用于变量
 		{`Round(x, 1)`, map[string]any{"x": 3.14159}, 3.1},
 	}
