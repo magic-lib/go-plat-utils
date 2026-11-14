@@ -57,7 +57,11 @@ func NewEngineLogic() *EngineLogic {
 		"Min":          ruleLogicFunc.Min,
 		"CeilToDigit":  ruleLogicFunc.CeilToDigit,
 		"FloorToDigit": ruleLogicFunc.FloorToDigit,
-		// 数组区间相关
+		"Round":        ruleLogicFunc.Round,
+		"Trunc":        ruleLogicFunc.Trunc,
+		//"RoundUp":      ruleLogicFunc.RoundUp,
+		//"RoundDown":    ruleLogicFunc.RoundDown,
+		// 数组相关
 		"Has":     ruleLogicFunc.Has,
 		"In":      ruleLogicFunc.In,
 		"Between": ruleLogicFunc.Between, // 新增区间判断

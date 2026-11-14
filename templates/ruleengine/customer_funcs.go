@@ -946,6 +946,102 @@ func (r *customerFunc) FloorToDigit(args ...any) (any, error) {
 	return result.InexactFloat64(), nil
 }
 
+// getRoundParams 解析“保留小数”类函数的参数：第一个为待处理数字，第二个为保留的小数位数（可选，默认 0）。
+func (r *customerFunc) getRoundParams(args ...any) (decimal.Decimal, int32, error) {
+	if len(args) == 0 {
+		return decimal.Zero, 0, fmt.Errorf("参数数量不对，需要 1~2 个参数：数字[，保留小数位数]")
+	}
+	num, err := conv.Convert[decimal.Decimal](args[0])
+	if err != nil {
+		return decimal.Zero, 0, fmt.Errorf("数字参数转换失败：%v", args[0])
+	}
+	var places int32
+	if len(args) >= 2 {
+		p, err := conv.Convert[int32](args[1])
+		if err != nil {
+			return decimal.Zero, 0, fmt.Errorf("保留小数位数参数转换失败：%v", args[1])
+		}
+		places = p
+	}
+	return num, places, nil
+}
+
+// roundingMode 保留小数时的舍入模式
+type roundingMode int
+
+const (
+	roundHalfUp roundingMode = iota // 四舍五入（ties 远离零）
+	roundTrunc                     // 直接舍去（朝零截断）
+	roundUp                        // 进一法（朝远离零方向进位）
+	roundFloor                     // 向下取整（朝负无穷）
+)
+
+// roundTo 保留 n 位小数并按指定模式舍入：先乘以 10^n，在整数尺度上做对应舍入，再除回去。
+// 这里不使用 decimal.Round 的 mode 参数（旧版本不支持），而是基于 Round(0)/Truncate(0)/Ceil()/Floor() 拼装。
+func (r *customerFunc) roundTo(num decimal.Decimal, places int32, mode roundingMode) float64 {
+	if places < 0 {
+		places = 0
+	}
+	scale := decimal.NewFromInt(1).Shift(places) // 10^places
+	scaled := num.Mul(scale)
+	var rounded decimal.Decimal
+	switch mode {
+	case roundHalfUp:
+		rounded = scaled.Round(0) // 默认即“四舍五入”（ties 远离零）
+	case roundTrunc:
+		rounded = scaled.Truncate(0) // 截断多余小数（朝零方向）
+	case roundUp:
+		if scaled.IsNegative() {
+			rounded = scaled.Floor() // 负数：朝更负方向
+		} else {
+			rounded = scaled.Ceil() // 正数：朝更正方向
+		}
+	case roundFloor:
+		rounded = scaled.Floor() // 朝负无穷
+	}
+	return rounded.Div(scale).InexactFloat64()
+}
+
+// Round 四舍五入：保留 n 位小数，遵循“四舍五入”（ties 远离零，如 2.5→3、-2.5→-3）。
+// 用法：Round(1.235) => 1、Round(1.235, 2) => 1.24、Round(-1.235, 2) => -1.24
+func (r *customerFunc) Round(args ...any) (any, error) {
+	num, places, err := r.getRoundParams(args...)
+	if err != nil {
+		return 0, err
+	}
+	return r.roundTo(num, places, roundHalfUp), nil
+}
+
+// Trunc 直接舍去：保留 n 位小数，把多余的小数位直接截断（朝零方向），不进位。
+// 用法：Trunc(1.239) => 1、Trunc(1.239, 2) => 1.23、Trunc(-1.239, 2) => -1.23
+func (r *customerFunc) Trunc(args ...any) (any, error) {
+	num, places, err := r.getRoundParams(args...)
+	if err != nil {
+		return 0, err
+	}
+	return r.roundTo(num, places, roundTrunc), nil
+}
+
+// RoundUp 进一法：保留 n 位小数，只要后面还有非零尾数就向远离零方向进位。
+// 用法：RoundUp(1.231) => 2、RoundUp(1.231, 2) => 1.24、RoundUp(-1.231, 2) => -1.24
+func (r *customerFunc) RoundUp(args ...any) (any, error) {
+	num, places, err := r.getRoundParams(args...)
+	if err != nil {
+		return 0, err
+	}
+	return r.roundTo(num, places, roundUp), nil
+}
+
+// RoundDown 向下取整：保留 n 位小数，朝负无穷方向舍去（正数的结果与 Trunc 一致，负数更小）。
+// 用法：RoundDown(1.239, 2) => 1.23、RoundDown(-1.239, 2) => -1.24
+func (r *customerFunc) RoundDown(args ...any) (any, error) {
+	num, places, err := r.getRoundParams(args...)
+	if err != nil {
+		return 0, err
+	}
+	return r.roundTo(num, places, roundFloor), nil
+}
+
 // isValidBase 验证基数是否为10的幂次方（1, 10, 100, 1000...）
 func isValidBase(base int64) bool {
 	if base <= 0 {

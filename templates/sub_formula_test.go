@@ -17,6 +17,7 @@ func TestSubFormulaTemplate(t *testing.T) {
 		rate          float64
 		want          string
 	}{
+		{225, 225, 0, "225"},     // 500 + MIN(-20, -10) = 480
 		{500, 500, 0.05, "480"},  // 500 + MIN(-20, -10) = 480
 		{100, 100, 0.05, "90"},   // 100 + MIN(0, -10) = 90
 		{300, 400, 0.1, "370"},   // 400 + MIN(-30, -10) = 370
@@ -34,6 +35,34 @@ func TestSubFormulaTemplate(t *testing.T) {
 			"last_credit":    c.lastCredit,
 		}
 		ret, err := e.RunString(subFormulaTemplate, args)
+		if err != nil {
+			t.Fatalf("借款金额=%v 上次授信=%v rate=%v: %v", c.productAmount, c.lastCredit, c.rate, err)
+		}
+		if got := conv.String(ret); got != c.want {
+			t.Errorf("借款金额=%v 上次授信=%v rate=%v: got %s, want %s", c.productAmount, c.lastCredit, c.rate, got, c.want)
+		}
+	}
+}
+func TestAddFormulaTemplate(t *testing.T) {
+	cases := []struct {
+		productAmount float64 // 借款金额
+		lastCredit    float64 // 上次授信
+		rate          float64
+		want          string
+	}{
+		{225, 225, 0, "225"}, // 500 + MIN(-20, -10) = 480
+	}
+
+	e := NewRuleExprEngine()
+	for _, c := range cases {
+		args := map[string]any{
+			"operator":              "+",
+			"rate":                  c.rate,
+			"product_amount":        c.productAmount,
+			"product_interest_rate": 0.05,
+			"last_credit":           c.lastCredit,
+		}
+		ret, err := e.RunString("Max(last_credit,product_amount{{operator}}Min(Max(FloorToDigit(1,product_amount*Min({{rate}}, {{product_interest_rate}})),25),100))", args)
 		if err != nil {
 			t.Fatalf("借款金额=%v 上次授信=%v rate=%v: %v", c.productAmount, c.lastCredit, c.rate, err)
 		}

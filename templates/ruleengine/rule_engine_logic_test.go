@@ -566,3 +566,42 @@ func TestReplaceRuleStringNumberArray(t *testing.T) {
 		t.Fatal("unreachable")
 	}
 }
+
+// TestRoundDecimalFuncs 验证新增的“保留小数”系列函数：四舍五入 / 直接舍去 / 进一 / 向下取整
+func TestRoundDecimalFuncs(t *testing.T) {
+	eng := templates.NewRuleExprEngine()
+	cases := []struct {
+		rule string
+		args map[string]any
+		want float64
+	}{
+		// Round 四舍五入
+		{`Round(1.235)`, nil, 1},
+		{`Round(1.235, 2)`, nil, 1.24},
+		{`Round(-1.235, 2)`, nil, -1.24},
+		{`Round(2.5)`, nil, 3},
+		// Trunc 直接舍去（朝零截断）
+		{`Trunc(1.239)`, nil, 1},
+		{`Trunc(1.239, 2)`, nil, 1.23},
+		{`Trunc(-1.239, 2)`, nil, -1.23},
+		// RoundUp 进一法（远离零）
+		{`RoundUp(1.231)`, nil, 2},
+		{`RoundUp(1.231, 2)`, nil, 1.24},
+		{`RoundUp(-1.231, 2)`, nil, -1.24},
+		// RoundDown 向下取整（朝负无穷）
+		{`RoundDown(1.239, 2)`, nil, 1.23},
+		{`RoundDown(-1.239, 2)`, nil, -1.24},
+		// 也可作用于变量
+		{`Round(x, 1)`, map[string]any{"x": 3.14159}, 3.1},
+	}
+	for _, c := range cases {
+		got, err := eng.RunString(c.rule, c.args)
+		if err != nil {
+			t.Errorf("EvaluateString(%q) error: %v", c.rule, err)
+			continue
+		}
+		if g, ok := got.(float64); !ok || g != c.want {
+			t.Errorf("EvaluateString(%q) = %v (%T), want %v", c.rule, got, got, c.want)
+		}
+	}
+}
