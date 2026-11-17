@@ -85,8 +85,8 @@ func (r *customerFunc) Div(args ...any) (any, error) {
 	}, args...), nil
 }
 
-// Has 数组是否包含某元素
-func (r *customerFunc) Has(args ...any) (any, error) {
+// has 数组是否包含某元素
+func (r *customerFunc) has(args ...any) (any, error) {
 	if len(args) != 2 {
 		if len(args) == 1 {
 			return false, nil
@@ -94,7 +94,7 @@ func (r *customerFunc) Has(args ...any) (any, error) {
 		if len(args) > 2 {
 			//这是一个bug，会将数组变成动态参数
 			arg1 := args[0 : len(args)-1]
-			return r.Has(arg1, args[len(args)-1])
+			return r.has(arg1, args[len(args)-1])
 		}
 		return false, fmt.Errorf("参数数量不对：%v", args)
 	}
@@ -129,7 +129,7 @@ func (r *customerFunc) In(args ...any) (any, error) {
 	if len(args) != 2 {
 		return false, fmt.Errorf("参数数量不对：%v", args)
 	}
-	return r.Has(args[1], args[0])
+	return r.has(args[1], args[0])
 }
 
 // Between 是否在某个范围内 Between(num, "[3,6]")
@@ -468,6 +468,89 @@ func (r *customerFunc) Len(args ...any) (any, error) {
 		list = args
 	}
 	return float64(len(list)), nil
+}
+
+// Intersect 求多个数组的交集：Intersect(Array(1,2,3), Array(2,3,4)) 返回 [2,3]。
+// 结果去重，按第一个数组中的出现顺序排列；元素按字符串形式比较（与 In/Has 一致，2 与 '2' 视为相同）。
+// 参数可以是数组，也可以是 JSON 数组字符串（如 '["a","b"]'）；nil 视为空数组。
+func (r *customerFunc) Intersect(args ...any) (any, error) {
+	lists, err := toArrayList("Intersect", args)
+	if err != nil {
+		return nil, err
+	}
+	if len(lists) == 0 {
+		return []any{}, nil
+	}
+	// 统计每个元素出现在多少个数组里（同一数组内重复的只算一次）
+	counts := make(map[string]int)
+	for _, list := range lists {
+		seen := make(map[string]struct{}, len(list))
+		for _, one := range list {
+			key := conv.String(one)
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			counts[key]++
+		}
+	}
+	result := make([]any, 0)
+	added := make(map[string]struct{})
+	for _, one := range lists[0] {
+		key := conv.String(one)
+		if _, ok := added[key]; ok || counts[key] != len(lists) {
+			continue
+		}
+		added[key] = struct{}{}
+		result = append(result, one)
+	}
+	return result, nil
+}
+
+// Union 求多个数组的并集：Union(Array(1,2), Array(2,3)) 返回 [1,2,3]。
+// 结果去重，按各数组依次出现的顺序排列；元素比较方式和参数格式同 Intersect。
+func (r *customerFunc) Union(args ...any) (any, error) {
+	lists, err := toArrayList("Union", args)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]any, 0)
+	added := make(map[string]struct{})
+	for _, list := range lists {
+		for _, one := range list {
+			key := conv.String(one)
+			if _, ok := added[key]; ok {
+				continue
+			}
+			added[key] = struct{}{}
+			result = append(result, one)
+		}
+	}
+	return result, nil
+}
+
+// toArrayList 把集合运算的每个参数都转成数组：数组直接使用，JSON 数组字符串先解析，nil 视为空数组，其他类型报错
+func toArrayList(funcName string, args []any) ([][]any, error) {
+	lists := make([][]any, 0, len(args))
+	for i, arg := range args {
+		if arg == nil {
+			lists = append(lists, []any{})
+			continue
+		}
+		if list := anySlice(arg); list != nil {
+			lists = append(lists, list)
+			continue
+		}
+		if str, ok := arg.(string); ok && cond.IsJson(str) {
+			list := make([]any, 0)
+			if err := conv.Unmarshal(str, &list); err == nil {
+				lists = append(lists, list)
+				continue
+			}
+		}
+		return nil, fmt.Errorf("%s 第 %d 个参数不是数组：%v", funcName, i+1, arg)
+	}
+	return lists, nil
 }
 
 // itemVarName 表达式里指代“当前元素”的变量名
@@ -971,9 +1054,9 @@ type roundingMode int
 
 const (
 	roundHalfUp roundingMode = iota // 四舍五入（ties 远离零）
-	roundTrunc                     // 直接舍去（朝零截断）
-	roundUp                        // 进一法（朝远离零方向进位）
-	roundFloor                     // 向下取整（朝负无穷）
+	roundTrunc                      // 直接舍去（朝零截断）
+	roundUp                         // 进一法（朝远离零方向进位）
+	roundFloor                      // 向下取整（朝负无穷）
 )
 
 // roundTo 保留 n 位小数并按指定模式舍入：先乘以 10^n，在整数尺度上做对应舍入，再除回去。

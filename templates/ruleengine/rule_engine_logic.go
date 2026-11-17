@@ -62,16 +62,18 @@ func NewEngineLogic() *EngineLogic {
 		//"RoundUp":      ruleLogicFunc.RoundUp,
 		//"RoundDown":    ruleLogicFunc.RoundDown,
 		// 数组相关
-		"Has":     ruleLogicFunc.Has,
-		"In":      ruleLogicFunc.In,
-		"Between": ruleLogicFunc.Between, // 新增区间判断
-		"Array":   ruleLogicFunc.Array,
-		"Find":    ruleLogicFunc.Find,
-		"Filter":  ruleLogicFunc.Filter,
-		"Map":     ruleLogicFunc.Map,
-		"Len":     ruleLogicFunc.Len,
-		"Index":   ruleLogicFunc.Index,
-		"At":      ruleLogicFunc.At,
+		//"Has":     ruleLogicFunc.Has,
+		"In":        ruleLogicFunc.In,
+		"Between":   ruleLogicFunc.Between, // 新增区间判断
+		"Array":     ruleLogicFunc.Array,
+		"Find":      ruleLogicFunc.Find,
+		"Filter":    ruleLogicFunc.Filter,
+		"Map":       ruleLogicFunc.Map,
+		"Len":       ruleLogicFunc.Len,
+		"Index":     ruleLogicFunc.Index,
+		"At":        ruleLogicFunc.At,
+		"Intersect": ruleLogicFunc.Intersect, // 多个数组求交集
+		"Union":     ruleLogicFunc.Union,     // 多个数组求并集
 		// 类型相关
 		"Is": ruleLogicFunc.Is,
 		"As": ruleLogicFunc.As,

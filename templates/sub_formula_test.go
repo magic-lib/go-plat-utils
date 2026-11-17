@@ -17,7 +17,7 @@ func TestSubFormulaTemplate(t *testing.T) {
 		rate          float64
 		want          string
 	}{
-		{225, 225, 0, "225"},     // 500 + MIN(-20, -10) = 480
+		{225, 225, 0, "215"},     // 225 + MIN(-0, -10) = 215
 		{500, 500, 0.05, "480"},  // 500 + MIN(-20, -10) = 480
 		{100, 100, 0.05, "90"},   // 100 + MIN(0, -10) = 90
 		{300, 400, 0.1, "370"},   // 400 + MIN(-30, -10) = 370
@@ -50,7 +50,7 @@ func TestAddFormulaTemplate(t *testing.T) {
 		rate          float64
 		want          string
 	}{
-		{225, 225, 0, "225"}, // 500 + MIN(-20, -10) = 480
+		{225, 225, 0, "250"}, // MAX(225, 225 + MIN(MAX(0, 25), 100)) = 250
 	}
 
 	e := NewRuleExprEngine()

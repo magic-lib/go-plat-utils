@@ -17,9 +17,8 @@ func TestDivAndHasEdgeCases(t *testing.T) {
 		{`Div(6, zero)`, nil, true},
 		{`Div(6, 2, 0)`, nil, true},
 		{`Div('x')`, float64(0), false},
-		{`Has(nilList, 'a')`, false, false},
 		{`In('a', nilList)`, false, false},
-		{`Has(list, 'a')`, true, false},
+		{`In('a', list)`, true, false},
 	}
 	for _, tc := range testCases {
 		got, err := ruleengine.NewEngineLogic().EvaluateString(tc.rule, params)

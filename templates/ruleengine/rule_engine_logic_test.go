@@ -147,7 +147,7 @@ func TestCheckRuleVars(t *testing.T) {
 
 	fmt.Println(is)
 
-	condTypeCustomVarPattern := `((In(MEMBER_TAGS, ('M6')) && In(MEMBER_TAGS, ('Y',"N")) && Has(MEMBER_TAGS, 'K1') && In(M6_MEMBER_COMPANY_NO, ('M6-002','M6-004','M6-005','M6-006',MM,'M6-007','M6-009','M6-010')) && true))`
+	condTypeCustomVarPattern := `((In(MEMBER_TAGS, ('M6')) && In(MEMBER_TAGS, ('Y',"N")) && In('K1', MEMBER_TAGS) && In(M6_MEMBER_COMPANY_NO, ('M6-002','M6-004','M6-005','M6-006',MM,'M6-007','M6-009','M6-010')) && true))`
 	ruleLogic := ruleengine.NewEngineLogic()
 	customList, err := ruleLogic.Vars(condTypeCustomVarPattern)
 	if err != nil {
@@ -255,7 +255,7 @@ func TestIfFunction11(t *testing.T) {
 	return
 }
 func TestHasFunction(t *testing.T) {
-	condTypeCustomVarPattern := `Has(('K1', 'K2', 'K5'), 'K5')`
+	condTypeCustomVarPattern := `In('K5', ('K1', 'K2', 'K5'))`
 	ruleLogic := ruleengine.NewEngineLogic()
 	customList, err := ruleLogic.EvaluateString(condTypeCustomVarPattern, map[string]any{
 		"Names": []string{
@@ -295,7 +295,7 @@ func TestCheckInAndHas(t *testing.T) {
 	//}
 	//fmt.Println(customList)
 
-	condTypeCustomVarPattern = `Has(M6_MEMBER_COMPANY_NO_LIST, "M6-006")`
+	condTypeCustomVarPattern = `In("M6-006", M6_MEMBER_COMPANY_NO_LIST)`
 	ruleLogic = ruleengine.NewEngineLogic()
 	customList, err = ruleLogic.EvaluateString(condTypeCustomVarPattern, map[string]any{
 		"M6_MEMBER_COMPANY_NO": "M6-006",
@@ -544,8 +544,8 @@ func TestReplaceRuleStringNumberArray(t *testing.T) {
 		{`In(3, [1,2,3])`, true},
 		{`In(5, [1,2,3])`, false},
 		// Has 数组包含判断
-		{`Has([1,2,3], 2)`, true},
-		{`Has([1,2,3], 9)`, false},
+		//{`Has([1,2,3], 2)`, true},
+		//{`Has([1,2,3], 9)`, false},
 		// 小数、负数
 		{`In(1.5, [1.5, 2.5])`, true},
 		{`In(-2, [-1, -2, -3])`, true},

@@ -223,9 +223,9 @@ func TestRunStringRealJsonGetExpr(t *testing.T) {
 		"Min([nums])":       float64(1),
 		"Len([nums])":       float64(3),
 		"Join('-', [nums])": "3-9-1",
-		"Has([nums], 9)":    true,
-		"In(3, nums)":       true,
-		"In(4, nums)":       false,
+		//"Has([nums], 9)":    true,
+		"In(3, nums)": true,
+		"In(4, nums)": false,
 	}
 	for expr, want := range cases {
 		got, err := e.RunString(expr, map[string]any{"nums": nums})
