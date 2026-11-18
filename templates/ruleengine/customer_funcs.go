@@ -244,6 +244,50 @@ func (r *customerFunc) Contains(args ...any) (any, error) {
 	return strings.Contains(conv.String(args[0]), conv.String(args[1])), nil
 }
 
+// SubString 截取字符串：SubString(str, start, length)，按字符（rune）计数，中文也算一个字符。
+//   - start 从 0 开始，负数从后往前数（-1 是最后一个字符）
+//   - length 为截取个数，省略时默认取 1 个字符，即 SubString('abc', 1) = 'b'；
+//     正数从起点（含）往右数，负数从起点（含）往左数，结果都按原顺序返回，0 返回空字符串
+//   - 截取范围超出字符串的部分按实际长度截断（负数起点超过开头时从开头算起），完全取不到时返回空字符串
+//
+// 例：SubString('abcdef', 1, 4) = 'bcde'，SubString('abcdef', 3, -2) = 'cd'，SubString('abc', 1, 4) = 'bc'
+func (r *customerFunc) SubString(args ...any) (any, error) {
+	if len(args) < 2 || len(args) > 3 {
+		return "", fmt.Errorf("参数数量不对：%v", args)
+	}
+	if args[0] == nil {
+		return "", nil
+	}
+	runes := []rune(conv.String(args[0]))
+	start, err := conv.Convert[int](args[1])
+	if err != nil {
+		return "", fmt.Errorf("SubString 起始下标不是整数：%v", args[1])
+	}
+	length := 1
+	if len(args) == 3 {
+		if length, err = conv.Convert[int](args[2]); err != nil {
+			return "", fmt.Errorf("SubString 截取长度不是整数：%v", args[2])
+		}
+	}
+	if start < 0 { // 负数下标：从末尾倒数
+		start += len(runes)
+	}
+	if length == 0 {
+		return "", nil
+	}
+	end := start + length
+	if length < 0 { // 负数个数：从起点（含）往左数
+		start, end = start+length+1, start+1
+	}
+	// 与字符串实际范围取交集，超出部分截断
+	start = max(start, 0)
+	end = min(end, len(runes))
+	if start >= end {
+		return "", nil
+	}
+	return string(runes[start:end]), nil
+}
+
 // Array 将动态参数组成一个数组，供 Array(1,2,3) 使用
 func (r *customerFunc) Array(args ...any) (any, error) {
 	if len(args) == 1 { // Array([list]) 直接返回该数组

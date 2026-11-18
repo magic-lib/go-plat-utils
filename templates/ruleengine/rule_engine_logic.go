@@ -88,6 +88,7 @@ func NewEngineLogic() *EngineLogic {
 		"JsonGet":   ruleLogicFunc.JsonGet,
 		"Join":      ruleLogicFunc.Join,
 		"MaskMatch": ruleLogicFunc.MaskMatch,
+		"SubString": ruleLogicFunc.SubString, // 截取字符串，负数下标从后往前数
 		// 时间相关
 		"Now":        ruleLogicFunc.Now,
 		"DateFormat": ruleLogicFunc.DateFormat,
