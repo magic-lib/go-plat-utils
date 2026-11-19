@@ -22,8 +22,8 @@ const jsRunTimeout = time.Second
 //   - 结果为数字时统一转成 float64，与规则里的数字字面量类型一致，可直接用 == 比较
 //
 // 例：JavaScript('arg0.substr(-6, 1) == 4', nid) && a > 2。
-// 注意：规则引擎的字符串遇到单引号或双引号都会结束，脚本里要写字符串时，引号必须用反斜杠转义，
-// 例如 JavaScript('arg0 == \"VIP\"', level)、JavaScript('\'a\' + 5')。
+// 引号：规则字符串只在遇到与开头相同的引号时结束，脚本外层用一种引号、里面用另一种即可，
+// 例如 JavaScript("arg0 == 'VIP'", level)、JavaScript('"a" + 5')；与外层相同的引号仍需用反斜杠转义。
 // 每次调用都新建 goja.Runtime，可并发使用；执行超过 jsRunTimeout 会被中断并返回错误。
 func (r *customerFunc) JavaScript(args ...any) (any, error) {
 	if len(args) == 0 {

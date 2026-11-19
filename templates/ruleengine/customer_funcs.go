@@ -306,8 +306,8 @@ func (r *customerFunc) Array(args ...any) (any, error) {
 //     元素是 map/结构体时，它的字段也会作为变量直接暴露出来，因此下面三种写法等价：
 //     Find(items, 'age > 18')、Find(items, 'item.age > 18')、Find(items, '[item.age] > 18')
 //     注意 1：本仓库的 govaluate 不支持点号取属性，item.age 会在编译前自动转成 [item.age]。
-//     注意 2：外层已经把第二个参数包起来了，表达式里再出现引号必须转义，
-//     例如 Find(items, "item.name == \'jack\'")。
+//     注意 2：表达式外层用一种引号、里面用另一种即可，例如 Find(items, "item.name == 'jack'")；
+//     与外层相同的引号仍需用反斜杠转义。
 //
 // 兜底规则：第二个参数不是字符串、或这个字符串没法当成表达式（无法编译、没有引用任何
 // 当前元素可用的变量）时，退化成原来的相等比较，保证 Find(Array('a','b'), 'a') 这类
