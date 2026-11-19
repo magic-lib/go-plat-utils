@@ -74,6 +74,8 @@ func NewEngineLogic() *EngineLogic {
 		"At":        ruleLogicFunc.At,
 		"Intersect": ruleLogicFunc.Intersect, // 多个数组求交集
 		"Union":     ruleLogicFunc.Union,     // 多个数组求并集
+		// 脚本相关
+		"JavaScript": ruleLogicFunc.JavaScript, // 按 JavaScript 语义执行脚本
 		// 类型相关
 		"Is": ruleLogicFunc.Is,
 		"As": ruleLogicFunc.As,

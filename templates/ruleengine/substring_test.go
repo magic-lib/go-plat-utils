@@ -1,6 +1,9 @@
 package ruleengine
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestSubString(t *testing.T) {
 	r := NewEngineLogic()
@@ -46,10 +49,33 @@ func TestSubString(t *testing.T) {
 }
 
 func TestSubStringInvalidArgs(t *testing.T) {
+	//r := templates.NewRuleExprEngine()
+	//for _, rule := range []string{"SubString('abc')", "SubString('abc', 'x')", "SubString('abc', 1, 'y')", "SubString('abc', 1, 2, 3)"} {
+	//	if _, err := r.RunString(rule, nil); err == nil {
+	//		t.Errorf("%s: expected error", rule)
+	//	}
+	//}
+	//=='1' || SubString(nid, -6, 1)=='2' || SubString(nid, -6, 1)=='3'
 	r := NewEngineLogic()
-	for _, rule := range []string{"SubString('abc')", "SubString('abc', 'x')", "SubString('abc', 1, 'y')", "SubString('abc', 1, 2, 3)"} {
-		if _, err := r.EvaluateString(rule, nil); err == nil {
+	for _, rule := range []string{"SubString(nid, -6)=='1' || SubString(nid, -6, 1)=='2' || SubString(nid, -6, 1)=='3'"} {
+		aa, err := r.RunStringAny(rule, map[string]any{
+			"nid": "151024/92/1",
+		})
+		if err != nil {
 			t.Errorf("%s: expected error", rule)
 		}
+		fmt.Println("aa:", aa)
+	}
+}
+func TestSubStringInvalidArgs1(t *testing.T) {
+	r := NewEngineLogic()
+	for _, rule := range []string{"SubString(nid, -6)=='4'", "SubString(nid, -6)==4"} {
+		aa, err := r.RunStringAny(rule, map[string]any{
+			"nid": "151024/92/1",
+		})
+		if err != nil {
+			t.Errorf("%s: expected error", rule)
+		}
+		fmt.Println("aa:", aa)
 	}
 }
