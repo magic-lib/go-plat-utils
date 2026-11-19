@@ -157,7 +157,11 @@ func readToken(stream *lexerStream, state lexerState, functions map[string]Expre
 		}
 
 		if !isNotQuote(character) {
-			tokenValue, completed = readUntilFalse(stream, true, false, true, isNotQuote)
+			// 字符串只在遇到与开头相同的引号时结束：'...' 内可直接写双引号，"..." 内可直接写单引号
+			openQuote := character
+			tokenValue, completed = readUntilFalse(stream, true, false, true, func(c rune) bool {
+				return c != openQuote
+			})
 
 			if !completed {
 				return ExpressionToken{}, errors.New("Unclosed string literal"), false

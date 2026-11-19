@@ -20,6 +20,7 @@ func TestJsFunction(t *testing.T) {
 		want any
 	}{
 		{`JavaScript('1 == \"1\"')`, true},   // JS 宽松相等
+		{`JavaScript("1 == '1'")`, true},     // JS 宽松相等
 		{`JavaScript('1 === \"1\"')`, false}, // 严格相等
 		{`JavaScript('\"a\" + 5')`, "a5"},    // 字符串拼接，脚本里的引号要转义
 		{`JavaScript('\'a\' + 5')`, "a5"},    // 字符串拼接
